@@ -1,6 +1,5 @@
 // admin-teams.js - Logique d'administration des équipes
-
-const TEAMS_STORAGE_KEY = 'footballEloTeams';
+const stored = localStorage.getItem('footballEloTeams');
 let currentEditingTeamId = null;
 
 // Initialisation de la page
