@@ -1,30 +1,45 @@
-// teams-loader.js - Charge les équipes depuis le fichier JSON
+// teams-loader.js - Charge les équipes depuis le système d'administration
 
 let teamsData = [];
+const TEAMS_STORAGE_KEY = 'footballEloTeams';
 
-// Fonction pour charger les équipes depuis le fichier JSON
+// Fonction pour charger les équipes depuis le stockage admin
 async function loadTeams() {
     try {
-        // Pour les tests en local, on utilise des données en dur
-        // Plus tard, on pourra charger depuis le fichier JSON
-        teamsData = [
-            { id: 1, name: "Paris Saint-Germain", shortName: "PSG" },
-            { id: 2, name: "Olympique de Marseille", shortName: "OM" },
-            { id: 3, name: "Olympique Lyonnais", shortName: "OL" },
-            { id: 4, name: "AS Monaco", shortName: "ASM" },
-            { id: 5, name: "Lille OSC", shortName: "LOSC" },
-            { id: 6, name: "Stade Rennais", shortName: "SRFC" },
-            { id: 7, name: "OGC Nice", shortName: "OGCN" },
-            { id: 8, name: "RC Strasbourg", shortName: "RCS" }
-        ];
+        // Charger depuis le localStorage (système admin)
+        const stored = localStorage.getItem(TEAMS_STORAGE_KEY);
+        if (stored) {
+            teamsData = JSON.parse(stored);
+        } else {
+            // Si aucune équipe en admin, utiliser les équipes par défaut
+            teamsData = getDefaultTeams();
+            // Sauvegarder les équipes par défaut pour l'admin
+            localStorage.setItem(TEAMS_STORAGE_KEY, JSON.stringify(teamsData));
+        }
         
         populateTeamSelects();
-        console.log('Équipes chargées avec succès');
+        console.log('Équipes chargées avec succès:', teamsData.length, 'équipes');
     } catch (error) {
         console.error('Erreur lors du chargement des équipes:', error);
-        // En cas d'erreur, on affiche un message à l'utilisateur
-        showError('Impossible de charger la liste des équipes');
+        // En cas d'erreur, utiliser les équipes par défaut
+        teamsData = getDefaultTeams();
+        populateTeamSelects();
+        showError('Erreur lors du chargement des équipes, utilisation des équipes par défaut');
     }
+}
+
+// Équipes par défaut (compatibilité)
+function getDefaultTeams() {
+    return [
+        { id: 1, name: "Paris Saint-Germain", shortName: "PSG", city: "Paris", eloRating: 1500 },
+        { id: 2, name: "Olympique de Marseille", shortName: "OM", city: "Marseille", eloRating: 1500 },
+        { id: 3, name: "Olympique Lyonnais", shortName: "OL", city: "Lyon", eloRating: 1500 },
+        { id: 4, name: "AS Monaco", shortName: "ASM", city: "Monaco", eloRating: 1500 },
+        { id: 5, name: "Lille OSC", shortName: "LOSC", city: "Lille", eloRating: 1500 },
+        { id: 6, name: "Stade Rennais", shortName: "SRFC", city: "Rennes", eloRating: 1500 },
+        { id: 7, name: "OGC Nice", shortName: "OGCN", city: "Nice", eloRating: 1500 },
+        { id: 8, name: "RC Strasbourg", shortName: "RCS", city: "Strasbourg", eloRating: 1500 }
+    ];
 }
 
 // Fonction pour remplir les selects avec les équipes

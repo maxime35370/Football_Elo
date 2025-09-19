@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des équipes - Admin Football Elo</title>
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="../../css/admin.css">
+</head>
+<body>
+    <header>
+        <h1>⚽ Football Elo - Administration</h1>
+        <p>Gestion des équipes</p>
+    </header>
+
+    <nav>
+        <div class="nav-container">
+            <a href="../../index.html" class="nav-btn">🏠 Accueil</a>
+            <a href="../add-match.html" class="nav-btn">➕ Ajouter un match</a>
+            <a href="../matches.html" class="nav-btn">📋 Historique</a>
+            <a href="../rankings.html" class="nav-btn">🏆 Classements</a>
+            <a href="teams-manager.html" class="nav-btn active">⚙️ Admin</a>
+        </div>
+    </nav>
+
+    <main>
+        <div class="admin-container">
+            <!-- Bandeau admin -->
+            <div class="admin-banner">
+                <h2>🔧 Administration - Gestion des équipes</h2>
+                <div class="admin-stats">
+                    <span id="teamCount">0 équipe</span>
+                    <span id="matchCount">0 match</span>
+                </div>
+            </div>
+
+            <!-- Actions rapides -->
+            <div class="quick-actions">
+                <button id="addTeamBtn" class="btn btn-primary">➕ Ajouter une équipe</button>
+                <button id="resetSeasonBtn" class="btn btn-warning">🔄 Nouvelle saison</button>
+                <button id="exportDataBtn" class="btn btn-info">💾 Exporter données</button>
+                <button id="importDataBtn" class="btn btn-success">📥 Importer équipes</button>
+            </div>
+
+            <!-- Formulaire d'ajout/modification d'équipe -->
+            <div id="teamFormSection" class="form-section" style="display: none;">
+                <h3 id="formTitle">➕ Ajouter une nouvelle équipe</h3>
+                <form id="teamForm" class="team-form">
+                    <input type="hidden" id="teamId" name="teamId">
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="teamName">Nom complet de l'équipe :</label>
+                            <input type="text" id="teamName" name="teamName" placeholder="ex: Paris Saint-Germain" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="teamShortName">Nom court :</label>
+                            <input type="text" id="teamShortName" name="teamShortName" placeholder="ex: PSG" maxlength="8" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="teamCity">Ville :</label>
+                            <input type="text" id="teamCity" name="teamCity" placeholder="ex: Paris" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="teamElo">Rating Elo initial :</label>
+                            <input type="number" id="teamElo" name="teamElo" value="1500" min="1000" max="2500" required>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" id="submitBtn" class="btn btn-primary">💾 Enregistrer</button>
+                        <button type="button" id="cancelBtn" class="btn btn-secondary">❌ Annuler</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Liste des équipes -->
+            <div class="teams-list-section">
+                <h3>📋 Équipes actuelles</h3>
+                <div id="teamsList" class="teams-grid">
+                    <!-- Les équipes seront ajoutées dynamiquement ici -->
+                </div>
+                
+                <div id="noTeamsMessage" class="no-teams">
+                    <div class="empty-state">
+                        <h4>📭 Aucune équipe configurée</h4>
+                        <p>Ajoutez votre première équipe pour commencer !</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section d'import CSV -->
+            <div id="importSection" class="import-section" style="display: none;">
+                <h3>📥 Import d'équipes depuis CSV</h3>
+                <div class="import-help">
+                    <p>Format CSV attendu : <code>nom,nom_court,ville,elo_rating</code></p>
+                    <p>Exemple : <code>Paris Saint-Germain,PSG,Paris,1500</code></p>
+                </div>
+                <div class="import-controls">
+                    <input type="file" id="csvFileInput" accept=".csv" class="file-input">
+                    <button id="processImportBtn" class="btn btn-primary">📤 Traiter le fichier</button>
+                    <button id="cancelImportBtn" class="btn btn-secondary">❌ Annuler</button>
+                </div>
+                <div id="importPreview" class="import-preview"></div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Football Elo - Administration</p>
+    </footer>
+
+    <script src="../../js/teams-loader.js"></script>
+    <script src="../../js/storage.js"></script>
+    <script src="../../js/admin-teams.js"></script>
+</body>
+</html>
