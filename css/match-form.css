@@ -284,13 +284,24 @@
 }
 
 .btn-secondary {
-    background: #95a5a6;
+    background: linear-gradient(45deg, #95a5a6, #7f8c8d);
     color: white;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: 25px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
     margin-bottom: 1rem;
+    display: inline-block;
+    text-decoration: none;
 }
 
 .btn-secondary:hover {
-    background: #7f8c8d;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(149, 165, 166, 0.4);
+    background: linear-gradient(45deg, #7f8c8d, #95a5a6);
 }
 
 /* Actions du formulaire */
