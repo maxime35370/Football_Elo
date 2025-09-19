@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ajouter un match - Football Elo</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/match-form.css">
+</head>
+<body>
+    <header>
+        <h1>⚽ Football Elo</h1>
+        <p>Ajouter un nouveau match</p>
+    </header>
+
+    <nav>
+        <div class="nav-container">
+            <a href="../index.html" class="nav-btn">🏠 Accueil</a>
+            <a href="add-match.html" class="nav-btn active">➕ Ajouter un match</a>
+            <a href="rankings.html" class="nav-btn">🏆 Classements</a>
+        </div>
+    </nav>
+
+    <main>
+        <div class="form-container">
+            <h2>📝 Détails du match</h2>
+            
+            <form id="matchForm" class="match-form">
+                <!-- Informations de base du match -->
+                <div class="form-section">
+                    <h3>🏟️ Informations générales</h3>
+                    
+                    <div class="form-group">
+                        <label for="matchDate">Date du match :</label>
+                        <input type="date" id="matchDate" name="matchDate" required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="homeTeam">Équipe à domicile :</label>
+                            <select id="homeTeam" name="homeTeam" required>
+                                <option value="">Sélectionner une équipe</option>
+                            </select>
+                        </div>
+
+                        <div class="vs-divider">VS</div>
+
+                        <div class="form-group">
+                            <label for="awayTeam">Équipe à l'extérieur :</label>
+                            <select id="awayTeam" name="awayTeam" required>
+                                <option value="">Sélectionner une équipe</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Score calculé automatiquement -->
+                <div class="form-section">
+                    <h3>⚽ Score du match</h3>
+                    <div class="score-display">
+                        <div class="team-score">
+                            <span id="homeTeamName">Équipe domicile</span>
+                            <span id="currentHomeScore" class="score-number">0</span>
+                        </div>
+                        <div class="score-divider">-</div>
+                        <div class="team-score">
+                            <span id="currentAwayScore" class="score-number">0</span>
+                            <span id="awayTeamName">Équipe extérieur</span>
+                        </div>
+                    </div>
+                    <p class="info-text">Score calculé automatiquement selon les buts saisis ci-dessous</p>
+                </div>
+
+                <!-- Détails des buts -->
+                <div class="form-section">
+                    <h3>🎯 Détails des buts</h3>
+                    <p class="section-desc">Ajoutez les buteurs et les minutes de chaque but (temps additionnel inclus)</p>
+                    
+                    <div id="goalsContainer">
+                        <!-- Les buts seront ajoutés dynamiquement ici -->
+                    </div>
+                    
+                    <button type="button" id="addGoalBtn" class="btn-secondary">+ Ajouter un but</button>
+                </div>
+
+                <!-- Score à la mi-temps (calculé automatiquement) -->
+                <div class="form-section">
+                    <h3>⏱️ Score à la mi-temps</h3>
+                    <div class="halftime-display">
+                        <span id="halftimeScore">0 - 0</span>
+                        <p class="info-text">Calculé automatiquement selon les buts marqués avant la 45e minute</p>
+                    </div>
+                </div>
+
+                <!-- Boutons d'action -->
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">💾 Enregistrer le match</button>
+                    <button type="reset" class="btn btn-secondary">🔄 Réinitialiser</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Football Elo - Saisie des matchs</p>
+    </footer>
+
+    <script src="../js/storage.js"></script>
+    <script src="../js/teams-loader.js"></script>
+    <script src="../js/match-form.js"></script>
+</body>
+</html>

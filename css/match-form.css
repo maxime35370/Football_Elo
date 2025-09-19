@@ -56,6 +56,8 @@
     border: 2px solid #e9ecef;
     border-radius: 5px;
     font-size: 1rem;
+    color: #2c3e50;
+    background-color: white;
     transition: border-color 0.3s ease;
 }
 
@@ -164,7 +166,52 @@
     margin-top: 0.5rem;
 }
 
-/* Formulaires de buts */
+/* Champs minute avec temps additionnel */
+.minute-group {
+    position: relative;
+}
+
+.minute-inputs {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.minute-inputs input[name="goalMinute"] {
+    flex: 2;
+    color: #2c3e50 !important;
+    background: white !important;
+}
+
+.minute-inputs input[name="goalExtraTime"] {
+    flex: 1;
+    color: #2c3e50 !important;
+    background: white !important;
+}
+
+.plus-sign {
+    font-weight: bold;
+    color: #2c3e50;
+    font-size: 1.2rem;
+}
+
+.minute-indicator {
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    white-space: nowrap;
+}
+
+.minute-indicator.first-half {
+    background: #e8f5e8;
+    color: #27ae60;
+}
+
+.minute-indicator.second-half {
+    background: #fff3cd;
+    color: #f39c12;
+}
 .goal-form {
     background: white;
     border: 2px solid #e9ecef;

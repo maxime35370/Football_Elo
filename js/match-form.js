@@ -77,13 +77,17 @@ function addGoalForm() {
     const goalId = Date.now(); // ID unique basé sur le timestamp
     const goalsContainer = document.getElementById('goalsContainer');
     
+    // Compter les buts existants pour la numérotation
+    const existingGoals = goalsContainer.querySelectorAll('.goal-form').length;
+    const goalNumber = existingGoals + 1;
+    
     const goalDiv = document.createElement('div');
     goalDiv.className = 'goal-form';
     goalDiv.setAttribute('data-goal-id', goalId);
     
     goalDiv.innerHTML = `
         <div class="goal-header">
-            <h4>But #${goals.length + 1}</h4>
+            <h4>But #${goalNumber}</h4>
             <button type="button" class="remove-goal-btn" onclick="removeGoal(${goalId})">🗑️</button>
         </div>
         <div class="goal-details">
@@ -99,19 +103,32 @@ function addGoalForm() {
                 <label>Buteur :</label>
                 <input type="text" name="goalScorer" placeholder="Nom du buteur" required>
             </div>
-            <div class="form-group">
+            <div class="form-group minute-group">
                 <label>Minute :</label>
-                <input type="number" name="goalMinute" min="1" max="120" placeholder="ex: 67" required>
-                <small>Inclure le temps additionnel (ex: 90+3 = 93)</small>
+                <div class="minute-inputs">
+                    <input type="number" name="goalMinute" min="1" max="90" placeholder="45" required>
+                    <span class="plus-sign">+</span>
+                    <input type="number" name="goalExtraTime" min="0" max="15" value="0" placeholder="0">
+                    <span class="minute-indicator" name="halfIndicator"></span>
+                </div>
+                <small>Minute principale (1-90) + temps additionnel (0-15)</small>
             </div>
         </div>
     `;
     
     goalsContainer.appendChild(goalDiv);
     
-    // Ajouter l'écouteur pour le calcul du score
+    // Ajouter l'écouteur pour le calcul du score et l'indicateur de mi-temps
     const goalTeamSelect = goalDiv.querySelector('select[name="goalTeam"]');
+    const minuteInput = goalDiv.querySelector('input[name="goalMinute"]');
+    const extraTimeInput = goalDiv.querySelector('input[name="goalExtraTime"]');
+    
     goalTeamSelect.addEventListener('change', calculateScore);
+    minuteInput.addEventListener('input', function() {
+        updateHalfTimeIndicator(goalDiv);
+        calculateScore();
+    });
+    extraTimeInput.addEventListener('input', calculateScore);
 }
 
 // Supprimer un but
@@ -135,6 +152,25 @@ function renumberGoals() {
     });
 }
 
+// Mettre à jour l'indicateur de mi-temps
+function updateHalfTimeIndicator(goalDiv) {
+    const minuteInput = goalDiv.querySelector('input[name="goalMinute"]');
+    const indicator = goalDiv.querySelector('.minute-indicator');
+    
+    if (minuteInput && indicator) {
+        const minute = parseInt(minuteInput.value);
+        if (minute >= 1 && minute <= 45) {
+            indicator.textContent = '(1ère mi-temps)';
+            indicator.className = 'minute-indicator first-half';
+        } else if (minute >= 46 && minute <= 90) {
+            indicator.textContent = '(2ème mi-temps)';
+            indicator.className = 'minute-indicator second-half';
+        } else {
+            indicator.textContent = '';
+            indicator.className = 'minute-indicator';
+        }
+    }
+}
 // Calculer et afficher le score actuel
 function calculateScore() {
     let homeScore = 0;
@@ -147,14 +183,16 @@ function calculateScore() {
     goalForms.forEach(goalForm => {
         const teamSelect = goalForm.querySelector('select[name="goalTeam"]');
         const minuteInput = goalForm.querySelector('input[name="goalMinute"]');
+        const extraTimeInput = goalForm.querySelector('input[name="goalExtraTime"]');
         
         if (teamSelect.value && minuteInput.value) {
             const minute = parseInt(minuteInput.value);
+            const extraTime = parseInt(extraTimeInput.value) || 0;
             
             // Compter pour le score final
             if (teamSelect.value === homeTeamId) {
                 homeScore++;
-                // Compter pour le score à la mi-temps (avant 46e minute)
+                // Pour la mi-temps : seulement les buts de la 1ère mi-temps (1-45 + temps add.)
                 if (minute <= 45) {
                     halftimeHomeScore++;
                 }
@@ -207,11 +245,19 @@ function handleFormSubmit(event) {
     // Collecter toutes les données du match
     const matchData = collectMatchData();
     
-    // Sauvegarder le match (à implémenter plus tard)
-    console.log('Données du match à sauvegarder:', matchData);
-    
-    // Afficher un message de succès
-    showSuccess('Match enregistré avec succès !');
+    // Sauvegarder le match
+    if (saveMatch(matchData)) {
+        showSuccess('Match enregistré avec succès ! Vous pouvez le voir dans l\'historique.');
+        
+        // Optionnel : rediriger vers l'historique après 2 secondes
+        setTimeout(() => {
+            if (confirm('Voulez-vous voir l\'historique des matchs ?')) {
+                window.location.href = 'matches.html';
+            }
+        }, 2000);
+    } else {
+        showError('Erreur lors de l\'enregistrement du match');
+    }
     
     // Optionnel : réinitialiser le formulaire
     // resetForm();
@@ -239,6 +285,7 @@ function validateMatch() {
         const team = goalForm.querySelector('select[name="goalTeam"]').value;
         const scorer = goalForm.querySelector('input[name="goalScorer"]').value;
         const minute = goalForm.querySelector('input[name="goalMinute"]').value;
+        const extraTime = goalForm.querySelector('input[name="goalExtraTime"]').value;
         
         if (!team || !scorer || !minute) {
             showError('Veuillez remplir tous les détails des buts ou les supprimer');
@@ -258,11 +305,14 @@ function collectMatchData() {
         const team = goalForm.querySelector('select[name="goalTeam"]').value;
         const scorer = goalForm.querySelector('input[name="goalScorer"]').value;
         const minute = parseInt(goalForm.querySelector('input[name="goalMinute"]').value);
+        const extraTime = parseInt(goalForm.querySelector('input[name="goalExtraTime"]').value) || 0;
         
         goalsData.push({
             teamId: team,
             scorer: scorer,
-            minute: minute
+            minute: minute,
+            extraTime: extraTime,
+            displayTime: extraTime > 0 ? `${minute}+${extraTime}` : `${minute}'`
         });
     });
     

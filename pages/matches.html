@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Historique des matchs - Football Elo</title>
+        <link rel="stylesheet" href="../css/style.css">
+        <link rel="stylesheet" href="../css/matches.css">
+    </head>
+    <body>
+        <header>
+            <h1>⚽ Football Elo</h1>
+            <p>Historique des matchs</p>
+        </header>
+
+        <nav>
+            <div class="nav-container">
+                <a href="../index.html" class="nav-btn">🏠 Accueil</a>
+                <a href="add-match.html" class="nav-btn">➕ Ajouter un match</a>
+                <a href="matches.html" class="nav-btn active">📋 Historique</a>
+                <a href="rankings.html" class="nav-btn">🏆 Classements</a>
+            </div>
+        </nav>
+
+        <main>
+            <div class="matches-container">
+                <div class="matches-header">
+                    <h2>📋 Tous les matchs</h2>
+                    <div class="matches-stats">
+                        <span id="matchCount">0 match</span>
+                        <span id="goalCount">0 but</span>
+                    </div>
+                </div>
+
+                <!-- Filtres et recherche -->
+                <div class="filters-section">
+                    <div class="filter-group">
+                        <label for="teamFilter">Filtrer par équipe :</label>
+                        <select id="teamFilter">
+                            <option value="">Toutes les équipes</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="dateFilter">Trier par :</label>
+                        <select id="dateFilter">
+                            <option value="newest">Plus récents</option>
+                            <option value="oldest">Plus anciens</option>
+                        </select>
+                    </div>
+
+                    <button id="clearAllBtn" class="btn-danger">🗑️ Effacer tout</button>
+                </div>
+
+                <!-- Liste des matchs -->
+                <div id="matchesList" class="matches-list">
+                    <!-- Les matchs seront ajoutés dynamiquement ici -->
+                </div>
+
+                <!-- Message si aucun match -->
+                <div id="noMatchesMessage" class="no-matches">
+                    <div class="empty-state">
+                        <h3>📭 Aucun match enregistré</h3>
+                        <p>Commencez par ajouter votre premier match !</p>
+                        <a href="add-match.html" class="btn">➕ Ajouter un match</a>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 Football Elo - Historique des matchs</p>
+        </footer>
+
+        <script src="../js/teams-loader.js"></script>
+        <script src="../js/storage.js"></script>
+        <script src="../js/matches-display.js"></script>
+    </body>
+</html>
