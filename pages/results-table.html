@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tableau des résultats - Football Elo</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/results-table.css">
+</head>
+<body>
+    <header>
+        <h1>⚽ Football Elo</h1>
+        <p>Tableau croisé des résultats</p>
+    </header>
+
+    <nav>
+        <div class="nav-container">
+            <a href="../index.html" class="nav-btn">🏠 Accueil</a>
+            <a href="../pages/add-match.html" class="nav-btn">➕ Ajouter un match</a>
+            <a href="../pages/matches.html" class="nav-btn">📋 Historique</a>
+            <a href="../pages/results-table.html" class="nav-btn active">📊 Tableau</a>
+            <a href="../pages/rankings.html" class="nav-btn">🏆 Classements</a>
+            <a href="../pages/admin/teams-manager.html" class="nav-btn">⚙️ Admin</a>
+        </div>
+    </nav>
+
+    <main>
+        <div class="results-container">
+            <div class="results-header">
+                <h2>📊 Tableau croisé des résultats</h2>
+                <p>Visualisation des matchs aller-retour entre toutes les équipes</p>
+                <div class="legend">
+                    <span class="legend-item">
+                        <span class="legend-color played"></span>
+                        Match joué
+                    </span>
+                    <span class="legend-item">
+                        <span class="legend-color not-played"></span>
+                        Match à jouer
+                    </span>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table id="resultsTable" class="results-table">
+                    <thead>
+                        <tr>
+                            <th class="team-header">Domicile \ Extérieur</th>
+                            <!-- Les en-têtes des équipes extérieures seront ajoutées ici -->
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Les lignes des équipes domicile seront ajoutées ici -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="stats-section">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>📈 Progression du championnat</h3>
+                        <div class="progress-bar">
+                            <div id="progressFill" class="progress-fill"></div>
+                        </div>
+                        <p><span id="playedMatches">0</span> matchs joués sur <span id="totalMatches">0</span></p>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <h3>🏠 Statistiques domicile</h3>
+                        <p>Victoires à domicile: <span id="homeWins">0</span></p>
+                        <p>Défaites à domicile: <span id="homeLosses">0</span></p>
+                        <p>Nuls: <span id="draws">0</span></p>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <h3>⚽ Statistiques de buts</h3>
+                        <p>Total buts marqués: <span id="totalGoals">0</span></p>
+                        <p>Moyenne par match: <span id="avgGoals">0</span></p>
+                        <p>Match le plus prolifique: <span id="highestScore">-</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Football Elo - Tableau des résultats</p>
+    </footer>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <!-- Configuration Firebase -->
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/firebase-service.js"></script>
+
+    <script src="../js/teams-loader.js"></script>
+    <script src="../js/storage.js"></script>
+    <script src="../js/results-table.js"></script>
+</body>
+</html>

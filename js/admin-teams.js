@@ -266,24 +266,38 @@ function deleteTeam(teamId) {
     
     // Vérifier si l'équipe a des matchs
     const matches = getStoredMatches();
-    const hasMatches = matches.some(match => 
+    const teamMatches = matches.filter(match => 
         match.homeTeamId == teamId || match.awayTeamId == teamId
     );
     
-    let confirmMessage = `Êtes-vous sûr de vouloir supprimer "${team.name}" ?`;
-    if (hasMatches) {
-        confirmMessage += '\n\n⚠️ ATTENTION: Cette équipe a des matchs enregistrés. Les supprimer causera des erreurs dans l\'historique.';
-    }
-    
-    if (confirm(confirmMessage)) {
-        const filteredTeams = teams.filter(t => t.id !== teamId);
-        if (saveTeams(filteredTeams)) {
-            showMessage('Équipe supprimée avec succès', 'success');
-            displayTeams();
-            loadAdminData();
+    if (teamMatches.length > 0) {
+        let confirmMessage = `L'équipe "${team.name}" a ${teamMatches.length} match(s) en historique.\n\n`;
+        confirmMessage += 'Que voulez-vous faire ?\n\n';
+        confirmMessage += 'OK = Supprimer l\'équipe ET tous ses matchs\n';
+        confirmMessage += 'Annuler = Garder l\'équipe';
+        
+        if (confirm(confirmMessage)) {
+            // Supprimer l'équipe ET ses matchs
+            const filteredTeams = teams.filter(t => t.id !== teamId);
+            const filteredMatches = matches.filter(match => 
+                match.homeTeamId != teamId && match.awayTeamId != teamId
+            );
             
-            if (hasMatches) {
-                showMessage('⚠️ Attention: Cette équipe avait des matchs. Vérifiez l\'historique.', 'warning');
+            // Sauvegarder les deux
+            if (saveTeams(filteredTeams) && saveFilteredMatches(filteredMatches)) {
+                showMessage(`Équipe et ses ${teamMatches.length} matchs supprimés`, 'success');
+                displayTeams();
+                loadAdminData();
+            }
+        }
+    } else {
+        // Pas de matchs, suppression simple
+        if (confirm(`Supprimer "${team.name}" ?`)) {
+            const filteredTeams = teams.filter(t => t.id !== teamId);
+            if (saveTeams(filteredTeams)) {
+                showMessage('Équipe supprimée avec succès', 'success');
+                displayTeams();
+                loadAdminData();
             }
         }
     }
@@ -448,4 +462,15 @@ function showMessage(text, type = 'info') {
     setTimeout(() => {
         messageDiv.remove();
     }, 5000);
+}
+
+// Fonction helper pour sauvegarder les matchs filtrés
+function saveFilteredMatches(matches) {
+    try {
+        localStorage.setItem('footballEloMatches', JSON.stringify(matches));
+        return true;
+    } catch (error) {
+        console.error('Erreur sauvegarde matchs:', error);
+        return false;
+    }
 }

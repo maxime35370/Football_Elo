@@ -4,30 +4,18 @@ let teamsData = [];
 const TEAMS_STORAGE_KEY = 'footballEloTeams';
 
 // Fonction pour charger les équipes depuis le stockage admin
-async function loadTeams() {
+function loadTeams() {
     try {
-        // Charger depuis le localStorage (système admin)
-        const stored = localStorage.getItem(TEAMS_STORAGE_KEY);
-        if (stored) {
-            teamsData = JSON.parse(stored);
-        } else {
-            // Si aucune équipe en admin, utiliser les équipes par défaut
-            teamsData = getDefaultTeams();
-            // Sauvegarder les équipes par défaut pour l'admin
-            localStorage.setItem(TEAMS_STORAGE_KEY, JSON.stringify(teamsData));
-        }
-        
+        teamsData = getStoredTeams(); // Sans await
         populateTeamSelects();
         console.log('Équipes chargées avec succès:', teamsData.length, 'équipes');
     } catch (error) {
         console.error('Erreur lors du chargement des équipes:', error);
-        // En cas d'erreur, utiliser les équipes par défaut
         teamsData = getDefaultTeams();
         populateTeamSelects();
-        showError('Erreur lors du chargement des équipes, utilisation des équipes par défaut');
+        showError('Erreur lors du chargement des équipes');
     }
 }
-
 // Équipes par défaut (compatibilité)
 function getDefaultTeams() {
     return [

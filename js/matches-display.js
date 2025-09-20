@@ -130,8 +130,8 @@ function createMatchElement(match) {
     matchDiv.className = 'match-card';
     matchDiv.setAttribute('data-match-id', match.id);
     
-    const homeTeam = getTeamById(match.homeTeamId);
-    const awayTeam = getTeamById(match.awayTeamId);
+    const homeTeam = getTeamById(match.homeTeamId) || { shortName: 'SUPP', name: 'Équipe supprimée' };
+    const awayTeam = getTeamById(match.awayTeamId) || { shortName: 'SUPP', name: 'Équipe supprimée' };
     
     const matchDate = new Date(match.date).toLocaleDateString('fr-FR', {
         weekday: 'long',
@@ -143,7 +143,10 @@ function createMatchElement(match) {
     matchDiv.innerHTML = `
         <div class="match-header">
             <div class="match-date">${matchDate}</div>
-            <button class="delete-match-btn" onclick="deleteMatchWithConfirm('${match.id}')">🗑️</button>
+            <div class="match-actions">
+                <button class="edit-match-btn" onclick="editMatch('${match.id}')">✏️</button>
+                <button class="delete-match-btn" onclick="deleteMatchWithConfirm('${match.id}')">🗑️</button>
+            </div>
         </div>
         
         <div class="match-score">
@@ -201,7 +204,22 @@ function createGoalsHTML(goals) {
 
 // Supprimer un match avec confirmation
 function deleteMatchWithConfirm(matchId) {
-    if (confirm('Êtes-vous sûr de vouloir supprimer ce match ? Cette action est irréversible.')) {
+    const match = allMatches.find(m => m.id == matchId);
+    if (!match) {
+        showMessage('Match introuvable', 'error');
+        return;
+    }
+    
+    // Récupérer les noms d'équipes avec gestion des équipes supprimées
+    const homeTeam = getTeamById(match.homeTeamId);
+    const awayTeam = getTeamById(match.awayTeamId);
+    
+    const homeTeamName = homeTeam ? homeTeam.shortName : 'Équipe supprimée';
+    const awayTeamName = awayTeam ? awayTeam.shortName : 'Équipe supprimée';
+    
+    const message = `Êtes-vous sûr de vouloir supprimer ce match ?\n\n${homeTeamName} vs ${awayTeamName}\n\nCette action est irréversible.`;
+    
+    if (confirm(message)) {
         if (deleteMatch(matchId)) {
             loadAndDisplayMatches(); // Recharger l'affichage
             showMessage('Match supprimé avec succès', 'success');
@@ -228,7 +246,23 @@ function handleClearAll() {
     }
 }
 
-// Afficher des messages temporaires
+// Éditer un match
+function editMatch(matchId) {
+    const match = allMatches.find(m => m.id == matchId);
+    if (!match) {
+        showMessage('Match introuvable', 'error');
+        return;
+    }
+    
+    console.log('Redirection vers édition du match:', matchId);
+    
+    // Construire l'URL avec le paramètre edit
+    const editUrl = `add-match.html?edit=${matchId}`;
+    console.log('URL de redirection:', editUrl);
+    
+    // Rediriger vers le formulaire d'édition
+    window.location.href = editUrl;
+}
 function showMessage(text, type = 'info') {
     // Supprimer le message existant s'il y en a un
     const existingMessage = document.getElementById('tempMessage');

@@ -166,7 +166,26 @@
     margin-top: 0.5rem;
 }
 
-/* Champs minute avec temps additionnel */
+/* Indicateur de mode édition */
+.edit-mode-indicator {
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    margin-bottom: 2rem;
+    text-align: center;
+    box-shadow: 0 3px 10px rgba(243, 156, 18, 0.3);
+}
+
+.edit-mode-indicator h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.3rem;
+}
+
+.edit-mode-indicator p {
+    margin: 0;
+    opacity: 0.9;
+}
 .minute-group {
     position: relative;
 }
