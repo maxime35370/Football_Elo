@@ -1,0 +1,239 @@
+/* rankings.css - Styles pour la page des classements */
+
+.rankings-container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+/* En-tête des classements */
+.rankings-header {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 2rem;
+    border-radius: 15px;
+    text-align: center;
+    margin-bottom: 2rem;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.rankings-header h2 {
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+    font-size: 2rem;
+}
+
+.matchday-selector {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.matchday-selector label {
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+.matchday-selector select {
+    padding: 0.5rem 1rem;
+    border: 2px solid #e9ecef;
+    border-radius: 5px;
+    font-size: 1rem;
+    color: #2c3e50;
+    background: white;
+    min-width: 150px;
+}
+
+.matchday-selector select:focus {
+    outline: none;
+    border-color: #3498db;
+}
+
+.matchday-info {
+    color: #7f8c8d;
+    font-style: italic;
+}
+
+/* Section de classement */
+.ranking-section {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 2rem;
+    border-radius: 15px;
+    margin-bottom: 2rem;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.ranking-section h3 {
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+    text-align: center;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+}
+
+.ranking-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+}
+
+.ranking-table th,
+.ranking-table td {
+    padding: 1rem 0.5rem;
+    text-align: center;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.ranking-table th {
+    background: linear-gradient(135deg, #2c3e50, #34495e);
+    color: white;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.ranking-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.ranking-table tbody tr:nth-child(odd) {
+    background: rgba(52, 152, 219, 0.05);
+}
+
+/* Colonnes spécifiques */
+.ranking-table .position {
+    font-weight: bold;
+    color: #3498db;
+    font-size: 1.1rem;
+}
+
+.ranking-table .team-name {
+    text-align: left;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.ranking-table .points {
+    font-weight: bold;
+    color: #27ae60;
+    font-size: 1.1rem;
+}
+
+.ranking-table .positive {
+    color: #27ae60;
+}
+
+.ranking-table .negative {
+    color: #e74c3c;
+}
+
+/* Positions spéciales */
+.ranking-table .champion {
+    background: linear-gradient(45deg, #f1c40f, #f39c12) !important;
+    color: white !important;
+}
+
+.ranking-table .european {
+    background: linear-gradient(45deg, #3498db, #2980b9) !important;
+    color: white !important;
+}
+
+.ranking-table .relegation {
+    background: linear-gradient(45deg, #e74c3c, #c0392b) !important;
+    color: white !important;
+}
+
+/* Message aucun match */
+.no-matches .empty-state {
+    text-align: center;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 4rem 2rem;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.no-matches h3 {
+    color: #7f8c8d;
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+}
+
+.no-matches p {
+    color: #95a5a6;
+    margin-bottom: 2rem;
+}
+
+/* Statistiques du championnat */
+.championship-stats {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.championship-stats h3 {
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+    font-size: 1.3rem;
+    text-align: center;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border-left: 4px solid #3498db;
+}
+
+.stat-value {
+    display: block;
+    font-size: 2rem;
+    font-weight: bold;
+    color: #3498db;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    color: #7f8c8d;
+    font-weight: 600;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .rankings-container {
+        margin: 1rem;
+        padding: 0;
+    }
+    
+    .matchday-selector {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .ranking-table th,
+    .ranking-table td {
+        padding: 0.5rem 0.25rem;
+        font-size: 0.9rem;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+    
+    .stat-value {
+        font-size: 1.5rem;
+    }
+}

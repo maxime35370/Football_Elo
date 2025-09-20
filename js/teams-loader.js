@@ -13,6 +13,7 @@ function loadTeams() {
         console.error('Erreur lors du chargement des équipes:', error);
         teamsData = getDefaultTeams();
         populateTeamSelects();
+        updateMatchDayLimits(); // Ajouter cette ligne
         showError('Erreur lors du chargement des équipes');
     }
 }
@@ -56,6 +57,21 @@ function populateTeamSelects() {
         awayOption.textContent = `${team.name} (${team.shortName})`;
         awayTeamSelect.appendChild(awayOption);
     });
+}
+
+// Mettre à jour les limites de journée selon le nombre d'équipes
+function updateMatchDayLimits() {
+    const matchDayInput = document.getElementById('matchDay');
+    const matchDayHelper = document.getElementById('matchDayHelper');
+    
+    if (matchDayInput && teamsData.length > 0) {
+        const maxMatchDays = (teamsData.length * 2) - 2;
+        matchDayInput.max = maxMatchDays;
+        
+        if (matchDayHelper) {
+            matchDayHelper.textContent = `Numéro de la journée de championnat (1 à ${maxMatchDays})`;
+        }
+    }
 }
 
 // Fonction pour éviter qu'une équipe joue contre elle-même

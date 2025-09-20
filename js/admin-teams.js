@@ -24,6 +24,11 @@ function setupEventListeners() {
     // Import
     document.getElementById('processImportBtn').addEventListener('click', processCSVImport);
     document.getElementById('cancelImportBtn').addEventListener('click', hideImportSection);
+
+    // Configuration de saison
+    document.getElementById('configSeasonBtn').addEventListener('click', showSeasonConfigSection);
+    document.getElementById('seasonConfigForm').addEventListener('submit', handleSeasonConfigSubmit);
+    document.getElementById('cancelSeasonBtn').addEventListener('click', hideSeasonConfigSection);
 }
 
 // Charger les données pour l'admin
@@ -121,6 +126,7 @@ function showEditTeamForm(teamId) {
 // Masquer le formulaire d'équipe
 function hideTeamForm() {
     document.getElementById('teamFormSection').style.display = 'none';
+    hideSeasonConfigSection(); // Ajouter cette ligne
     currentEditingTeamId = null;
 }
 
@@ -474,3 +480,141 @@ function saveFilteredMatches(matches) {
         return false;
     }
 }
+
+// === GESTION DE LA CONFIGURATION DE SAISON ===
+
+// Configuration par défaut
+function getDefaultSeasonConfig() {
+    return {
+        championPlaces: 1,
+        europeanPlaces: 3,
+        relegationPlaces: 2,
+        seasonName: "2024-2025"
+    };
+}
+
+// Récupérer la configuration de saison
+function getSeasonConfig() {
+    try {
+        const stored = localStorage.getItem('footballEloSeasonConfig');
+        return stored ? JSON.parse(stored) : getDefaultSeasonConfig();
+    } catch (error) {
+        console.error('Erreur récupération config saison:', error);
+        return getDefaultSeasonConfig();
+    }
+}
+
+// Sauvegarder la configuration de saison
+function saveSeasonConfig(config) {
+    try {
+        localStorage.setItem('footballEloSeasonConfig', JSON.stringify(config));
+        return true;
+    } catch (error) {
+        console.error('Erreur sauvegarde config saison:', error);
+        return false;
+    }
+}
+
+// Afficher la section de configuration
+function showSeasonConfigSection() {
+    console.log('showSeasonConfigSection appelée');
+    
+    const section = document.getElementById('seasonConfigSection');
+    console.log('Section trouvée:', section);
+    
+    if (section) {
+        section.style.display = 'block !important'; // Ajouter !important
+        section.style.visibility = 'visible !important'; // Forcer la visibilité
+        console.log('Section affichée avec !important');
+    } else {
+        console.error('Section seasonConfigSection introuvable dans le DOM');
+        return;
+    }
+    
+    hideTeamForm();
+    hideImportSection();
+    
+    // Charger la configuration actuelle
+    try {
+        const config = getSeasonConfig();
+        console.log('Config chargée:', config);
+        
+        document.getElementById('championPlaces').value = config.championPlaces;
+        document.getElementById('europeanPlaces').value = config.europeanPlaces;
+        document.getElementById('relegationPlaces').value = config.relegationPlaces;
+        document.getElementById('seasonName').value = config.seasonName;
+        
+        console.log('Formulaire rempli');
+    } catch (error) {
+        console.error('Erreur lors du chargement du formulaire:', error);
+    }
+}
+
+// Masquer la section de configuration
+function hideSeasonConfigSection() {
+    document.getElementById('seasonConfigSection').style.display = 'none';
+}
+
+// Gérer la soumission de la configuration
+function handleSeasonConfigSubmit(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    const config = {
+        championPlaces: parseInt(formData.get('championPlaces')),
+        europeanPlaces: parseInt(formData.get('europeanPlaces')),
+        relegationPlaces: parseInt(formData.get('relegationPlaces')),
+        seasonName: formData.get('seasonName').trim()
+    };
+    
+    // Validation
+    if (!validateSeasonConfig(config)) {
+        return;
+    }
+    
+    if (saveSeasonConfig(config)) {
+        showMessage('Configuration de saison sauvegardée !', 'success');
+        hideSeasonConfigSection();
+    } else {
+        showMessage('Erreur lors de la sauvegarde', 'error');
+    }
+}
+
+// Valider la configuration de saison
+function validateSeasonConfig(config) {
+    const teams = getStoredTeams();
+    const totalTeams = teams.length;
+    
+    if (config.championPlaces < 1) {
+        showMessage('Il doit y avoir au moins 1 place de champion', 'error');
+        return false;
+    }
+    
+    if (config.europeanPlaces < config.championPlaces) {
+        showMessage('Les places européennes doivent inclure le champion', 'error');
+        return false;
+    }
+    
+    if (config.europeanPlaces + config.relegationPlaces >= totalTeams) {
+        showMessage('Trop de places spéciales par rapport au nombre d\'équipes', 'error');
+        return false;
+    }
+    
+    if (!config.seasonName || config.seasonName.length < 2) {
+        showMessage('Le nom de saison doit faire au moins 2 caractères', 'error');
+        return false;
+    }
+    
+    return true;
+}
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        const configBtn = document.getElementById('configSeasonBtn');
+        if (configBtn) {
+            configBtn.addEventListener('click', showSeasonConfigSection);
+            console.log('Écouteur config saison ajouté');
+        } else {
+            console.error('Bouton configSeasonBtn introuvable');
+        }
+    }, 100);
+});

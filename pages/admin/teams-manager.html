@@ -14,15 +14,15 @@
     </header>
 
     <nav>
-            <div class="nav-container">
-                <a href="../../index.html" class="nav-btn">🏠 Accueil</a>
-                <a href="../../pages/add-match.html" class="nav-btn">➕ Ajouter un match</a>
-                <a href="../../pages/matches.html" class="nav-btn">📋 Historique</a>
-                <a href="../../pages/results-table.html" class="nav-btn">📊 Tableau</a>
-                <a href="../../pages/rankings.html" class="nav-btn">🏆 Classements</a>
-                <a href="../../pages/admin/teams-manager.html" class="nav-btn active">⚙️ Admin</a>
-            </div>
-        </nav>
+        <div class="nav-container">
+            <a href="../../index.html" class="nav-btn">🏠 Accueil</a>
+            <a href="../../pages/add-match.html" class="nav-btn">➕ Ajouter un match</a>
+            <a href="../../pages/matches.html" class="nav-btn">📋 Historique</a>
+            <a href="../../pages/results-table.html" class="nav-btn">📊 Tableau</a>
+            <a href="../../pages/rankings.html" class="nav-btn">🏆 Classements</a>
+            <a href="../../pages/admin/teams-manager.html" class="nav-btn active">⚙️ Admin</a>
+        </div>
+    </nav>
 
     <main>
         <div class="admin-container">
@@ -41,6 +41,7 @@
                 <button id="resetSeasonBtn" class="btn btn-warning">🔄 Nouvelle saison</button>
                 <button id="exportDataBtn" class="btn btn-info">💾 Exporter données</button>
                 <button id="importDataBtn" class="btn btn-success">📥 Importer équipes</button>
+                <button id="configSeasonBtn" class="btn btn-info">⚙️ Config saison</button>
             </div>
 
             <!-- Formulaire d'ajout/modification d'équipe -->
@@ -80,6 +81,54 @@
                 </form>
             </div>
 
+            <!-- Section de configuration de saison -->
+            <div id="seasonConfigSection" class="form-section" style="display: none;">
+                <h3>⚙️ Configuration de la saison</h3>
+                <form id="seasonConfigForm" class="season-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="championPlaces">Places de champion :</label>
+                            <input type="number" id="championPlaces" name="championPlaces" value="1" min="1" max="3" required>
+                            <small>Nombre d'équipes qui remportent le titre (généralement 1)</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="europeanPlaces">Places européennes :</label>
+                            <input type="number" id="europeanPlaces" name="europeanPlaces" value="3" min="0" max="8" required>
+                            <small>Nombre total de places européennes (champion inclus)</small>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="relegationPlaces">Places de relégation :</label>
+                            <input type="number" id="relegationPlaces" name="relegationPlaces" value="2" min="0" max="4" required>
+                            <small>Nombre d'équipes reléguées</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="seasonName">Nom de la saison :</label>
+                            <input type="text" id="seasonName" name="seasonName" value="2024-2025" placeholder="ex: 2024-2025" required>
+                            <small>Nom affiché pour identifier la saison</small>
+                        </div>
+                    </div>
+
+                    <div class="season-preview">
+                        <h4>Aperçu des couleurs :</h4>
+                        <div class="preview-grid">
+                            <div class="preview-item champion-preview">🥇 Champion</div>
+                            <div class="preview-item european-preview">🏆 Européen</div>
+                            <div class="preview-item relegation-preview">⬇️ Relégation</div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">💾 Sauvegarder config</button>
+                        <button type="button" id="cancelSeasonBtn" class="btn btn-secondary">❌ Annuler</button>
+                    </div>
+                </form>
+            </div>
+
             <!-- Liste des équipes -->
             <div class="teams-list-section">
                 <h3>📋 Équipes actuelles</h3>
@@ -115,7 +164,8 @@
     <footer>
         <p>&copy; 2025 Football Elo - Administration</p>
     </footer>
-     <!-- Firebase SDK -->
+    
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 

@@ -8,7 +8,13 @@ const STORAGE_KEY = 'footballEloMatches';
 function getStoredMatches() {
     try {
         const stored = localStorage.getItem(STORAGE_KEY);
-        return stored ? JSON.parse(stored) : [];
+        const matches = stored ? JSON.parse(stored) : [];
+        
+        // Assurer la compatibilité : ajouter matchDay = 1 si manquant
+        return matches.map(match => ({
+            ...match,
+            matchDay: match.matchDay || 1
+        }));
     } catch (error) {
         console.error('Erreur récupération synchrone matchs:', error);
         return [];

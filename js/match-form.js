@@ -89,6 +89,12 @@ function loadMatchForEditing(matchId) {
         const homeSelect = document.getElementById('homeTeam');
         const awaySelect = document.getElementById('awayTeam');
         const dateInput = document.getElementById('matchDate');
+        const matchDayInput = document.getElementById('matchDay');
+        if (matchDayInput) {
+            const journee = match.matchDay || 1; // Valeur par défaut si pas de journée
+            matchDayInput.value = journee;
+            console.log('Journée chargée:', journee);
+        }
         
         if (!homeSelect || !awaySelect || !dateInput) {
             console.log('Éléments du formulaire pas encore prêts, nouvelle tentative...');
@@ -589,6 +595,12 @@ function validateMatch() {
         showError('Veuillez saisir la date du match');
         return false;
     }
+
+    const maxMatchDays = (teamsData.length * 2) - 2; // Formule : 2n-2
+    if (!matchDay || matchDay < 1 || matchDay > maxMatchDays) {
+        showError(`Veuillez saisir une journée valide (1 à ${maxMatchDays})`);
+        return false;
+    }
     
     // Vérifier que tous les buts sont complets
     const goalForms = document.querySelectorAll('.goal-form');
@@ -634,6 +646,7 @@ function collectMatchData() {
     
     return {
         date: document.getElementById('matchDate').value,
+        matchDay: parseInt(document.getElementById('matchDay').value),
         homeTeamId: homeTeamId,
         awayTeamId: awayTeamId,
         goals: goalsData,
