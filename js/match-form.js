@@ -1,4 +1,4 @@
-// match-form.js - Logique du formulaire de match avec calcul automatique du score
+// match-form.js - Logique du formulaire de match avec calcul automatique du score et mode édition
 
 let goals = []; // Array pour stocker tous les buts
 let homeTeamId = null;
@@ -7,9 +7,27 @@ let editingMatchId = null; // ID du match en cours d'édition
 
 // Initialisation du formulaire
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM chargé, initialisation du formulaire...');
+    
     setupFormListeners();
     setTodayDate();
-    checkForEditMode();
+    
+    // Attendre un peu que tout soit prêt avant de vérifier le mode édition
+    setTimeout(() => {
+        console.log('Vérification du mode édition...');
+        checkForEditMode();
+    }, 200);
+});
+
+// Double vérification après chargement complet
+window.addEventListener('load', function() {
+    console.log('Page entièrement chargée');
+    // Si le mode édition n'a pas été détecté, réessayer
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('edit') && !editingMatchId) {
+        console.log('Mode édition détecté en second appel');
+        setTimeout(checkForEditMode, 100);
+    }
 });
 
 // Vérifier si on est en mode édition
@@ -17,34 +35,50 @@ function checkForEditMode() {
     const urlParams = new URLSearchParams(window.location.search);
     const editId = urlParams.get('edit');
     
+    console.log('Vérification mode édition, editId:', editId);
+    
     if (editId) {
         editingMatchId = editId;
+        console.log('Mode édition activé pour le match:', editingMatchId);
         
-        // Afficher l'indicateur de mode édition SEULEMENT s'il existe
+        // Afficher l'indicateur de mode édition
         const editIndicator = document.getElementById('editModeIndicator');
+        console.log('Élément editModeIndicator trouvé:', editIndicator);
+        
         if (editIndicator) {
             editIndicator.style.display = 'block';
+            console.log('Bandeau d\'édition affiché');
+        } else {
+            console.error('Élément editModeIndicator introuvable');
         }
         
-        loadMatchForEditing(editId);
-        
-        // Changer le titre et le bouton
-        document.querySelector('header p').textContent = 'Modifier un match';
-        document.querySelector('h2').textContent = '✏️ Modifier le match';
-        
+        // Changer les textes
+        const headerP = document.querySelector('header p');
+        const h2 = document.querySelector('h2');
         const submitBtn = document.querySelector('#matchForm button[type="submit"]');
-        if (submitBtn) {
-            submitBtn.innerHTML = '💾 Modifier le match';
-        }
+        
+        if (headerP) headerP.textContent = 'Modifier un match';
+        if (h2) h2.textContent = '✏️ Modifier le match';
+        if (submitBtn) submitBtn.innerHTML = '💾 Modifier le match';
+        
+        console.log('Textes mis à jour pour le mode édition');
+        
+        // Charger les données du match
+        loadMatchForEditing(editId);
+    } else {
+        console.log('Pas de paramètre edit détecté, mode création');
     }
 }
 
 // Charger un match pour édition
 function loadMatchForEditing(matchId) {
+    console.log('Chargement du match pour édition:', matchId);
+    
     const matches = getStoredMatches();
     const match = matches.find(m => m.id == matchId);
     
     if (!match) {
+        console.error('Match introuvable avec l\'ID:', matchId);
         showError('Match introuvable');
         return;
     }
@@ -57,43 +91,73 @@ function loadMatchForEditing(matchId) {
         const dateInput = document.getElementById('matchDate');
         
         if (!homeSelect || !awaySelect || !dateInput) {
+            console.log('Éléments du formulaire pas encore prêts, nouvelle tentative...');
             setTimeout(loadMatchData, 100);
             return;
         }
         
         // Attendre que les équipes soient chargées dans les selects
         if (homeSelect.options.length <= 1) {
+            console.log('Équipes pas encore chargées, nouvelle tentative...');
             setTimeout(loadMatchData, 100);
             return;
         }
         
         try {
+            console.log('Chargement des données du match...');
+            
             // 1. Charger la date
             dateInput.value = match.date;
+            console.log('Date chargée:', match.date);
             
             // 2. Forcer la sélection des équipes
             homeSelect.value = match.homeTeamId;
             awaySelect.value = match.awayTeamId;
             
-            // 3. Déclencher manuellement les événements
+            console.log('Équipe domicile sélectionnée:', homeSelect.value);
+            console.log('Équipe extérieur sélectionnée:', awaySelect.value);
+            
+            // 3. Si la sélection automatique n'a pas fonctionné, forcer manuellement
+            if (homeSelect.value === "" || awaySelect.value === "") {
+                console.log('Sélection automatique échouée, force manuelle...');
+                
+                // Chercher les bonnes options par valeur
+                for (let option of homeSelect.options) {
+                    if (option.value == match.homeTeamId) {
+                        option.selected = true;
+                        homeSelect.value = option.value;
+                        break;
+                    }
+                }
+                for (let option of awaySelect.options) {
+                    if (option.value == match.awayTeamId) {
+                        option.selected = true;
+                        awaySelect.value = option.value;
+                        break;
+                    }
+                }
+            }
+            
+            // 4. Déclencher manuellement les événements de changement
             const changeEvent = new Event('change');
             homeSelect.dispatchEvent(changeEvent);
             awaySelect.dispatchEvent(changeEvent);
             
-            // 4. Vérifier que les sélections ont fonctionné
-            console.log('Équipe domicile sélectionnée:', homeSelect.value);
-            console.log('Équipe extérieur sélectionnée:', awaySelect.value);
+            console.log('Événements de changement déclenchés');
             
-            // 5. Charger les buts après un délai
+            // 5. Charger les buts après un délai pour laisser l'interface se mettre à jour
             setTimeout(() => {
                 if (match.goals && match.goals.length > 0) {
+                    console.log('Chargement des buts:', match.goals.length, 'buts');
                     loadExistingGoals(match.goals);
+                } else {
+                    console.log('Aucun but à charger');
                 }
                 showSuccess('Match chargé pour modification');
             }, 500);
             
         } catch (error) {
-            console.error('Erreur lors du chargement:', error);
+            console.error('Erreur lors du chargement des données:', error);
             showError('Erreur lors du chargement des données du match');
         }
     };
@@ -109,26 +173,29 @@ function loadExistingGoals(matchGoals) {
         return;
     }
     
-    console.log('Chargement des buts:', matchGoals);
+    console.log('Chargement des buts existants:', matchGoals);
     
-    // Vider les buts existants d'abord
+    // IMPORTANT : Vider complètement le conteneur d'abord
     const goalsContainer = document.getElementById('goalsContainer');
     if (goalsContainer) {
         goalsContainer.innerHTML = '';
+        console.log('Conteneur de buts vidé');
     }
     
-    // Trier les buts par minute
-    const sortedGoals = matchGoals.sort((a, b) => {
-        if (a.minute !== b.minute) return a.minute - b.minute;
-        return (a.extraTime || 0) - (b.extraTime || 0);
-    });
-    
-    // Ajouter chaque but
-    sortedGoals.forEach((goal, index) => {
-        setTimeout(() => {
+    // Attendre un peu que le vidage soit effectif
+    setTimeout(() => {
+        // Trier les buts par minute
+        const sortedGoals = matchGoals.sort((a, b) => {
+            if (a.minute !== b.minute) return a.minute - b.minute;
+            return (a.extraTime || 0) - (b.extraTime || 0);
+        });
+        
+        // Ajouter chaque but de façon synchrone
+        sortedGoals.forEach((goal, index) => {
+            console.log(`Ajout du but ${index + 1}:`, goal);
             addGoalForm();
             
-            // Remplir le dernier formulaire ajouté
+            // Remplir immédiatement le formulaire qui vient d'être créé
             const goalForms = document.querySelectorAll('.goal-form');
             const lastForm = goalForms[goalForms.length - 1];
             
@@ -146,17 +213,21 @@ function loadExistingGoals(matchGoals) {
                 // Mettre à jour l'indicateur de mi-temps
                 updateHalfTimeIndicator(lastForm);
             }
-        }, index * 100); // Délai entre chaque but
-    });
-    
-    // Recalculer le score après avoir ajouté tous les buts
-    setTimeout(() => {
-        calculateScore();
-    }, sortedGoals.length * 100 + 200);
+        });
+        
+        // Recalculer le score une seule fois à la fin
+        setTimeout(() => {
+            calculateScore();
+            console.log('Score recalculé après chargement de tous les buts');
+        }, 100);
+        
+    }, 100);
 }
 
 // Configuration des écouteurs d'événements
 function setupFormListeners() {
+    console.log('Configuration des écouteurs d\'événements...');
+    
     // Écouteurs pour les sélections d'équipes
     const homeTeamSelect = document.getElementById('homeTeam');
     const awayTeamSelect = document.getElementById('awayTeam');
@@ -181,7 +252,7 @@ function setupFormListeners() {
     }
 }
 
-// Mettre la date d'aujourd'hui par défaut
+// Mettre la date d'aujourd'hui par défaut (seulement en mode création)
 function setTodayDate() {
     const dateInput = document.getElementById('matchDate');
     if (dateInput && !editingMatchId) {
@@ -229,7 +300,7 @@ function filterAvailableTeams() {
     
     if (!homeTeamSelect || !awayTeamSelect) return;
     
-    const matches = getStoredMatchesSync();
+    const matches = getStoredMatches();
     const selectedHomeTeam = homeTeamSelect.value;
     const selectedAwayTeam = awayTeamSelect.value;
     
@@ -298,7 +369,7 @@ function addGoalForm() {
         return;
     }
 
-    const goalId = Date.now(); // ID unique basé sur le timestamp
+    const goalId = Date.now() + Math.random(); // ID unique
     const goalsContainer = document.getElementById('goalsContainer');
     
     // Compter les buts existants pour la numérotation
@@ -417,7 +488,7 @@ function calculateScore() {
             // Compter pour le score final
             if (teamSelect.value === homeTeamId) {
                 homeScore++;
-                // Pour la mi-temps : seulement les buts de la 1ère mi-temps (1-45 + temps add.)
+                // Pour la mi-temps : seulement les buts de la 1ère mi-temps (1-45)
                 if (minute <= 45) {
                     halftimeHomeScore++;
                 }
@@ -449,11 +520,13 @@ function updateGoalFormOptions() {
     goalForms.forEach(goalForm => {
         const teamSelect = goalForm.querySelector('select[name="goalTeam"]');
         if (teamSelect && homeTeamId && awayTeamId) {
+            const currentValue = teamSelect.value;
             teamSelect.innerHTML = `
                 <option value="">Sélectionner l'équipe</option>
                 <option value="${homeTeamId}">${getTeamById(homeTeamId).shortName} (Domicile)</option>
                 <option value="${awayTeamId}">${getTeamById(awayTeamId).shortName} (Extérieur)</option>
             `;
+            teamSelect.value = currentValue; // Restaurer la sélection
         }
     });
 }
@@ -472,6 +545,7 @@ function handleFormSubmit(event) {
     
     if (editingMatchId) {
         // Mode édition - mettre à jour le match existant
+        console.log('Modification du match:', editingMatchId);
         if (updateMatch(editingMatchId, matchData)) {
             showSuccess('Match modifié avec succès !');
             
@@ -485,10 +559,9 @@ function handleFormSubmit(event) {
         }
     } else {
         // Mode création - sauvegarder un nouveau match
-        try {
-        const success = await saveMatch(matchData);
-        if (success) {
-            showSuccess('Match enregistré avec succès ! Vous pouvez le voir dans l\'historique.');
+        console.log('Création d\'un nouveau match');
+        if (saveMatch(matchData)) {
+            showSuccess('Match enregistré avec succès !');
             
             setTimeout(() => {
                 if (confirm('Voulez-vous voir le tableau des résultats mis à jour ?')) {
@@ -498,40 +571,6 @@ function handleFormSubmit(event) {
         } else {
             showError('Erreur lors de l\'enregistrement du match');
         }
-    }
-}
-
-// Mettre à jour un match existant
-function updateMatch(matchId, newMatchData) {
-    try {
-        const matches = getStoredMatches();
-        const matchIndex = matches.findIndex(m => m.id == matchId);
-        
-        if (matchIndex === -1) {
-            console.error('Match introuvable pour modification');
-            return false;
-        }
-        
-        // Conserver l'ID et les métadonnées existantes
-        const existingMatch = matches[matchIndex];
-        const updatedMatch = {
-            ...newMatchData,
-            id: existingMatch.id,
-            createdAt: existingMatch.createdAt,
-            updatedAt: new Date().toISOString()
-        };
-        
-        // Remplacer le match dans la liste
-        matches[matchIndex] = updatedMatch;
-        
-        // Sauvegarder la liste mise à jour
-        localStorage.setItem('footballEloMatches', JSON.stringify(matches));
-        
-        console.log('Match modifié avec succès:', updatedMatch);
-        return true;
-    } catch (error) {
-        console.error('Erreur lors de la modification:', error);
-        return false;
     }
 }
 
@@ -557,7 +596,6 @@ function validateMatch() {
         const team = goalForm.querySelector('select[name="goalTeam"]').value;
         const scorer = goalForm.querySelector('input[name="goalScorer"]').value;
         const minute = goalForm.querySelector('input[name="goalMinute"]').value;
-        const extraTime = goalForm.querySelector('input[name="goalExtraTime"]').value;
         
         if (!team || !scorer || !minute) {
             showError('Veuillez remplir tous les détails des buts ou les supprimer');
@@ -638,7 +676,7 @@ function showSuccess(message) {
     }, 5000);
 }
 
-// Afficher un message d'erreur (fonction déjà définie dans teams-loader.js mais redéfinie ici par sécurité)
+// Afficher un message d'erreur
 function showError(message) {
     let errorDiv = document.getElementById('errorMessage');
     if (!errorDiv) {
