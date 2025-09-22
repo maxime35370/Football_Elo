@@ -1,5 +1,5 @@
 // admin-teams.js - Logique d'administration des équipes
-const stored = localStorage.getItem('footballEloTeams');
+const TEAMS_STORAGE_KEY = 'footballEloTeams'; // AJOUTE CETTE LIGNE
 let currentEditingTeamId = null;
 
 // Initialisation de la page
@@ -126,7 +126,7 @@ function showEditTeamForm(teamId) {
 // Masquer le formulaire d'équipe
 function hideTeamForm() {
     document.getElementById('teamFormSection').style.display = 'none';
-    hideSeasonConfigSection(); // Ajouter cette ligne
+    // Enlève cette ligne si elle existe : hideSeasonConfigSection();
     currentEditingTeamId = null;
 }
 
@@ -519,38 +519,18 @@ function saveSeasonConfig(config) {
 function showSeasonConfigSection() {
     console.log('showSeasonConfigSection appelée');
     
-    const section = document.getElementById('seasonConfigSection');
-    console.log('Section trouvée:', section);
-    
-    if (section) {
-        section.style.display = 'block !important'; // Ajouter !important
-        section.style.visibility = 'visible !important'; // Forcer la visibilité
-        console.log('Section affichée avec !important');
-    } else {
-        console.error('Section seasonConfigSection introuvable dans le DOM');
-        return;
-    }
-    
+    document.getElementById('seasonConfigSection').style.display = 'block';
     hideTeamForm();
     hideImportSection();
     
     // Charger la configuration actuelle
-    try {
-        const config = getSeasonConfig();
-        console.log('Config chargée:', config);
-        
-        document.getElementById('championPlaces').value = config.championPlaces;
-        document.getElementById('europeanPlaces').value = config.europeanPlaces;
-        document.getElementById('relegationPlaces').value = config.relegationPlaces;
-        document.getElementById('seasonName').value = config.seasonName;
-        
-        console.log('Formulaire rempli');
-    } catch (error) {
-        console.error('Erreur lors du chargement du formulaire:', error);
-    }
+    const config = getSeasonConfig();
+    document.getElementById('championPlaces').value = config.championPlaces;
+    document.getElementById('europeanPlaces').value = config.europeanPlaces;
+    document.getElementById('relegationPlaces').value = config.relegationPlaces;
+    document.getElementById('seasonName').value = config.seasonName;
 }
 
-// Masquer la section de configuration
 function hideSeasonConfigSection() {
     document.getElementById('seasonConfigSection').style.display = 'none';
 }

@@ -12,15 +12,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Charger les données
 function loadData() {
-    // Attendre que les équipes soient chargées
-    if (typeof teamsData !== 'undefined' && teamsData.length > 0) {
-        allTeams = teamsData;
-    } else {
-        // Fallback si teamsData n'est pas encore chargé
-        const stored = localStorage.getItem('footballEloTeams');
-        allTeams = stored ? JSON.parse(stored) : [];
-    }
-    
+    allTeams = getStoredTeams(); // Utiliser la fonction standard
     allMatches = getStoredMatches();
     console.log('Données chargées:', allTeams.length, 'équipes,', allMatches.length, 'matchs');
 }

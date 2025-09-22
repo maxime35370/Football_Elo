@@ -1,6 +1,7 @@
 // storage.js - Stockage hybride Firebase + localStorage avec compatibilité sync/async
 
 const STORAGE_KEY = 'footballEloMatches';
+const TEAMS_STORAGE_KEY = 'footballEloTeams'; // AJOUTE CETTE LIGNE
 
 // === FONCTIONS SYNCHRONES (pour compatibilité avec l'ancien code) ===
 

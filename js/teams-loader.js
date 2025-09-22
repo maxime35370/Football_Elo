@@ -21,13 +21,23 @@ function loadTeams() {
 function getDefaultTeams() {
     return [
         { id: 1, name: "Paris Saint-Germain", shortName: "PSG", city: "Paris", eloRating: 1500 },
-        { id: 2, name: "Olympique de Marseille", shortName: "OM", city: "Marseille", eloRating: 1500 },
+        { id: 2, name: "AS Monaco", shortName: "ASM", city: "Monaco", eloRating: 1500 },
         { id: 3, name: "Olympique Lyonnais", shortName: "OL", city: "Lyon", eloRating: 1500 },
-        { id: 4, name: "AS Monaco", shortName: "ASM", city: "Monaco", eloRating: 1500 },
+        { id: 4, name: "RC Strasbourg", shortName: "RCS", city: "Strasbourg", eloRating: 1500 },
         { id: 5, name: "Lille OSC", shortName: "LOSC", city: "Lille", eloRating: 1500 },
-        { id: 6, name: "Stade Rennais", shortName: "SRFC", city: "Rennes", eloRating: 1500 },
-        { id: 7, name: "OGC Nice", shortName: "OGCN", city: "Nice", eloRating: 1500 },
-        { id: 8, name: "RC Strasbourg", shortName: "RCS", city: "Strasbourg", eloRating: 1500 }
+        { id: 6, name: "RC Lens", shortName: "RCL", city: "Lens", eloRating: 1500 },
+        { id: 7, name: "Stade Rennais", shortName: "SRFC", city: "Rennes", eloRating: 1500 },
+        { id: 8, name: "Olympique de Marseille", shortName: "OM", city: "Marseille", eloRating: 1500 },
+        { id: 9, name: "Toulouse FC", shortName: "TFC", city: "Toulouse", eloRating: 1500 },
+        { id: 10, name: "AJ Auxerre", shortName: "AJA", city: "Auxerre", eloRating: 1500 },
+        { id: 11, name: "Paris FC", shortName: "PFC", city: "Paris", eloRating: 1500 },
+        { id: 12, name: "OGC Nice", shortName: "OGCN", city: "Nice", eloRating: 1500 },
+        { id: 13, name: "Angers SCO", shortName: "SCO", city: "Angers", eloRating: 1500 },
+        { id: 14, name: "Stade Brestois 29", shortName: "SB29", city: "Brest", eloRating: 1500 },
+        { id: 15, name: "Havre AC", shortName: "HAC", city: "Havre", eloRating: 1500 },
+        { id: 16, name: "FC Nantes", shortName: "FCN", city: "Nantes", eloRating: 1500 },
+        { id: 17, name: "FC Lorient", shortName: "FCL", city: "Lorient", eloRating: 1500 },
+        { id: 18, name: "FC Metz", shortName: "FCM", city: "Metz", eloRating: 1500 }
     ];
 }
 
