@@ -368,6 +368,7 @@ function exportData() {
 function showImportSection() {
     document.getElementById('importSection').style.display = 'block';
     hideTeamForm();
+    hideSeasonConfigSection();
 }
 
 // Masquer la section d'import
