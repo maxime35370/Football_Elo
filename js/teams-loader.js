@@ -1,7 +1,7 @@
 // teams-loader.js - Charge les équipes depuis le système d'administration
 
 let teamsData = [];
-const TEAMS_STORAGE_KEY = 'footballEloTeams';
+//const TEAMS_STORAGE_KEY = 'footballEloTeams';
 
 // Fonction pour charger les équipes depuis le stockage admin
 function loadTeams() {
