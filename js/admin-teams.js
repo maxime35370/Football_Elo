@@ -587,14 +587,3 @@ function validateSeasonConfig(config) {
     
     return true;
 }
-document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(() => {
-        const configBtn = document.getElementById('configSeasonBtn');
-        if (configBtn) {
-            configBtn.addEventListener('click', showSeasonConfigSection);
-            console.log('Écouteur config saison ajouté');
-        } else {
-            console.error('Bouton configSeasonBtn introuvable');
-        }
-    }, 100);
-});
