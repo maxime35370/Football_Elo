@@ -1,5 +1,5 @@
 // admin-teams.js - Logique d'administration des équipes
-const TEAMS_STORAGE_KEY = 'footballEloTeams'; // AJOUTE CETTE LIGNE
+//const TEAMS_STORAGE_KEY = 'footballEloTeams'; // AJOUTE CETTE LIGNE
 let currentEditingTeamId = null;
 
 // Initialisation de la page
@@ -45,10 +45,10 @@ function loadAdminData() {
 function getStoredTeams() {
     try {
         const stored = localStorage.getItem(TEAMS_STORAGE_KEY);
-        return stored ? JSON.parse(stored) : getDefaultTeams();
+        return stored ? JSON.parse(stored) : []; // Retourner un tableau vide au lieu des équipes par défaut
     } catch (error) {
         console.error('Erreur lors de la récupération des équipes:', error);
-        return getDefaultTeams();
+        return []; // Retourner un tableau vide en cas d'erreur aussi
     }
 }
 

@@ -46,9 +46,10 @@ function populateTeamSelects() {
     const homeTeamSelect = document.getElementById('homeTeam');
     const awayTeamSelect = document.getElementById('awayTeam');
     
+    // AJOUTE CETTE VÉRIFICATION :
     if (!homeTeamSelect || !awayTeamSelect) {
-        console.error('Les éléments select pour les équipes sont introuvables');
-        return;
+        console.log('Éléments select non trouvés - probablement pas sur la page de match');
+        return; // Sortir de la fonction si les éléments n'existent pas
     }
 
     // Vider les selects d'abord
@@ -89,8 +90,8 @@ function setupTeamValidation() {
     const homeTeamSelect = document.getElementById('homeTeam');
     const awayTeamSelect = document.getElementById('awayTeam');
     
-    if (!homeTeamSelect || !awayTeamSelect) return;
-
+    if (!homeTeamSelect || !awayTeamSelect) return; // AJOUTE CETTE LIGNE
+    
     homeTeamSelect.addEventListener('change', function() {
         validateTeamSelection();
     });
@@ -157,3 +158,13 @@ document.addEventListener('DOMContentLoaded', function() {
     loadTeams();
     setupTeamValidation();
 });
+
+function getStoredTeams() {
+    try {
+        const stored = localStorage.getItem(TEAMS_STORAGE_KEY);
+        return stored ? JSON.parse(stored) : []; // Changer ici aussi
+    } catch (error) {
+        console.error('Erreur lors de la récupération des équipes:', error);
+        return []; // Et ici
+    }
+}
