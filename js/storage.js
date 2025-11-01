@@ -28,6 +28,7 @@ function saveMatch(matchData) {
         // Générer un ID unique et ajouter les métadonnées
         matchData.id = Date.now() + Math.random();
         matchData.createdAt = new Date().toISOString();
+        matchData.season = getCurrentSeason(); // ← AJOUTER CETTE LIGNE
         
         // Sauvegarder en local immédiatement
         const existingMatches = getStoredMatches();
@@ -72,6 +73,7 @@ function updateMatch(matchId, newMatchData) {
             ...newMatchData,
             id: existingMatch.id,
             createdAt: existingMatch.createdAt,
+            season: existingMatch.season || getCurrentSeason(), // ← AJOUTER CETTE LIGNE
             updatedAt: new Date().toISOString()
         };
         
