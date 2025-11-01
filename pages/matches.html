@@ -37,6 +37,13 @@
                 <!-- Filtres et recherche -->
                 <div class="filters-section">
                     <div class="filter-group">
+                        <label for="seasonFilter">Saison :</label>
+                        <select id="seasonFilter">
+                            <option value="">Toutes les saisons</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
                         <label for="teamFilter">Filtrer par équipe :</label>
                         <select id="teamFilter">
                             <option value="">Toutes les équipes</option>
@@ -81,7 +88,7 @@
         <script src="../js/firebase-config.js"></script>
         <script src="../js/firebase-service.js"></script>
 
-
+        <script src="../js/seasons.js"></script>
         <script src="../js/teams-loader.js"></script>
         <script src="../js/storage.js"></script>
         <script src="../js/matches-display.js"></script>

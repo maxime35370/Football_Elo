@@ -5,9 +5,20 @@ let homeTeamId = null;
 let awayTeamId = null;
 let editingMatchId = null; // ID du match en cours d'édition
 
+// Afficher la saison en cours
+function displayCurrentSeason() {
+    const currentSeason = getCurrentSeason();
+    const displayElement = document.getElementById('currentSeasonDisplay');
+    if (displayElement) {
+        displayElement.textContent = currentSeason;
+    }
+}
+
 // Initialisation du formulaire
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM chargé, initialisation du formulaire...');
+
+    displayCurrentSeason(); // ← AJOUTER CETTE LIGNE
     
     setupFormListeners();
     setTodayDate();

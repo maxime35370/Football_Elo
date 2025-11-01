@@ -74,6 +74,9 @@ function saveTeams(teams) {
         if (typeof window.teamsData !== 'undefined') {
             window.teamsData = teams;
         }
+        if (typeof firebaseService !== 'undefined') {
+            firebaseService.saveTeams(teams);
+        }
         return true;
     } catch (error) {
         console.error('Erreur lors de la sauvegarde:', error);

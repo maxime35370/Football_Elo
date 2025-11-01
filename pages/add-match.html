@@ -33,6 +33,9 @@
             </div>
             
             <h2>📝 Détails du match</h2>
+            <div id="currentSeasonBanner" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 1rem; border-radius: 10px; margin-bottom: 1.5rem; text-align: center; box-shadow: 0 3px 10px rgba(0,0,0,0.2);">
+                <strong>📅 Saison en cours :</strong> <span id="currentSeasonDisplay">Chargement...</span>
+            </div>
             
             <form id="matchForm" class="match-form">
                 <!-- Informations de base du match -->
@@ -126,6 +129,7 @@
     <script src="../js/firebase-config.js"></script>
     <script src="../js/firebase-service.js"></script>
 
+    <script src="../js/seasons.js"></script>
     <script src="../js/teams-loader.js"></script>
     <script src="../js/storage.js"></script>
     <script src="../js/match-form.js"></script>

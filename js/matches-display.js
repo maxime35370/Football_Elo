@@ -16,6 +16,7 @@ function loadAndDisplayMatches() {
     filteredMatches = [...allMatches];
     
     updateStats();
+    populateSeasonFilter();
     populateTeamFilter();
     displayMatches();
 }
@@ -67,8 +68,14 @@ function setupEventListeners() {
 
 // Configuration des filtres
 function setupFilters() {
+    const seasonFilter = document.getElementById('seasonFilter'); // ← AJOUTER
     const teamFilter = document.getElementById('teamFilter');
     const dateFilter = document.getElementById('dateFilter');
+    
+    // ← AJOUTER CE BLOC
+    if (seasonFilter) {
+        seasonFilter.addEventListener('change', applyFilters);
+    }
     
     if (teamFilter) {
         teamFilter.addEventListener('change', applyFilters);
@@ -81,10 +88,16 @@ function setupFilters() {
 
 // Appliquer les filtres
 function applyFilters() {
+    const seasonFilter = document.getElementById('seasonFilter'); // ← AJOUTER
     const teamFilter = document.getElementById('teamFilter');
     const dateFilter = document.getElementById('dateFilter');
     
     let filtered = [...allMatches];
+    
+    // ← AJOUTER CE BLOC : Filtrer par saison
+    if (seasonFilter && seasonFilter.value) {
+        filtered = filtered.filter(match => match.season === seasonFilter.value);
+    }
     
     // Filtrer par équipe
     if (teamFilter && teamFilter.value) {
@@ -244,6 +257,31 @@ function handleClearAll() {
             showMessage('Erreur lors de la suppression', 'error');
         }
     }
+}
+// Remplir le filtre des saisons
+function populateSeasonFilter() {
+    const seasonFilter = document.getElementById('seasonFilter');
+    if (!seasonFilter) return;
+    
+    // Garder l'option "Toutes les saisons"
+    seasonFilter.innerHTML = '<option value="">Toutes les saisons</option>';
+    
+    // Récupérer toutes les saisons triées
+    const seasons = getSeasonsOrderedByDate();
+    
+    // Ajouter chaque saison
+    seasons.forEach(season => {
+        const option = document.createElement('option');
+        option.value = season.name;
+        option.textContent = season.name;
+        
+        // Sélectionner la saison active par défaut
+        if (season.isActive) {
+            option.selected = true;
+        }
+        
+        seasonFilter.appendChild(option);
+    });
 }
 
 // Éditer un match

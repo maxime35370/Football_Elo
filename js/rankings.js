@@ -1,10 +1,13 @@
 // rankings.js - Logique d'affichage des classements
 
 let currentMatchDay = null;
+let selectedSeason = null; // ← AJOUTER CETTE LIGNE
 
 // Initialisation de la page
 document.addEventListener('DOMContentLoaded', function() {
+    selectedSeason = getCurrentSeason(); // ← AJOUTER
     loadRankingsData();
+    populateSeasonSelector(); // ← AJOUTER
     setupMatchDaySelector();
     updateSeasonTitle();
     displayRanking();
@@ -20,7 +23,8 @@ function loadRankingsData() {
 // Configurer le sélecteur de journée
 function setupMatchDaySelector() {
     const matchDaySelect = document.getElementById('matchDaySelect');
-    const lastMatchDay = getLastPlayedMatchDay();
+    const season = selectedSeason || getCurrentSeason(); // ← AJOUTER
+    const lastMatchDay = getLastPlayedMatchDay(season);
     
     // Vider le sélecteur
     matchDaySelect.innerHTML = '<option value="">Classement actuel</option>';
@@ -43,6 +47,49 @@ function setupMatchDaySelector() {
     updateMatchDayInfo();
 }
 
+function updateSeasonTitle() {
+    const season = selectedSeason || getCurrentSeason();
+    const titleElement = document.querySelector('.rankings-header h2');
+    if (titleElement) {
+        titleElement.textContent = `🏆 Classement ${season}`;
+    }
+}
+
+// Remplir le sélecteur de saison
+function populateSeasonSelector() {
+    const seasonSelect = document.getElementById('seasonSelect');
+    if (!seasonSelect) return;
+    
+    seasonSelect.innerHTML = '';
+    
+    // Récupérer toutes les saisons triées
+    const seasons = getSeasonsOrderedByDate();
+    
+    // Ajouter chaque saison
+    seasons.forEach(season => {
+        const option = document.createElement('option');
+        option.value = season.name;
+        option.textContent = season.name;
+        
+        // Sélectionner la saison active par défaut
+        if (season.isActive) {
+            option.selected = true;
+            selectedSeason = season.name;
+        }
+        
+        seasonSelect.appendChild(option);
+    });
+    
+    // Écouteur de changement
+    seasonSelect.addEventListener('change', function() {
+        selectedSeason = this.value;
+        setupMatchDaySelector();
+        displayRanking();
+        updateChampionshipStats();
+        updateSeasonTitle();
+    });
+}
+
 // Mettre à jour l'info de journée
 function updateMatchDayInfo() {
     const matchDayInfo = document.getElementById('matchDayInfo');
@@ -59,7 +106,8 @@ function updateMatchDayInfo() {
 
 // Afficher le classement
 function displayRanking() {
-    const ranking = generateRanking(currentMatchDay);
+    const season = selectedSeason || getCurrentSeason();
+    const ranking = generateRanking(currentMatchDay, season);
     const tableBody = document.querySelector('#traditionalRanking tbody');
     const noMatchesMessage = document.getElementById('noMatchesMessage');
     

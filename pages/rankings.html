@@ -30,6 +30,13 @@
                 <div class="rankings-header">
                     <h2>🏆 Classement du championnat</h2>
                     <div class="matchday-selector">
+
+                        <label for="seasonSelect">Saison :</label>
+                        <select id="seasonSelect">
+                            <option value="">Chargement...</option>
+                        </select>
+
+
                         <label for="matchDaySelect">Afficher jusqu'à la journée :</label>
                         <select id="matchDaySelect">
                             <option value="">Classement actuel</option>
@@ -111,6 +118,7 @@
         <script src="../js/firebase-service.js"></script>
 
         <!-- Scripts -->
+        <script src="../js/seasons.js"></script>
         <script src="../js/teams-loader.js"></script>
         <script src="../js/storage.js"></script>
         <script src="../js/app.js"></script>

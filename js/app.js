@@ -1,8 +1,9 @@
 // app.js - Logique principale du système de classement
 
 // Calculer les statistiques d'une équipe jusqu'à une journée donnée
-function calculateTeamStats(teamId, upToMatchDay = null) {
-    const matches = getStoredMatches();
+function calculateTeamStats(teamId, upToMatchDay, season) {
+    season = season || getCurrentSeason();
+    const matches = getStoredMatches().filter(m => m.season === season);
     const stats = {
         teamId: teamId,
         played: 0,
@@ -66,12 +67,13 @@ function calculateTeamStats(teamId, upToMatchDay = null) {
 }
 
 // Générer le classement complet jusqu'à une journée donnée
-function generateRanking(upToMatchDay = null) {
+function generateRanking(upToMatchDay, season) {
+    season = season || getCurrentSeason();
     const teams = getStoredTeams();
     const ranking = [];
     
     teams.forEach(team => {
-        const stats = calculateTeamStats(team.id, upToMatchDay);
+        const stats = calculateTeamStats(team.id, upToMatchDay, season);
         ranking.push({
             ...team,
             ...stats
@@ -89,8 +91,9 @@ function generateRanking(upToMatchDay = null) {
 }
 
 // Obtenir la dernière journée jouée
-function getLastPlayedMatchDay() {
-    const matches = getStoredMatches();
+function getLastPlayedMatchDay(season) {
+    season = season || getCurrentSeason();
+    const matches = getStoredMatches().filter(m => m.season === season);
     if (matches.length === 0) return 0;
     
     return Math.max(...matches.map(match => match.matchDay || 1));
