@@ -39,6 +39,11 @@ function loadAdminData() {
     // Mettre à jour les statistiques
     document.getElementById('teamCount').textContent = `${teams.length} équipe${teams.length > 1 ? 's' : ''}`;
     document.getElementById('matchCount').textContent = `${matches.length} match${matches.length > 1 ? 's' : ''}`;
+
+    // Afficher les saisons
+    if (typeof displaySeasonsList === 'function') {
+        displaySeasonsList();
+    }
 }
 
 // Récupérer les équipes stockées

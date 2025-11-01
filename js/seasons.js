@@ -9,6 +9,7 @@ const CURRENT_SEASON_KEY = 'footballEloCurrentSeason';
 //     startDate: "2024-08-01",
 //     endDate: null, // null si en cours
 //     isActive: true,
+//     teamIds: [1, 2, 3, 5, 7], // IDs des équipes participantes
 //     createdAt: "2024-08-01T00:00:00Z"
 // }
 
@@ -18,11 +19,16 @@ function initializeSeasons() {
     
     // Si aucune saison n'existe, créer la saison actuelle par défaut
     if (seasons.length === 0) {
+        // Récupérer toutes les équipes disponibles
+        const teams = getStoredTeams();
+        const allTeamIds = teams.map(t => t.id);
+        
         const defaultSeason = {
             name: "2025-2026",
             startDate: new Date().toISOString().split('T')[0],
             endDate: null,
             isActive: true,
+            teamIds: allTeamIds, // Toutes les équipes par défaut
             createdAt: new Date().toISOString()
         };
         
@@ -101,7 +107,7 @@ function setCurrentSeason(seasonName) {
 }
 
 // Créer une nouvelle saison
-function createNewSeason(seasonName, resetElo = false) {
+function createNewSeason(seasonName, resetElo = false, teamIds = []) {
     try {
         const seasons = getStoredSeasons();
         
@@ -109,6 +115,12 @@ function createNewSeason(seasonName, resetElo = false) {
         if (seasons.some(s => s.name === seasonName)) {
             console.error('Cette saison existe déjà');
             return false;
+        }
+        
+        // Si aucune équipe spécifiée, prendre toutes les équipes
+        if (!teamIds || teamIds.length === 0) {
+            const teams = getStoredTeams();
+            teamIds = teams.map(t => t.id);
         }
         
         // Archiver la saison actuelle
@@ -125,6 +137,7 @@ function createNewSeason(seasonName, resetElo = false) {
             startDate: new Date().toISOString().split('T')[0],
             endDate: null,
             isActive: true,
+            teamIds: teamIds, // Équipes participantes
             createdAt: new Date().toISOString()
         };
         
@@ -137,7 +150,7 @@ function createNewSeason(seasonName, resetElo = false) {
             resetTeamsElo();
         }
         
-        console.log(`✅ Nouvelle saison créée : ${seasonName}`);
+        console.log(`✅ Nouvelle saison créée : ${seasonName} avec ${teamIds.length} équipes`);
         return true;
         
     } catch (error) {
@@ -206,6 +219,88 @@ function getSeasonStats(seasonName) {
 // Vérifier si un match appartient à la saison en cours
 function isMatchInCurrentSeason(match) {
     return match.season === getCurrentSeason();
+}
+
+// Obtenir les équipes d'une saison spécifique
+function getTeamsBySeason(seasonName) {
+    const seasons = getStoredSeasons();
+    const season = seasons.find(s => s.name === seasonName);
+    
+    if (!season || !season.teamIds) {
+        // Fallback : retourner toutes les équipes
+        return getStoredTeams();
+    }
+    
+    const allTeams = getStoredTeams();
+    return allTeams.filter(team => season.teamIds.includes(team.id));
+}
+
+// Obtenir les équipes de la saison en cours
+function getCurrentSeasonTeams() {
+    const currentSeason = getCurrentSeason();
+    return getTeamsBySeason(currentSeason);
+}
+
+// Supprimer une saison (et tous ses matchs)
+function deleteSeason(seasonName) {
+    try {
+        // Vérifier qu'on ne supprime pas la saison active
+        if (seasonName === getCurrentSeason()) {
+            console.error('Impossible de supprimer la saison active');
+            return false;
+        }
+        
+        // Supprimer la saison
+        const seasons = getStoredSeasons();
+        const filteredSeasons = seasons.filter(s => s.name !== seasonName);
+        saveSeasons(filteredSeasons);
+        
+        // Supprimer tous les matchs de cette saison
+        const allMatches = getStoredMatches();
+        const filteredMatches = allMatches.filter(m => m.season !== seasonName);
+        localStorage.setItem('footballEloMatches', JSON.stringify(filteredMatches));
+        
+        // Synchroniser avec Firebase si disponible
+        if (typeof firebaseService !== 'undefined') {
+            filteredMatches.forEach(match => {
+                firebaseService.saveMatch(match);
+            });
+        }
+        
+        console.log(`✅ Saison "${seasonName}" supprimée avec ${allMatches.length - filteredMatches.length} matchs`);
+        return true;
+        
+    } catch (error) {
+        console.error('Erreur deleteSeason:', error);
+        return false;
+    }
+}
+
+// Modifier une saison
+function updateSeason(seasonName, updates) {
+    try {
+        const seasons = getStoredSeasons();
+        const seasonIndex = seasons.findIndex(s => s.name === seasonName);
+        
+        if (seasonIndex === -1) {
+            console.error('Saison introuvable');
+            return false;
+        }
+        
+        // Appliquer les mises à jour
+        seasons[seasonIndex] = {
+            ...seasons[seasonIndex],
+            ...updates
+        };
+        
+        saveSeasons(seasons);
+        console.log(`✅ Saison "${seasonName}" mise à jour`);
+        return true;
+        
+    } catch (error) {
+        console.error('Erreur updateSeason:', error);
+        return false;
+    }
 }
 
 // Initialiser automatiquement au chargement
