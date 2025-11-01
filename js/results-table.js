@@ -46,8 +46,8 @@ function populateSeasonSelector() {
 
 // Charger les données
 function loadData() {
-    allTeams = getStoredTeams();
     const season = selectedSeason || getCurrentSeason();
+    allTeams = getTeamsBySeason(season);
     allMatches = getMatchesBySeason(season); // ← MODIFIER pour filtrer par saison
     console.log('Données chargées:', allTeams.length, 'équipes,', allMatches.length, 'matchs');
 }

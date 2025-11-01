@@ -6,7 +6,7 @@ let teamsData = [];
 // Fonction pour charger les équipes depuis le stockage admin
 function loadTeams() {
     try {
-        teamsData = getStoredTeams(); // Sans await
+        teamsData = getCurrentSeasonTeams(); // ← MODIFIER CETTE LIGNE
         populateTeamSelects();
         console.log('Équipes chargées avec succès:', teamsData.length, 'équipes');
     } catch (error) {

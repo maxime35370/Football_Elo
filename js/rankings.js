@@ -111,8 +111,13 @@ function displayRanking() {
     const tableBody = document.querySelector('#traditionalRanking tbody');
     const noMatchesMessage = document.getElementById('noMatchesMessage');
     
-    // Vérifier s'il y a des matchs
-    if (ranking.length === 0 || ranking.every(team => team.played === 0)) {
+    // Filtrer seulement les équipes de la saison
+    const seasonTeams = getTeamsBySeason(season);
+    const seasonTeamIds = seasonTeams.map(t => t.id);
+    const filteredRanking = ranking.filter(team => seasonTeamIds.includes(team.id));
+    
+    // Vérifier s'il y a des matchs - UTILISER filteredRanking
+    if (filteredRanking.length === 0 || filteredRanking.every(team => team.played === 0)) {
         document.querySelector('.ranking-section').style.display = 'none';
         noMatchesMessage.style.display = 'block';
         return;
@@ -124,8 +129,8 @@ function displayRanking() {
     // Vider le tableau
     tableBody.innerHTML = '';
     
-    // Ajouter chaque équipe
-    ranking.forEach((team, index) => {
+    // Ajouter chaque équipe - UTILISER filteredRanking
+    filteredRanking.forEach((team, index) => {
         const row = createRankingRow(team, index + 1);
         tableBody.appendChild(row);
     });
