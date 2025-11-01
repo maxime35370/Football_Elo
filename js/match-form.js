@@ -183,6 +183,88 @@ function loadMatchForEditing(matchId) {
     loadMatchData();
 }
 
+// Obtenir les équipes qui ont déjà joué dans une journée donnée
+function getTeamsAlreadyPlayedInMatchDay(matchDay, season) {
+    if (!matchDay || matchDay < 1) return [];
+    
+    season = season || getCurrentSeason();
+    const matches = getStoredMatches().filter(m => 
+        m.season === season && m.matchDay == matchDay
+    );
+    
+    // Extraire tous les IDs d'équipes ayant joué
+    const playedTeamIds = new Set();
+    matches.forEach(match => {
+        playedTeamIds.add(match.homeTeamId.toString());
+        playedTeamIds.add(match.awayTeamId.toString());
+    });
+    
+    return Array.from(playedTeamIds);
+}
+
+// Filtrer les équipes disponibles selon la journée
+function filterTeamsByMatchDay() {
+    const matchDayInput = document.getElementById('matchDay');
+    if (!matchDayInput || !matchDayInput.value) return;
+    
+    const matchDay = parseInt(matchDayInput.value);
+    const season = getCurrentSeason();
+    
+    // Si on est en mode édition, ne pas filtrer
+    if (editingMatchId) {
+        return;
+    }
+    
+    // Obtenir les équipes qui ont déjà joué
+    const playedTeamIds = getTeamsAlreadyPlayedInMatchDay(matchDay, season);
+    
+    console.log(`Journée ${matchDay} : ${playedTeamIds.length} équipes ont déjà joué`);
+    
+    // Filtrer les selects
+    updateTeamSelectsWithFilter(playedTeamIds);
+}
+
+// Mettre à jour les selects en filtrant les équipes
+function updateTeamSelectsWithFilter(playedTeamIds) {
+    const homeTeamSelect = document.getElementById('homeTeam');
+    const awayTeamSelect = document.getElementById('awayTeam');
+    
+    if (!homeTeamSelect || !awayTeamSelect) return;
+    
+    // Sauvegarder les sélections actuelles
+    const currentHomeTeam = homeTeamSelect.value;
+    const currentAwayTeam = awayTeamSelect.value;
+    
+    // Vider et remplir les selects
+    homeTeamSelect.innerHTML = '<option value="">Sélectionner une équipe</option>';
+    awayTeamSelect.innerHTML = '<option value="">Sélectionner une équipe</option>';
+    
+    teamsData.forEach(team => {
+        // Exclure les équipes qui ont déjà joué
+        if (playedTeamIds.includes(team.id.toString())) {
+            return; // Skip cette équipe
+        }
+        
+        const homeOption = document.createElement('option');
+        homeOption.value = team.id;
+        homeOption.textContent = `${team.name} (${team.shortName})`;
+        homeTeamSelect.appendChild(homeOption);
+        
+        const awayOption = document.createElement('option');
+        awayOption.value = team.id;
+        awayOption.textContent = `${team.name} (${team.shortName})`;
+        awayTeamSelect.appendChild(awayOption);
+    });
+    
+    // Restaurer les sélections si elles sont toujours valides
+    if (currentHomeTeam && !playedTeamIds.includes(currentHomeTeam)) {
+        homeTeamSelect.value = currentHomeTeam;
+    }
+    if (currentAwayTeam && !playedTeamIds.includes(currentAwayTeam)) {
+        awayTeamSelect.value = currentAwayTeam;
+    }
+}
+
 // Charger les buts existants dans le formulaire
 function loadExistingGoals(matchGoals) {
     if (!matchGoals || matchGoals.length === 0) {
@@ -254,6 +336,14 @@ function setupFormListeners() {
     }
     if (awayTeamSelect) {
         awayTeamSelect.addEventListener('change', updateTeamNames);
+    }
+    
+    // ← AJOUTER CET ÉCOUTEUR
+    // Écouteur pour la journée
+    const matchDayInput = document.getElementById('matchDay');
+    if (matchDayInput) {
+        matchDayInput.addEventListener('change', filterTeamsByMatchDay);
+        matchDayInput.addEventListener('input', filterTeamsByMatchDay);
     }
 
     // Bouton pour ajouter un but
@@ -376,6 +466,40 @@ function filterAvailableTeams() {
     // Si aucune équipe n'est sélectionnée, remettre toutes les équipes
     if (!selectedHomeTeam && !selectedAwayTeam) {
         populateTeamSelects();
+    }
+}
+
+// Fonction pour remplir les selects avec les équipes
+function populateTeamSelects() {
+    const homeTeamSelect = document.getElementById('homeTeam');
+    const awayTeamSelect = document.getElementById('awayTeam');
+    
+    if (!homeTeamSelect || !awayTeamSelect) {
+        console.log('Éléments select non trouvés - probablement pas sur la page de match');
+        return;
+    }
+
+    // Vider les selects d'abord
+    homeTeamSelect.innerHTML = '<option value="">Sélectionner une équipe</option>';
+    awayTeamSelect.innerHTML = '<option value="">Sélectionner une équipe</option>';
+
+    // Ajouter chaque équipe aux deux selects
+    teamsData.forEach(team => {
+        const homeOption = document.createElement('option');
+        homeOption.value = team.id;
+        homeOption.textContent = `${team.name} (${team.shortName})`;
+        homeTeamSelect.appendChild(homeOption);
+
+        const awayOption = document.createElement('option');
+        awayOption.value = team.id;
+        awayOption.textContent = `${team.name} (${team.shortName})`;
+        awayTeamSelect.appendChild(awayOption);
+    });
+    
+    // ← AJOUTER : Filtrer selon la journée si une journée est déjà saisie
+    const matchDayInput = document.getElementById('matchDay');
+    if (matchDayInput && matchDayInput.value) {
+        filterTeamsByMatchDay();
     }
 }
 

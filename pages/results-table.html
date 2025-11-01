@@ -29,6 +29,15 @@
             <div class="results-header">
                 <h2>📊 Tableau croisé des résultats</h2>
                 <p>Visualisation des matchs aller-retour entre toutes les équipes</p>
+
+                <div style="margin: 1rem 0; text-align: center;">
+                    <label for="seasonSelectTable" style="font-weight: 600; margin-right: 0.5rem;">
+                        📅 Saison :
+                    </label>
+                    <select id="seasonSelectTable" style="padding: 0.5rem 1rem; border: 2px solid #e9ecef; border-radius: 5px; font-size: 1rem;">
+                        <option value="">Chargement...</option>
+                    </select>
+                </div>
                 <div class="legend">
                     <span class="legend-item">
                         <span class="legend-color played"></span>
@@ -94,6 +103,7 @@
     <script src="../js/firebase-config.js"></script>
     <script src="../js/firebase-service.js"></script>
 
+    <script src="../js/seasons.js"></script>
     <script src="../js/teams-loader.js"></script>
     <script src="../js/storage.js"></script>
     <script src="../js/results-table.js"></script>

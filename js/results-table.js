@@ -2,18 +2,53 @@
 
 let allTeams = [];
 let allMatches = [];
+let selectedSeason = null; // ← AJOUTER
 
 // Initialisation de la page
 document.addEventListener('DOMContentLoaded', function() {
+    selectedSeason = getCurrentSeason(); // ← AJOUTER
+    populateSeasonSelector(); // ← AJOUTER
     loadData();
     generateResultsTable();
     calculateStats();
 });
 
+// Remplir le sélecteur de saison
+function populateSeasonSelector() {
+    const seasonSelect = document.getElementById('seasonSelectTable');
+    if (!seasonSelect) return;
+    
+    seasonSelect.innerHTML = '';
+    
+    const seasons = getSeasonsOrderedByDate();
+    
+    seasons.forEach(season => {
+        const option = document.createElement('option');
+        option.value = season.name;
+        option.textContent = season.name;
+        
+        if (season.isActive) {
+            option.selected = true;
+        }
+        
+        seasonSelect.appendChild(option);
+    });
+    
+    // Écouteur de changement
+    seasonSelect.addEventListener('change', function() {
+        selectedSeason = this.value;
+        loadData();
+        generateResultsTable();
+        calculateStats();
+    });
+}
+
+
 // Charger les données
 function loadData() {
-    allTeams = getStoredTeams(); // Utiliser la fonction standard
-    allMatches = getStoredMatches();
+    allTeams = getStoredTeams();
+    const season = selectedSeason || getCurrentSeason();
+    allMatches = getMatchesBySeason(season); // ← MODIFIER pour filtrer par saison
     console.log('Données chargées:', allTeams.length, 'équipes,', allMatches.length, 'matchs');
 }
 
