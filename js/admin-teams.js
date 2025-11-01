@@ -311,34 +311,14 @@ function deleteTeam(teamId) {
 
 // Réinitialiser la saison
 function handleResetSeason() {
+    // La nouvelle logique est maintenant dans new-season-handler.js
+    // Cette fonction appelle directement la nouvelle popup
+    const currentSeason = getCurrentSeason();
     const teams = getStoredTeams();
     const matches = getStoredMatches();
+    const currentSeasonMatches = getMatchesBySeason(currentSeason);
     
-    let message = 'Êtes-vous sûr de vouloir démarrer une nouvelle saison ?\n\n';
-    message += 'Cela va :\n';
-    message += '• Remettre tous les ratings Elo à 1500\n';
-    message += `• Supprimer les ${matches.length} matchs existants\n`;
-    message += '• Conserver la liste des équipes\n\n';
-    message += 'Cette action est irréversible !';
-    
-    if (confirm(message)) {
-        // Reset des ratings Elo
-        teams.forEach(team => {
-            team.eloRating = 1500;
-        });
-        
-        // Sauvegarder les équipes
-        saveTeams(teams);
-        
-        // Vider les matchs
-        clearAllMatches();
-        
-        // Recharger l'affichage
-        displayTeams();
-        loadAdminData();
-        
-        showMessage('🎉 Nouvelle saison démarrée ! Tous les ratings ont été remis à 1500.', 'success');
-    }
+    showNewSeasonDialog(currentSeason, teams.length, currentSeasonMatches.length);
 }
 
 // Exporter les données
