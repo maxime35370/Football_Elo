@@ -1,8 +1,8 @@
 // rankings.js - Logique d'affichage des classements
 
 let currentMatchDay = null;
-let teamsWithElo = [];
 let selectedSeason = null; // ← AJOUTER CETTE LIGNE
+let teamsWithElo = [];
 
 // Initialisation de la page
 document.addEventListener('DOMContentLoaded', function() {
@@ -11,6 +11,13 @@ document.addEventListener('DOMContentLoaded', function() {
     populateSeasonSelector(); // ← AJOUTER
     setupMatchDaySelector();
     updateSeasonTitle();
+
+    if (typeof EloSystem !== 'undefined') {
+        recalculateEloRatings();
+        displayEloRanking();
+        displayComparison();
+    }
+
     displayRanking();
     updateChampionshipStats();
 });
@@ -19,6 +26,33 @@ document.addEventListener('DOMContentLoaded', function() {
 function loadRankingsData() {
     // Les données sont déjà chargées via teams-loader.js et storage.js
     console.log('Données de classement chargées');
+}
+
+// NOUVEAUTÉ ELO : Recalculer tous les ratings Elo
+function recalculateEloRatings() {
+    if (typeof EloSystem === 'undefined') {
+        console.warn('Système Elo non chargé - classement Elo désactivé');
+        return;
+    }
+    
+    const season = selectedSeason || getCurrentSeason();
+    const teams = getTeamsBySeason(season); // Utiliser vos équipes de la saison
+    const matches = getMatchesBySeason(season); // Utiliser vos matchs de la saison
+    
+    teamsWithElo = EloSystem.recalculateAllEloRatings(teams, matches);
+    
+    // Sauvegarder les ratings (adapter selon votre système)
+    teamsWithElo.forEach(team => {
+        const storedTeams = getStoredTeams();
+        const teamIndex = storedTeams.findIndex(t => t.id === team.id);
+        if (teamIndex !== -1) {
+            storedTeams[teamIndex].eloRating = team.eloRating;
+            storedTeams[teamIndex].eloHistory = team.eloHistory;
+        }
+    });
+    saveTeams(getStoredTeams());
+    
+    console.log('✅ Ratings Elo recalculés pour', teamsWithElo.length, 'équipes');
 }
 
 // Configurer le sélecteur de journée
@@ -42,6 +76,11 @@ function setupMatchDaySelector() {
     matchDaySelect.addEventListener('change', function() {
         currentMatchDay = this.value ? parseInt(this.value) : null;
         displayRanking();
+        if (typeof EloSystem !== 'undefined') {
+            displayEloRanking();
+            displayComparison();
+        }
+
         updateMatchDayInfo();
     });
     
@@ -84,6 +123,13 @@ function populateSeasonSelector() {
     // Écouteur de changement
     seasonSelect.addEventListener('change', function() {
         selectedSeason = this.value;
+
+        if (typeof EloSystem !== 'undefined') {
+            recalculateEloRatings();
+            displayEloRanking();
+            displayComparison();
+        }
+
         setupMatchDaySelector();
         displayRanking();
         updateChampionshipStats();
@@ -218,6 +264,13 @@ function updateChampionshipStats() {
 
 // Rafraîchir le classement (appelé depuis d'autres pages)
 function refreshRankings() {
+
+    if (typeof EloSystem !== 'undefined') {
+        recalculateEloRatings();
+        displayEloRanking();
+        displayComparison();
+    }
+
     setupMatchDaySelector();
     displayRanking();
     updateChampionshipStats();
@@ -257,6 +310,143 @@ function updateSeasonTitle() {
     if (titleElement) {
         titleElement.textContent = `🏆 Classement ${config.seasonName}`;
     }
+}
+
+// NOUVEAUTÉ ELO : Afficher le classement Elo
+function displayEloRanking() {
+    const eloRankingSection = document.querySelector('#eloRanking');
+    if (!eloRankingSection) {
+        console.log('Section Elo non présente dans le HTML');
+        return;
+    }
+    
+    const tableBody = eloRankingSection.querySelector('tbody');
+    if (!tableBody) return;
+    
+    const eloRanking = EloSystem.generateEloRanking(teamsWithElo);
+    
+    let filteredEloRanking = eloRanking;
+    if (currentMatchDay) {
+        filteredEloRanking = eloRanking.map(team => {
+            const historyAtMatchDay = team.eloHistory?.find(h => h.matchDay === currentMatchDay);
+            return {
+                ...team,
+                eloRating: historyAtMatchDay ? historyAtMatchDay.rating : EloSystem.ELO_CONFIG.INITIAL_RATING
+            };
+        }).sort((a, b) => b.eloRating - a.eloRating);
+    }
+    
+    tableBody.innerHTML = '';
+    
+    filteredEloRanking.forEach((team, index) => {
+        const row = createEloRankingRow(team, index + 1);
+        tableBody.appendChild(row);
+    });
+}
+
+// NOUVEAUTÉ ELO : Créer une ligne de classement Elo
+function createEloRankingRow(team, position) {
+    const row = document.createElement('tr');
+    const config = getSeasonConfig();
+    
+    if (position <= config.championPlaces) {
+        row.classList.add('champion');
+    } else if (position <= config.europeanPlaces) {
+        row.classList.add('european');
+    } else {
+        const totalTeams = teamsWithElo.filter(t => t.eloHistory && t.eloHistory.length > 0).length;
+        const relegationStart = totalTeams - config.relegationPlaces + 1;
+        if (position >= relegationStart && totalTeams >= 6) {
+            row.classList.add('relegation');
+        }
+    }
+    
+    const eloRating = Math.round(team.eloRating || EloSystem.ELO_CONFIG.INITIAL_RATING);
+    const eloChange = team.eloHistory && team.eloHistory.length > 0 
+        ? eloRating - EloSystem.ELO_CONFIG.INITIAL_RATING 
+        : 0;
+    
+    const changeClass = eloChange >= 0 ? 'positive' : 'negative';
+    const changeSymbol = eloChange > 0 ? '+' : '';
+    
+    row.innerHTML = `
+        <td class="position">${position}</td>
+        <td class="team-name">${team.shortName}</td>
+        <td class="elo-rating">${eloRating}</td>
+        <td class="${changeClass}">${changeSymbol}${eloChange}</td>
+        <td>${team.eloHistory ? team.eloHistory.length : 0}</td>
+    `;
+    
+    const stats = EloSystem.getTeamEloStats(team);
+    let tooltipText = `${team.name} - Elo: ${eloRating}`;
+    if (stats && stats.form && stats.form.length > 0) {
+        const formString = stats.form.map(h => h.result).join('');
+        tooltipText += `\nForme récente: ${formString}`;
+    }
+    row.title = tooltipText;
+    
+    return row;
+}
+
+// NOUVEAUTÉ ELO : Afficher la comparaison des classements
+function displayComparison() {
+    const comparisonSection = document.querySelector('#comparisonRanking');
+    if (!comparisonSection) {
+        console.log('Section comparaison non présente dans le HTML');
+        return;
+    }
+    
+    const tableBody = comparisonSection.querySelector('tbody');
+    if (!tableBody) return;
+    
+    const season = selectedSeason || getCurrentSeason();
+    const traditionalRanking = generateRanking(currentMatchDay, season);
+    
+    // Filtrer pour la saison
+    const seasonTeams = getTeamsBySeason(season);
+    const seasonTeamIds = seasonTeams.map(t => t.id);
+    const filteredTraditionalRanking = traditionalRanking.filter(team => seasonTeamIds.includes(team.id));
+    
+    const eloRanking = EloSystem.generateEloRanking(teamsWithElo);
+    
+    const comparison = EloSystem.compareRankings(filteredTraditionalRanking, eloRanking);
+    
+    tableBody.innerHTML = '';
+    
+    comparison.forEach(team => {
+        const row = createComparisonRow(team);
+        tableBody.appendChild(row);
+    });
+}
+
+// NOUVEAUTÉ ELO : Créer une ligne de comparaison
+function createComparisonRow(team) {
+    const row = document.createElement('tr');
+    
+    const diff = team.positionDifference;
+    let diffClass = 'no-change';
+    let diffSymbol = '=';
+    
+    if (diff > 0) {
+        diffClass = 'positive-diff';
+        diffSymbol = `↑${diff}`;
+    } else if (diff < 0) {
+        diffClass = 'negative-diff';
+        diffSymbol = `↓${Math.abs(diff)}`;
+    }
+    
+    row.innerHTML = `
+        <td class="team-name">${team.shortName}</td>
+        <td>${team.traditionalPosition}</td>
+        <td>${team.eloPosition}</td>
+        <td class="${diffClass}">${diffSymbol}</td>
+        <td>${team.points}</td>
+        <td>${Math.round(team.eloRating || EloSystem.ELO_CONFIG.INITIAL_RATING)}</td>
+    `;
+    
+    row.title = `${team.name}`;
+    
+    return row;
 }
 
 // Exposer la fonction pour l'utiliser depuis d'autres scripts
