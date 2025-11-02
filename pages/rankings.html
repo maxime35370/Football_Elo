@@ -72,6 +72,58 @@
                     </div>
                 </div>
 
+                <!-- NOUVEAU : Classement Elo -->
+                <div class="ranking-section">
+                    <h3>🎯 Classement Elo</h3>
+                    <div class="elo-info">
+                        <p><strong>Le système Elo</strong> évalue la force relative des équipes en tenant compte de la qualité des adversaires et de l'avantage du terrain.</p>
+                        <p>Un rating plus élevé indique une équipe plus performante selon ce système statistique.</p>
+                    </div>
+                    <div class="table-wrapper">
+                        <table id="eloRanking" class="ranking-table">
+                            <thead>
+                                <tr>
+                                    <th>Pos.</th>
+                                    <th>Équipe</th>
+                                    <th>Rating Elo</th>
+                                    <th>Évolution</th>
+                                    <th>Matchs</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Les données Elo seront ajoutées ici -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- NOUVEAU : Comparaison des classements -->
+                <div class="ranking-section">
+                    <h3>⚖️ Comparaison des classements</h3>
+                    <div class="elo-info">
+                        <p>Cette table compare les positions selon le classement traditionnel (points) et le système Elo.</p>
+                        <p>↑ = meilleure position en Elo • ↓ = moins bonne position en Elo • = = position identique</p>
+                    </div>
+                    <div class="table-wrapper">
+                        <table id="comparisonRanking" class="ranking-table">
+                            <thead>
+                                <tr>
+                                    <th>Équipe</th>
+                                    <th>Pos. Traditionnelle</th>
+                                    <th>Pos. Elo</th>
+                                    <th>Différence</th>
+                                    <th>Points</th>
+                                    <th>Rating Elo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- La comparaison sera ajoutée ici -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+
                 <!-- Message si aucun match -->
                 <div id="noMatchesMessage" class="no-matches" style="display: none;">
                     <div class="empty-state">
@@ -123,6 +175,7 @@
         <script src="../js/teams-loader.js"></script>
         <script src="../js/storage.js"></script>
         <script src="../js/app.js"></script>
+        <script src="../js/elo.js"></script>
         <script src="../js/rankings.js"></script>
     </body>
 </html>

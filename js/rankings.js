@@ -41,18 +41,8 @@ function recalculateEloRatings() {
     
     teamsWithElo = EloSystem.recalculateAllEloRatings(teams, matches);
     
-    // Sauvegarder les ratings (adapter selon votre système)
-    teamsWithElo.forEach(team => {
-        const storedTeams = getStoredTeams();
-        const teamIndex = storedTeams.findIndex(t => t.id === team.id);
-        if (teamIndex !== -1) {
-            storedTeams[teamIndex].eloRating = team.eloRating;
-            storedTeams[teamIndex].eloHistory = team.eloHistory;
-        }
-    });
-    saveTeams(getStoredTeams());
-    
     console.log('✅ Ratings Elo recalculés pour', teamsWithElo.length, 'équipes');
+    console.log('Exemple:', teamsWithElo[0]?.name, '=', teamsWithElo[0]?.eloRating);
 }
 
 // Configurer le sélecteur de journée
@@ -423,6 +413,10 @@ function displayComparison() {
 function createComparisonRow(team) {
     const row = document.createElement('tr');
     
+    // Récupérer le rating Elo depuis teamsWithElo
+    const teamWithElo = teamsWithElo.find(t => t.id === team.id);
+    const eloRating = teamWithElo ? Math.round(teamWithElo.eloRating) : EloSystem.ELO_CONFIG.INITIAL_RATING;
+    
     const diff = team.positionDifference;
     let diffClass = 'no-change';
     let diffSymbol = '=';
@@ -441,7 +435,7 @@ function createComparisonRow(team) {
         <td>${team.eloPosition}</td>
         <td class="${diffClass}">${diffSymbol}</td>
         <td>${team.points}</td>
-        <td>${Math.round(team.eloRating || EloSystem.ELO_CONFIG.INITIAL_RATING)}</td>
+        <td>${eloRating}</td>
     `;
     
     row.title = `${team.name}`;
