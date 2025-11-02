@@ -1,0 +1,220 @@
+/* rankings-elo.css - Styles supplémentaires pour le classement Elo */
+
+/* Section Elo */
+.elo-section {
+    background: linear-gradient(135deg, rgba(155, 89, 182, 0.1), rgba(142, 68, 173, 0.05));
+    border-left: 5px solid #9b59b6;
+}
+
+.elo-info {
+    background: rgba(255, 255, 255, 0.8);
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid #9b59b6;
+}
+
+.elo-info p {
+    margin: 0;
+    color: #2c3e50;
+    line-height: 1.6;
+}
+
+.elo-rating {
+    font-weight: bold;
+    color: #9b59b6;
+    font-size: 1.1rem;
+}
+
+/* Section de comparaison */
+.comparison-section {
+    background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), rgba(41, 128, 185, 0.05));
+    border-left: 5px solid #3498db;
+}
+
+.comparison-info {
+    background: rgba(255, 255, 255, 0.8);
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid #3498db;
+}
+
+.comparison-info p {
+    margin: 0;
+    color: #2c3e50;
+    line-height: 1.6;
+}
+
+/* Classes de différence de position */
+.positive-diff {
+    color: #27ae60;
+    font-weight: bold;
+}
+
+.negative-diff {
+    color: #e74c3c;
+    font-weight: bold;
+}
+
+.no-change {
+    color: #95a5a6;
+}
+
+/* Indicateurs visuels */
+.elo-badge {
+    display: inline-block;
+    background: linear-gradient(45deg, #9b59b6, #8e44ad);
+    color: white;
+    padding: 0.3rem 0.8rem;
+    border-radius: 15px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-left: 0.5rem;
+}
+
+/* Graphique de forme récente (si ajouté) */
+.recent-form {
+    display: flex;
+    gap: 0.2rem;
+    justify-content: center;
+    margin-top: 0.5rem;
+}
+
+.form-indicator {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: white;
+}
+
+.form-indicator.win {
+    background: #27ae60;
+}
+
+.form-indicator.draw {
+    background: #f39c12;
+}
+
+.form-indicator.loss {
+    background: #e74c3c;
+}
+
+/* Highlights pour grandes différences */
+.ranking-table tbody tr.big-difference {
+    background: rgba(255, 193, 7, 0.1);
+    border-left: 3px solid #ffc107;
+}
+
+/* Animation pour les changements de classement */
+@keyframes positionChange {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(5px); }
+}
+
+.ranking-table tbody tr.position-changed {
+    animation: positionChange 0.5s ease;
+}
+
+/* Tooltip amélioré pour les infos Elo */
+.elo-tooltip {
+    position: relative;
+    cursor: help;
+}
+
+.elo-tooltip::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #2c3e50;
+    color: white;
+    padding: 0.5rem;
+    border-radius: 5px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    font-size: 0.85rem;
+    z-index: 10;
+}
+
+.elo-tooltip:hover::after {
+    opacity: 1;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .elo-info,
+    .comparison-info {
+        padding: 0.8rem;
+        font-size: 0.9rem;
+    }
+    
+    .recent-form {
+        gap: 0.1rem;
+    }
+    
+    .form-indicator {
+        width: 16px;
+        height: 16px;
+        font-size: 0.6rem;
+    }
+}
+
+/* Styles spécifiques pour les grandes divergences */
+.major-divergence {
+    background: linear-gradient(90deg, 
+        rgba(231, 76, 60, 0.1) 0%, 
+        rgba(255, 255, 255, 0) 100%
+    );
+}
+
+.minor-divergence {
+    background: linear-gradient(90deg, 
+        rgba(243, 156, 18, 0.1) 0%, 
+        rgba(255, 255, 255, 0) 100%
+    );
+}
+
+/* Légende pour la comparaison */
+.comparison-legend {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin: 1rem 0;
+    padding: 1rem;
+    background: white;
+    border-radius: 8px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: #2c3e50;
+}
+
+.legend-symbol {
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.legend-symbol.up {
+    color: #27ae60;
+}
+
+.legend-symbol.down {
+    color: #e74c3c;
+}
+
+.legend-symbol.same {
+    color: #95a5a6;
+}

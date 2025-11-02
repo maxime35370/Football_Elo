@@ -1,6 +1,7 @@
 // rankings.js - Logique d'affichage des classements
 
 let currentMatchDay = null;
+let teamsWithElo = [];
 let selectedSeason = null; // ← AJOUTER CETTE LIGNE
 
 // Initialisation de la page
