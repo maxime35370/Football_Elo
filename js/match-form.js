@@ -393,6 +393,92 @@ function updateTeamNames() {
     }
     
     updateGoalFormOptions();
+    updateEloPrediction();
+}
+
+// Calculer et afficher la prédiction Elo
+function updateEloPrediction() {
+    const homeTeamSelect = document.getElementById('homeTeam');
+    const awayTeamSelect = document.getElementById('awayTeam');
+    const eloPredictionSection = document.getElementById('eloPredictionSection');
+    
+    if (!homeTeamSelect.value || !awayTeamSelect.value || typeof EloSystem === 'undefined') {
+        if (eloPredictionSection) eloPredictionSection.style.display = 'none';
+        return;
+    }
+    
+    // Récupérer les équipes avec leurs ratings Elo actuels
+    const teams = getStoredTeams();
+    const matches = getStoredMatches();
+    const teamsWithElo = EloSystem.recalculateAllEloRatings(teams, matches);
+    
+    const homeTeam = teamsWithElo.find(t => t.id == homeTeamSelect.value);
+    const awayTeam = teamsWithElo.find(t => t.id == awayTeamSelect.value);
+    
+    if (!homeTeam || !awayTeam) return;
+    
+    const homeRating = homeTeam.eloRating || EloSystem.ELO_CONFIG.INITIAL_RATING;
+    const awayRating = awayTeam.eloRating || EloSystem.ELO_CONFIG.INITIAL_RATING;
+    
+    // Calculer les probabilités et changements potentiels
+    const adjustedHomeRating = homeRating + EloSystem.ELO_CONFIG.HOME_ADVANTAGE;
+    
+    // Probabilités
+    const homeWinProb = EloSystem.calculateExpectedScore(adjustedHomeRating, awayRating);
+    const awayWinProb = 1 - homeWinProb;
+    
+    // Simuler les différents résultats pour calculer les changements
+    const winChanges = calculateEloChangesForResult(homeTeam, awayTeam, 1, 0); // Victoire domicile
+    const drawChanges = calculateEloChangesForResult(homeTeam, awayTeam, 0, 0); // Match nul
+    const lossChanges = calculateEloChangesForResult(homeTeam, awayTeam, 0, 1); // Défaite domicile
+    
+    // Afficher les informations
+    document.getElementById('homeTeamEloName').textContent = homeTeam.shortName;
+    document.getElementById('awayTeamEloName').textContent = awayTeam.shortName;
+    
+    document.getElementById('homeTeamEloRating').textContent = Math.round(homeRating);
+    document.getElementById('awayTeamEloRating').textContent = Math.round(awayRating);
+    
+    document.getElementById('homeWinProbability').textContent = (homeWinProb * 100).toFixed(1) + '%';
+    document.getElementById('awayWinProbability').textContent = (awayWinProb * 100).toFixed(1) + '%';
+    
+    // Changements pour l'équipe domicile
+    document.getElementById('homeWinGain').textContent = formatEloChange(winChanges.homeChange);
+    document.getElementById('homeDrawChange').textContent = formatEloChange(drawChanges.homeChange);
+    document.getElementById('homeLossChange').textContent = formatEloChange(lossChanges.homeChange);
+    
+    // Changements pour l'équipe extérieur
+    document.getElementById('awayWinGain').textContent = formatEloChange(lossChanges.awayChange);
+    document.getElementById('awayDrawChange').textContent = formatEloChange(drawChanges.awayChange);
+    document.getElementById('awayLossChange').textContent = formatEloChange(winChanges.awayChange);
+    
+    eloPredictionSection.style.display = 'block';
+}
+
+// Calculer les changements Elo pour un résultat donné
+function calculateEloChangesForResult(homeTeam, awayTeam, homeGoals, awayGoals) {
+    const fakeMatch = {
+        homeTeamId: homeTeam.id,
+        awayTeamId: awayTeam.id,
+        finalScore: { home: homeGoals, away: awayGoals }
+    };
+    
+    const teams = [
+        { ...homeTeam },
+        { ...awayTeam }
+    ];
+    
+    const result = EloSystem.calculateEloChange(fakeMatch, teams);
+    return {
+        homeChange: result.homeTeam.change,
+        awayChange: result.awayTeam.change
+    };
+}
+
+// Formater l'affichage du changement Elo
+function formatEloChange(change) {
+    if (change > 0) return `+${change}`;
+    return change.toString();
 }
 
 // Nouvelle fonction pour filtrer les équipes selon les matchs existants

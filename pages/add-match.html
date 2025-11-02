@@ -89,6 +89,71 @@
                     <p class="info-text">Score calculé automatiquement selon les buts saisis ci-dessous</p>
                 </div>
 
+                <!-- NOUVEAU : Prédiction Elo -->
+                <div class="form-section" id="eloPredictionSection" style="display: none;">
+                    <h3>🎯 Analyse Elo du match</h3>
+                    <div class="elo-prediction">
+                        <div class="elo-team-info">
+                            <div class="elo-team-card">
+                                <h4 id="homeTeamEloName">Équipe domicile</h4>
+                                <div class="elo-current">
+                                    <span class="elo-label">Rating actuel :</span>
+                                    <span class="elo-value" id="homeTeamEloRating">1500</span>
+                                </div>
+                                <div class="elo-probability">
+                                    <span class="elo-label">Probabilité de victoire :</span>
+                                    <span class="elo-percent" id="homeWinProbability">50%</span>
+                                </div>
+                                <div class="elo-changes">
+                                    <div class="elo-change-item">
+                                        <span class="elo-result">Victoire :</span>
+                                        <span class="elo-gain" id="homeWinGain">+0</span>
+                                    </div>
+                                    <div class="elo-change-item">
+                                        <span class="elo-result">Match nul :</span>
+                                        <span class="elo-neutral" id="homeDrawChange">+0</span>
+                                    </div>
+                                    <div class="elo-change-item">
+                                        <span class="elo-result">Défaite :</span>
+                                        <span class="elo-loss" id="homeLossChange">-0</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="vs-divider-elo">VS</div>
+                            
+                            <div class="elo-team-card">
+                                <h4 id="awayTeamEloName">Équipe extérieur</h4>
+                                <div class="elo-current">
+                                    <span class="elo-label">Rating actuel :</span>
+                                    <span class="elo-value" id="awayTeamEloRating">1500</span>
+                                </div>
+                                <div class="elo-probability">
+                                    <span class="elo-label">Probabilité de victoire :</span>
+                                    <span class="elo-percent" id="awayWinProbability">50%</span>
+                                </div>
+                                <div class="elo-changes">
+                                    <div class="elo-change-item">
+                                        <span class="elo-result">Victoire :</span>
+                                        <span class="elo-gain" id="awayWinGain">+0</span>
+                                    </div>
+                                    <div class="elo-change-item">
+                                        <span class="elo-result">Match nul :</span>
+                                        <span class="elo-neutral" id="awayDrawChange">+0</span>
+                                    </div>
+                                    <div class="elo-change-item">
+                                        <span class="elo-result">Défaite :</span>
+                                        <span class="elo-loss" id="awayLossChange">-0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="elo-note">
+                            💡 Ces prédictions sont calculées avec le système Elo (K=32, avantage domicile=+100)
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Détails des buts -->
                 <div class="form-section">
                     <h3>🎯 Détails des buts</h3>
@@ -133,6 +198,7 @@
     <script src="../js/seasons.js"></script>
     <script src="../js/teams-loader.js"></script>
     <script src="../js/storage.js"></script>
+    <script src="../js/elo.js"></script>
     <script src="../js/match-form.js"></script>
 </body>
 </html>
