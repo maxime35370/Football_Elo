@@ -33,20 +33,42 @@ document.addEventListener('DOMContentLoaded', async function() {
 async function loadSeasons() {
     const seasonSelect = document.getElementById('seasonSelect');
     
+    // Vérifier que les fonctions nécessaires existent
+    if (typeof getStoredSeasons !== 'function') {
+        console.error('❌ getStoredSeasons n\'est pas définie');
+        seasonSelect.innerHTML = '<option value="">Erreur: fonctions manquantes</option>';
+        return;
+    }
+    
+    if (typeof getSeasonsOrderedByDate !== 'function') {
+        console.error('❌ getSeasonsOrderedByDate n\'est pas définie');
+        seasonSelect.innerHTML = '<option value="">Erreur: fonctions manquantes</option>';
+        return;
+    }
+    
     // Récupérer toutes les saisons
     let seasons = getSeasonsOrderedByDate();
     
+    console.log('📊 Saisons récupérées:', seasons);
+    
     // Si aucune saison n'existe, initialiser
     if (!seasons || seasons.length === 0) {
-        initializeSeasons();
-        seasons = getSeasonsOrderedByDate();
+        console.log('⚠️ Aucune saison trouvée, initialisation...');
+        
+        if (typeof initializeSeasons === 'function') {
+            initializeSeasons();
+            seasons = getSeasonsOrderedByDate();
+        }
     }
     
     if (!seasons || seasons.length === 0) {
+        console.error('❌ Aucune saison disponible après initialisation');
         seasonSelect.innerHTML = '<option value="">Aucune saison disponible</option>';
         showEmptyState();
         return;
     }
+    
+    console.log('✅ Saisons chargées:', seasons.length);
     
     // Remplir le sélecteur
     seasonSelect.innerHTML = seasons.map(season => 
@@ -58,9 +80,11 @@ async function loadSeasons() {
     if (activeSeason) {
         seasonSelect.value = activeSeason.name;
         currentSeason = activeSeason.name;
+        console.log('✅ Saison active sélectionnée:', currentSeason);
     } else if (seasons.length > 0) {
         seasonSelect.value = seasons[0].name;
         currentSeason = seasons[0].name;
+        console.log('✅ Première saison sélectionnée:', currentSeason);
     }
     
     // Charger les données de la saison
@@ -448,133 +472,6 @@ function generateHalfTimeChart(goalsFor, goalsAgainst) {
     }
     
     container.innerHTML = html || '<p style="text-align: center; color: #95a5a6;">Aucun but</p>';
-}
-    const container = document.getElementById('timeSliceChart');
-    
-    // Définir les tranches de temps
-    let timeSlices = [];
-    
-    if (sliceSize === 5) {
-        // Tranches de 5 minutes
-        for (let i = 0; i < 45; i += 5) {
-            timeSlices.push({ label: `${i+1}-${i+5}`, min: i+1, max: i+5 });
-        }
-        timeSlices.push({ label: '45+ (MT)', min: 46, max: 45.99 }); // Temps additionnel 1ère MT
-        
-        for (let i = 46; i <= 86; i += 5) {
-            timeSlices.push({ label: `${i}-${i+4}`, min: i, max: i+4 });
-        }
-        timeSlices.push({ label: '90+ (2ème)', min: 91, max: 999 }); // Temps additionnel 2ème MT
-        
-    } else if (sliceSize === 15) {
-        // Tranches de 15 minutes
-        timeSlices = [
-            { label: '1-15', min: 1, max: 15 },
-            { label: '16-30', min: 16, max: 30 },
-            { label: '31-45', min: 31, max: 45 },
-            { label: '45+ (MT)', min: 46, max: 45.99 },
-            { label: '46-60', min: 46, max: 60 },
-            { label: '61-75', min: 61, max: 75 },
-            { label: '76-90', min: 76, max: 90 },
-            { label: '90+ (2ème)', min: 91, max: 999 }
-        ];
-    }
-    
-    // Compter les buts par tranche
-    const countsFor = timeSlices.map(slice => ({
-        label: slice.label,
-        count: goalsFor.filter(g => {
-            if (slice.label.includes('45+ (MT)')) {
-                // Temps additionnel 1ère MT (45+1, 45+2, etc.)
-                return g.minute > 45 && g.minute < 46;
-            } else if (slice.label.includes('90+')) {
-                // Temps additionnel 2ème MT (90+, prolongations)
-                return g.minute > 90;
-            } else {
-                return g.minute >= slice.min && g.minute <= slice.max;
-            }
-        }).length
-    }));
-    
-    const countsAgainst = timeSlices.map(slice => ({
-        label: slice.label,
-        count: goalsAgainst.filter(g => {
-            if (slice.label.includes('45+ (MT)')) {
-                return g.minute > 45 && g.minute < 46;
-            } else if (slice.label.includes('90+')) {
-                return g.minute > 90;
-            } else {
-                return g.minute >= slice.min && g.minute <= slice.max;
-            }
-        }).length
-    }));
-    
-    // Trouver le maximum pour l'échelle
-    const maxCount = Math.max(
-        ...countsFor.map(c => c.count),
-        ...countsAgainst.map(c => c.count)
-    );
-    
-    // Générer le HTML du graphique
-    let html = '<div class="chart-bar-container">';
-    
-    timeSlices.forEach((slice, index) => {
-        const forCount = countsFor[index].count;
-        const againstCount = countsAgainst[index].count;
-        
-        html += `<div class="chart-bar-row">`;
-        html += `<div class="chart-bar-label">${slice.label}</div>`;
-        html += `<div class="chart-bar-wrapper">`;
-        
-        if (showFor && forCount > 0) {
-            const widthFor = maxCount > 0 ? (forCount / maxCount) * 100 : 0;
-            html += `
-                <div class="chart-bar goals-for" style="width: ${widthFor}%">
-                    <span class="chart-bar-value">${forCount}</span>
-                </div>
-            `;
-        }
-        
-        html += `</div>`;
-        html += `</div>`;
-        
-        // Ligne pour les buts contre (si applicable)
-        if (showAgainst && goalsAgainst.length > 0 && againstCount > 0) {
-            html += `<div class="chart-bar-row">`;
-            html += `<div class="chart-bar-label"></div>`;
-            html += `<div class="chart-bar-wrapper">`;
-            
-            const widthAgainst = maxCount > 0 ? (againstCount / maxCount) * 100 : 0;
-            html += `
-                <div class="chart-bar goals-against" style="width: ${widthAgainst}%">
-                    <span class="chart-bar-value">${againstCount} contre</span>
-                </div>
-            `;
-            
-            html += `</div>`;
-            html += `</div>`;
-        }
-    });
-    
-    html += '</div>';
-    
-    // Résumé
-    const totalFor = goalsFor.length;
-    const totalAgainst = goalsAgainst.length;
-    
-    if (totalFor > 0 || totalAgainst > 0) {
-        html += `<div class="chart-summary">`;
-        if (showFor && totalFor > 0) {
-            html += `⚽ <strong>${totalFor}</strong> buts marqués`;
-        }
-        if (showAgainst && totalAgainst > 0) {
-            if (totalFor > 0) html += ' | ';
-            html += `🛡️ <strong>${totalAgainst}</strong> buts encaissés`;
-        }
-        html += `</div>`;
-    }
-    
-    container.innerHTML = html;
 }
 
 function displayMinutesByMinute(goalsFor, goalsAgainst) {
