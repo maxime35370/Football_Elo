@@ -89,21 +89,40 @@
                     <p class="info-text">Score calculé automatiquement selon les buts saisis ci-dessous</p>
                 </div>
 
-                <!-- NOUVEAU : Prédiction Elo -->
+                <!-- NOUVEAU : Prédiction Elo avec forme -->
                 <div class="form-section" id="eloPredictionSection" style="display: none;">
                     <h3>🎯 Analyse Elo du match</h3>
                     <div class="elo-prediction">
                         <div class="elo-team-info">
                             <div class="elo-team-card">
                                 <h4 id="homeTeamEloName">Équipe domicile</h4>
+                                
+                                <!-- Forme récente -->
+                                <div class="team-form-display">
+                                    <span class="form-label">Forme récente :</span>
+                                    <span class="form-results" id="homeTeamForm">-</span>
+                                    <span class="form-status" id="homeTeamFormStatus"></span>
+                                </div>
+                                
+                                <!-- Rating Elo -->
                                 <div class="elo-current">
-                                    <span class="elo-label">Rating actuel :</span>
+                                    <span class="elo-label">Rating Elo :</span>
+                                    <div class="elo-rating-breakdown">
+                                        <span class="elo-base">Base: <strong id="homeTeamEloBase">1500</strong></span>
+                                        <span class="elo-form-mod" id="homeTeamFormMod">+0</span>
+                                        <span class="elo-home-advantage" id="homeAdvantageDisplay">+100 🏠</span> <!-- AJOUTER CETTE LIGNE -->
+                                    </div>
                                     <span class="elo-value" id="homeTeamEloRating">1500</span>
                                 </div>
+                                
+                                <!-- Détails de la forme -->
+                                <div class="form-details" id="homeTeamFormDetails"></div>
+                                
                                 <div class="elo-probability">
                                     <span class="elo-label">Probabilité de victoire :</span>
                                     <span class="elo-percent" id="homeWinProbability">50%</span>
                                 </div>
+                                
                                 <div class="elo-changes">
                                     <div class="elo-change-item">
                                         <span class="elo-result">Victoire :</span>
@@ -124,14 +143,32 @@
                             
                             <div class="elo-team-card">
                                 <h4 id="awayTeamEloName">Équipe extérieur</h4>
+                                
+                                <!-- Forme récente -->
+                                <div class="team-form-display">
+                                    <span class="form-label">Forme récente :</span>
+                                    <span class="form-results" id="awayTeamForm">-</span>
+                                    <span class="form-status" id="awayTeamFormStatus"></span>
+                                </div>
+                                
+                                <!-- Rating Elo -->
                                 <div class="elo-current">
-                                    <span class="elo-label">Rating actuel :</span>
+                                    <span class="elo-label">Rating Elo :</span>
+                                    <div class="elo-rating-breakdown">
+                                        <span class="elo-base">Base: <strong id="awayTeamEloBase">1500</strong></span>
+                                        <span class="elo-form-mod" id="awayTeamFormMod">+0</span>
+                                    </div>
                                     <span class="elo-value" id="awayTeamEloRating">1500</span>
                                 </div>
+                                
+                                <!-- Détails de la forme -->
+                                <div class="form-details" id="awayTeamFormDetails"></div>
+                                
                                 <div class="elo-probability">
                                     <span class="elo-label">Probabilité de victoire :</span>
                                     <span class="elo-percent" id="awayWinProbability">50%</span>
                                 </div>
+                                
                                 <div class="elo-changes">
                                     <div class="elo-change-item">
                                         <span class="elo-result">Victoire :</span>
@@ -149,7 +186,7 @@
                             </div>
                         </div>
                         <div class="elo-note">
-                            💡 Ces prédictions sont calculées avec le système Elo (K=32, avantage domicile=+100)
+                            💡 Prédictions basées sur le système Elo (K=32) avec modificateur de forme dynamique
                         </div>
                     </div>
                 </div>
@@ -199,6 +236,7 @@
     <script src="../js/teams-loader.js"></script>
     <script src="../js/storage.js"></script>
     <script src="../js/elo.js"></script>
+    <script src="../js/form-modifier.js"></script>
     <script src="../js/match-form.js"></script>
 </body>
 </html>

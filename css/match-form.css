@@ -487,6 +487,134 @@
     border-left: 4px solid #27ae60;
 }
 
+/* === STYLES POUR L'AFFICHAGE DE LA FORME === */
+
+.team-form-display {
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.form-label {
+    display: block;
+    color: #7f8c8d;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.form-results {
+    display: inline-block;
+    font-family: 'Courier New', monospace;
+    font-size: 1.2rem;
+    font-weight: bold;
+    letter-spacing: 0.2rem;
+    color: #2c3e50;
+    margin-right: 0.5rem;
+}
+
+.form-status {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    font-size: 0.85rem;
+    font-weight: bold;
+}
+
+.form-status.on-fire {
+    background: linear-gradient(45deg, #ff6b6b, #ee5a6f);
+    color: white;
+}
+
+.form-status.good-form {
+    background: linear-gradient(45deg, #51cf66, #37b24d);
+    color: white;
+}
+
+.form-status.neutral {
+    background: #e9ecef;
+    color: #495057;
+}
+
+.form-status.struggling {
+    background: linear-gradient(45deg, #ffa94d, #ff922b);
+    color: white;
+}
+
+.form-status.crisis {
+    background: linear-gradient(45deg, #495057, #343a40);
+    color: white;
+}
+
+.elo-rating-breakdown {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.5rem 0;
+    font-size: 0.9rem;
+}
+
+.elo-base {
+    color: #7f8c8d;
+}
+
+.elo-form-mod {
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 0.85rem;
+}
+
+.elo-form-mod.positive {
+    background: #d4edda;
+    color: #155724;
+}
+
+.elo-form-mod.negative {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.elo-form-mod.neutral {
+    background: #e9ecef;
+    color: #6c757d;
+}
+
+.form-details {
+    background: #f8f9fa;
+    padding: 0.75rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+}
+
+.form-detail-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0;
+    color: #495057;
+}
+
+.form-detail-item:not(:last-child) {
+    border-bottom: 1px solid #dee2e6;
+}
+
+.elo-home-advantage {
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 0.85rem;
+    background: #d4edda;
+    color: #155724;
+}
+
+.elo-home-advantage.reduced {
+    background: #fff3cd;
+    color: #856404;
+}
 
 /* Responsive */
 @media (max-width: 768px) {
@@ -527,5 +655,15 @@
     .vs-divider-elo {
         order: 2;
         margin: 0.5rem auto;
+    }
+
+    .form-results {
+        font-size: 1rem;
+        letter-spacing: 0.1rem;
+    }
+    
+    .elo-rating-breakdown {
+        flex-direction: column;
+        gap: 0.25rem;
     }
 }

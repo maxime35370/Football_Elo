@@ -144,7 +144,9 @@ function recalculateAllEloRatings(teams, matches) {
                     rating: eloChange.homeTeam.newRating,
                     change: eloChange.homeTeam.change,
                     opponent: awayTeam.name,
-                    result: getMatchResult(match, true)
+                    result: getMatchResult(match, true),
+                    goalsFor: match.finalScore.home,        // ← AJOUTER
+                    goalsAgainst: match.finalScore.away     // ← AJOUTER
                 });
             }
             
@@ -156,13 +158,23 @@ function recalculateAllEloRatings(teams, matches) {
                     rating: eloChange.awayTeam.newRating,
                     change: eloChange.awayTeam.change,
                     opponent: homeTeam.name,
-                    result: getMatchResult(match, false)
+                    result: getMatchResult(match, false),
+                    goalsFor: match.finalScore.away,        // ← AJOUTER
+                    goalsAgainst: match.finalScore.home     // ← AJOUTER
                 });
             }
         }
     });
     
     return updatedTeams;
+}
+
+// Ajouter les stats de buts dans l'historique
+function addGoalStatsToHistory(match, homeTeam, awayTeam) {
+    return {
+        goalsFor: match.finalScore.home,
+        goalsAgainst: match.finalScore.away
+    };
 }
 
 /**
@@ -301,6 +313,7 @@ if (typeof window !== 'undefined') {
         compareRankings,
         predictMatch,
         getTeamEloStats,
+        calculateExpectedScore,
         ELO_CONFIG
     };
 }

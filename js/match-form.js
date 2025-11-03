@@ -396,13 +396,39 @@ function updateTeamNames() {
     updateEloPrediction();
 }
 
-// Calculer et afficher la prédiction Elo
+function debugCleanSheets(team) {
+    console.log('=== DEBUG CLEAN SHEETS pour', team.name, '===');
+    
+    if (!team.eloHistory || team.eloHistory.length === 0) {
+        console.log('Pas d\'historique');
+        return;
+    }
+    
+    const last5 = team.eloHistory.slice(-5);
+    
+    last5.forEach((match, index) => {
+        console.log(`Match ${index + 1}:`, {
+            opponent: match.opponent,
+            result: match.result,
+            goalsFor: match.goalsFor,
+            goalsAgainst: match.goalsAgainst,
+            isCleanSheet: match.goalsAgainst === 0 ? '✅ OUI' : '❌ NON'
+        });
+    });
+    
+    const cleanSheetCount = last5.filter(m => m.goalsAgainst === 0).length;
+    console.log('Total clean sheets comptés:', cleanSheetCount);
+    console.log('========================');
+}
+
+// Calculer et afficher la prédiction Elo avec modificateur de forme
 function updateEloPrediction() {
     const homeTeamSelect = document.getElementById('homeTeam');
     const awayTeamSelect = document.getElementById('awayTeam');
     const eloPredictionSection = document.getElementById('eloPredictionSection');
     
-    if (!homeTeamSelect.value || !awayTeamSelect.value || typeof EloSystem === 'undefined') {
+    if (!homeTeamSelect.value || !awayTeamSelect.value || 
+        typeof EloSystem === 'undefined' || typeof FormModifier === 'undefined') {
         if (eloPredictionSection) eloPredictionSection.style.display = 'none';
         return;
     }
@@ -416,38 +442,118 @@ function updateEloPrediction() {
     const awayTeam = teamsWithElo.find(t => t.id == awayTeamSelect.value);
     
     if (!homeTeam || !awayTeam) return;
+
+    debugCleanSheets(homeTeam);
+    debugCleanSheets(awayTeam);
     
-    const homeRating = homeTeam.eloRating || EloSystem.ELO_CONFIG.INITIAL_RATING;
-    const awayRating = awayTeam.eloRating || EloSystem.ELO_CONFIG.INITIAL_RATING;
+    // Calculer les ratings ajustés avec la forme
+    const homeAdjusted = FormModifier.getAdjustedEloRating(homeTeam);
+    const awayAdjusted = FormModifier.getAdjustedEloRating(awayTeam);
     
-    // Calculer les probabilités et changements potentiels
-    const adjustedHomeRating = homeRating + EloSystem.ELO_CONFIG.HOME_ADVANTAGE;
+    // Calculer l'avantage domicile ajusté selon la forme
+    let homeAdvantageBonus = EloSystem.ELO_CONFIG.HOME_ADVANTAGE;
+
+    // Réduire l'avantage domicile si l'équipe est en crise
+    if (homeAdjusted.formModifier < -50) {
+        homeAdvantageBonus = 50; // Divisé par 2 si très mauvaise forme
+        console.log('🏠 Avantage domicile réduit à 50 (crise)');
+    } else if (homeAdjusted.formModifier < -30) {
+        homeAdvantageBonus = 75; // Réduit à 75 si forme difficile
+        console.log('🏠 Avantage domicile réduit à 75 (difficulté)');
+    }
+
+    const homeAdvDisplay = document.getElementById('homeAdvantageDisplay');
+    if (homeAdvDisplay) {
+        homeAdvDisplay.textContent = `+${homeAdvantageBonus} 🏠`;
+        if (homeAdvantageBonus < 100) {
+            homeAdvDisplay.classList.add('reduced');
+            homeAdvDisplay.title = 'Avantage domicile réduit (mauvaise forme)';
+        } else {
+            homeAdvDisplay.classList.remove('reduced');
+            homeAdvDisplay.title = 'Avantage domicile complet';
+        }
+    }
+    // Calculer les probabilités avec l'avantage domicile ajusté ET la forme
+    const finalHomeRating = homeAdjusted.adjustedRating + homeAdvantageBonus;
+    const finalAwayRating = awayAdjusted.adjustedRating;
+
+    console.log('Ratings finaux:', {
+        home: finalHomeRating,
+        away: finalAwayRating,
+        homeAdvantage: homeAdvantageBonus
+    });
     
-    // Probabilités
-    const homeWinProb = EloSystem.calculateExpectedScore(adjustedHomeRating, awayRating);
+    const homeWinProb = EloSystem.calculateExpectedScore(finalHomeRating, finalAwayRating);
     const awayWinProb = 1 - homeWinProb;
     
-    // Simuler les différents résultats pour calculer les changements
-    const winChanges = calculateEloChangesForResult(homeTeam, awayTeam, 1, 0); // Victoire domicile
-    const drawChanges = calculateEloChangesForResult(homeTeam, awayTeam, 0, 0); // Match nul
-    const lossChanges = calculateEloChangesForResult(homeTeam, awayTeam, 0, 1); // Défaite domicile
+    // Simuler les différents résultats pour les changements Elo (avec avantage domicile)
+    const winChanges = calculateEloChangesForResult(homeTeam, awayTeam, 1, 0, homeAdvantageBonus);
+    const drawChanges = calculateEloChangesForResult(homeTeam, awayTeam, 0, 0, homeAdvantageBonus);
+    const lossChanges = calculateEloChangesForResult(homeTeam, awayTeam, 0, 1, homeAdvantageBonus);
     
-    // Afficher les informations
+    // === AFFICHAGE ÉQUIPE DOMICILE ===
     document.getElementById('homeTeamEloName').textContent = homeTeam.shortName;
-    document.getElementById('awayTeamEloName').textContent = awayTeam.shortName;
+    document.getElementById('homeTeamEloBase').textContent = Math.round(homeAdjusted.baseRating);
+
+    // Le rating final affiché doit inclure l'avantage domicile
+    const finalHomeDisplayRating = Math.round(homeAdjusted.adjustedRating + homeAdvantageBonus);
+    document.getElementById('homeTeamEloRating').textContent = finalHomeDisplayRating;
     
-    document.getElementById('homeTeamEloRating').textContent = Math.round(homeRating);
-    document.getElementById('awayTeamEloRating').textContent = Math.round(awayRating);
+    // Modificateur de forme
+    const homeFormModEl = document.getElementById('homeTeamFormMod');
+    homeFormModEl.textContent = formatEloChange(homeAdjusted.formModifier);
+    homeFormModEl.className = 'elo-form-mod ' + 
+        (homeAdjusted.formModifier > 0 ? 'positive' : 
+         homeAdjusted.formModifier < 0 ? 'negative' : 'neutral');
     
+    // Forme récente
+    if (homeAdjusted.recentForm && homeAdjusted.recentForm.length > 0) {
+        document.getElementById('homeTeamForm').textContent = 
+            FormModifier.formatRecentForm(homeAdjusted.recentForm);
+    }
+    
+    // Statut de forme
+    const homeFormStatusEl = document.getElementById('homeTeamFormStatus');
+    homeFormStatusEl.textContent = `${homeAdjusted.formStatus.icon} ${homeAdjusted.formStatus.text}`;
+    homeFormStatusEl.className = 'form-status ' + homeAdjusted.formStatus.class;
+    
+    // Détails de la forme
+    displayFormDetails('homeTeamFormDetails', homeAdjusted.formDetails);
+    
+    // Probabilités et changements
     document.getElementById('homeWinProbability').textContent = (homeWinProb * 100).toFixed(1) + '%';
-    document.getElementById('awayWinProbability').textContent = (awayWinProb * 100).toFixed(1) + '%';
-    
-    // Changements pour l'équipe domicile
     document.getElementById('homeWinGain').textContent = formatEloChange(winChanges.homeChange);
     document.getElementById('homeDrawChange').textContent = formatEloChange(drawChanges.homeChange);
     document.getElementById('homeLossChange').textContent = formatEloChange(lossChanges.homeChange);
     
-    // Changements pour l'équipe extérieur
+    // === AFFICHAGE ÉQUIPE EXTÉRIEUR ===
+    document.getElementById('awayTeamEloName').textContent = awayTeam.shortName;
+    document.getElementById('awayTeamEloBase').textContent = Math.round(awayAdjusted.baseRating);
+    document.getElementById('awayTeamEloRating').textContent = Math.round(awayAdjusted.adjustedRating);
+    
+    // Modificateur de forme
+    const awayFormModEl = document.getElementById('awayTeamFormMod');
+    awayFormModEl.textContent = formatEloChange(awayAdjusted.formModifier);
+    awayFormModEl.className = 'elo-form-mod ' + 
+        (awayAdjusted.formModifier > 0 ? 'positive' : 
+         awayAdjusted.formModifier < 0 ? 'negative' : 'neutral');
+    
+    // Forme récente
+    if (awayAdjusted.recentForm && awayAdjusted.recentForm.length > 0) {
+        document.getElementById('awayTeamForm').textContent = 
+            FormModifier.formatRecentForm(awayAdjusted.recentForm);
+    }
+    
+    // Statut de forme
+    const awayFormStatusEl = document.getElementById('awayTeamFormStatus');
+    awayFormStatusEl.textContent = `${awayAdjusted.formStatus.icon} ${awayAdjusted.formStatus.text}`;
+    awayFormStatusEl.className = 'form-status ' + awayAdjusted.formStatus.class;
+    
+    // Détails de la forme
+    displayFormDetails('awayTeamFormDetails', awayAdjusted.formDetails);
+    
+    // Probabilités et changements
+    document.getElementById('awayWinProbability').textContent = (awayWinProb * 100).toFixed(1) + '%';
     document.getElementById('awayWinGain').textContent = formatEloChange(lossChanges.awayChange);
     document.getElementById('awayDrawChange').textContent = formatEloChange(drawChanges.awayChange);
     document.getElementById('awayLossChange').textContent = formatEloChange(winChanges.awayChange);
@@ -455,23 +561,64 @@ function updateEloPrediction() {
     eloPredictionSection.style.display = 'block';
 }
 
+// Afficher les détails de la forme
+function displayFormDetails(elementId, details) {
+    const container = document.getElementById(elementId);
+    if (!container) return;
+    
+    if (!details || details.length === 0) {
+        container.innerHTML = '<div class="form-detail-item">Aucun historique de forme</div>';
+        return;
+    }
+    
+    container.innerHTML = details.map(detail => 
+        `<div class="form-detail-item">${detail}</div>`
+    ).join('');
+}
+
 // Calculer les changements Elo pour un résultat donné
-function calculateEloChangesForResult(homeTeam, awayTeam, homeGoals, awayGoals) {
-    const fakeMatch = {
-        homeTeamId: homeTeam.id,
-        awayTeamId: awayTeam.id,
-        finalScore: { home: homeGoals, away: awayGoals }
-    };
+function calculateEloChangesForResult(homeTeam, awayTeam, homeGoals, awayGoals, homeAdvantageBonus) {
+    // Créer des copies des équipes avec les ratings ajustés
+    const homeAdjusted = FormModifier.getAdjustedEloRating(homeTeam);
+    const awayAdjusted = FormModifier.getAdjustedEloRating(awayTeam);
     
-    const teams = [
-        { ...homeTeam },
-        { ...awayTeam }
-    ];
+    // Rating final pour le calcul (avec avantage domicile)
+    const finalHomeRating = homeAdjusted.adjustedRating + homeAdvantageBonus;
+    const finalAwayRating = awayAdjusted.adjustedRating;
     
-    const result = EloSystem.calculateEloChange(fakeMatch, teams);
+    // Calculer les probabilités attendues
+    const homeExpected = EloSystem.calculateExpectedScore(finalHomeRating, finalAwayRating);
+    const awayExpected = 1 - homeExpected;
+    
+    // Déterminer le score réel
+    let homeActual, awayActual;
+    if (homeGoals > awayGoals) {
+        homeActual = 1;
+        awayActual = 0;
+    } else if (homeGoals < awayGoals) {
+        homeActual = 0;
+        awayActual = 1;
+    } else {
+        homeActual = 0.5;
+        awayActual = 0.5;
+    }
+    
+    // Calculer la différence de buts pour le multiplicateur
+    const goalDiff = Math.abs(homeGoals - awayGoals);
+    let multiplier = 1;
+    if (goalDiff === 0 || goalDiff === 1) multiplier = 1;
+    else if (goalDiff === 2) multiplier = 1.5;
+    else if (goalDiff === 3) multiplier = 1.75;
+    else multiplier = 1.75 + (goalDiff - 3) * 0.125;
+    
+    // Calculer les changements Elo
+    const K = EloSystem.ELO_CONFIG.K_FACTOR;
+    const homeChange = Math.round(K * multiplier * (homeActual - homeExpected));
+    const awayChange = Math.round(K * multiplier * (awayActual - awayExpected));
+    
     return {
-        homeChange: result.homeTeam.change,
-        awayChange: result.awayTeam.change
+        homeChange: homeChange,
+        awayChange: awayChange
     };
 }
 
