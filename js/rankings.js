@@ -36,13 +36,45 @@ function recalculateEloRatings() {
     }
     
     const season = selectedSeason || getCurrentSeason();
-    const teams = getTeamsBySeason(season); // Utiliser vos équipes de la saison
-    const matches = getMatchesBySeason(season); // Utiliser vos matchs de la saison
+    const teams = getTeamsBySeason(season);
+    const matches = getMatchesBySeason(season);
+    
+    // AJOUTER CE DEBUG
+    console.log('=== ANALYSE DES MATCHS ===');
+    console.log('Total matchs dans la saison:', matches.length);
+    
+    // Grouper par journée
+    const matchesByDay = {};
+    matches.forEach(match => {
+        const day = match.matchDay || 'sans journée';
+        if (!matchesByDay[day]) matchesByDay[day] = [];
+        matchesByDay[day].push(match);
+    });
+    
+    console.log('Répartition par journée:');
+    Object.keys(matchesByDay).sort().forEach(day => {
+        console.log(`  Journée ${day}: ${matchesByDay[day].length} matchs`);
+    });
+    
+    // Compter les matchs par équipe
+    const matchCountByTeam = {};
+    matches.forEach(match => {
+        const homeId = match.homeTeamId;
+        const awayId = match.awayTeamId;
+        matchCountByTeam[homeId] = (matchCountByTeam[homeId] || 0) + 1;
+        matchCountByTeam[awayId] = (matchCountByTeam[awayId] || 0) + 1;
+    });
+    
+    console.log('Matchs par équipe:');
+    teams.forEach(team => {
+        const count = matchCountByTeam[team.id] || 0;
+        console.log(`  ${team.shortName}: ${count} matchs`);
+    });
+    console.log('========================');
     
     teamsWithElo = EloSystem.recalculateAllEloRatings(teams, matches);
     
     console.log('✅ Ratings Elo recalculés pour', teamsWithElo.length, 'équipes');
-    console.log('Exemple:', teamsWithElo[0]?.name, '=', teamsWithElo[0]?.eloRating);
 }
 
 // Configurer le sélecteur de journée
@@ -329,6 +361,7 @@ function displayEloRanking() {
     tableBody.innerHTML = '';
     
     filteredEloRanking.forEach((team, index) => {
+        console.log(`${team.shortName}: ${team.eloHistory?.length || 0} matchs dans l'historique`);
         const row = createEloRankingRow(team, index + 1);
         tableBody.appendChild(row);
     });
@@ -358,13 +391,23 @@ function createEloRankingRow(team, position) {
     
     const changeClass = eloChange >= 0 ? 'positive' : 'negative';
     const changeSymbol = eloChange > 0 ? '+' : '';
+    let matchesPlayed = 0;
+    if (team.eloHistory) {
+        if (currentMatchDay) {
+            // Compter seulement les matchs jusqu'à la journée sélectionnée
+            matchesPlayed = team.eloHistory.filter(h => h.matchDay <= currentMatchDay).length;
+        } else {
+            // Compter tous les matchs
+            matchesPlayed = team.eloHistory.length;
+        }
+    }
     
     row.innerHTML = `
         <td class="position">${position}</td>
         <td class="team-name">${team.shortName}</td>
         <td class="elo-rating">${eloRating}</td>
         <td class="${changeClass}">${changeSymbol}${eloChange}</td>
-        <td>${team.eloHistory ? team.eloHistory.length : 0}</td>
+        <td>${matchesPlayed}</td>  <!-- ← C'est ici le problème -->
     `;
     
     const stats = EloSystem.getTeamEloStats(team);

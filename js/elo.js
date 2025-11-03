@@ -118,7 +118,7 @@ function recalculateAllEloRatings(teams, matches) {
     const updatedTeams = teams.map(team => ({
         ...team,
         eloRating: ELO_CONFIG.INITIAL_RATING,
-        eloHistory: [{ matchDay: 0, rating: ELO_CONFIG.INITIAL_RATING }]
+        eloHistory: []
     }));
     
     // Trier les matchs par journée puis par date

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistiques - Football Elo</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/statistics.css">
+</head>
+<body>
+    <header>
+        <h1>⚽ Football Elo</h1>
+        <p>Statistiques détaillées</p>
+    </header>
+
+    <nav>
+        <div class="nav-container">
+            <a href="../index.html" class="nav-btn">🏠 Accueil</a>
+            <a href="../pages/add-match.html" class="nav-btn">➕ Ajouter un match</a>
+            <a href="../pages/matches.html" class="nav-btn">📋 Historique</a>
+            <a href="../pages/results-table.html" class="nav-btn">📊 Tableau</a>
+            <a href="../pages/rankings.html" class="nav-btn">🏆 Classements</a>
+            <a href="../pages/statistics.html" class="nav-btn active">📈 Stats</a>
+            <a href="../pages/archives.html" class="nav-btn">📚 Archives</a>
+            <a href="../pages/admin/teams-manager.html" class="nav-btn">⚙️ Admin</a>
+        </div>
+    </nav>
+
+    <main>
+        <div class="stats-container">
+            
+            <!-- Sélecteur de saison -->
+            <div class="stats-header">
+                <h2>📈 Statistiques de la saison</h2>
+                <div class="season-selector">
+                    <label for="seasonSelect">Saison :</label>
+                    <select id="seasonSelect">
+                        <option value="">Chargement...</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Top 10 Buteurs -->
+            <section class="stat-section">
+                <h3>⚽ Top 10 Buteurs</h3>
+                <div class="scorers-table-wrapper">
+                    <table id="topScorersTable" class="stats-table">
+                        <thead>
+                            <tr>
+                                <th>Rang</th>
+                                <th>Joueur</th>
+                                <th>Équipe</th>
+                                <th>Buts</th>
+                                <th>Buts/Match</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Données dynamiques -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Analyse temporelle des buts -->
+            <section class="stat-section">
+                <h3>⏰ Analyse temporelle des buts</h3>
+                
+                <div class="time-analysis-controls">
+                    <div class="control-group">
+                        <label for="teamSelect">Équipe :</label>
+                        <select id="teamSelect">
+                            <option value="all">Toutes les équipes</option>
+                        </select>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="timeSliceSelect">Tranches de temps :</label>
+                        <select id="timeSliceSelect">
+                            <option value="5">5 minutes (1-5, 6-10, ...)</option>
+                            <option value="15">15 minutes (1-15, 16-30, ...)</option>
+                            <option value="half" selected>Par mi-temps</option>
+                        </select>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>
+                            <input type="checkbox" id="showExtraTime" checked>
+                            Inclure temps additionnel
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Buts marqués -->
+                <div class="time-chart-container">
+                    <h4>🎯 Buts marqués</h4>
+                    <div id="goalsForChart" class="chart">
+                        <!-- Graphique généré dynamiquement -->
+                    </div>
+                    <div id="goalsForSummary" class="chart-summary"></div>
+                </div>
+
+                <!-- Buts encaissés -->
+                <div class="time-chart-container">
+                    <h4>🛡️ Buts encaissés</h4>
+                    <div id="goalsAgainstChart" class="chart">
+                        <!-- Graphique généré dynamiquement -->
+                    </div>
+                    <div id="goalsAgainstSummary" class="chart-summary"></div>
+                </div>
+
+                <!-- Analyse comparative -->
+                <div class="time-chart-container">
+                    <h4>⚖️ Comparaison Buts pour/contre</h4>
+                    <div id="comparisonChart" class="chart comparison-chart">
+                        <!-- Graphique comparatif -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Minutes exactes des buts -->
+            <section class="stat-section">
+                <h3>📋 Détail minute par minute</h3>
+                <div class="minutes-detail-container">
+                    <div class="minutes-column">
+                        <h4>⚽ Buts marqués</h4>
+                        <div id="minutesForList" class="minutes-list"></div>
+                    </div>
+                    <div class="minutes-column">
+                        <h4>🛡️ Buts encaissés</h4>
+                        <div id="minutesAgainstList" class="minutes-list"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Statistiques supplémentaires -->
+            <section class="stat-section">
+                <h3>📊 Statistiques générales</h3>
+                <div class="general-stats-grid">
+                    <div class="stat-card">
+                        <span class="stat-value" id="totalGoals">0</span>
+                        <span class="stat-label">Total buts</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="avgGoalsPerMatch">0</span>
+                        <span class="stat-label">Moy. buts/match</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="mostScoringMinute">-</span>
+                        <span class="stat-label">Minute la plus prolifique</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="leastScoringMinute">-</span>
+                        <span class="stat-label">Minute la moins prolifique</span>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Football Elo - Statistiques</p>
+    </footer>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <!-- Configuration Firebase -->
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/firebase-service.js"></script>
+
+    <!-- Scripts -->
+    <script src="../js/seasons.js"></script>
+    <script src="../js/teams-loader.js"></script>
+    <script src="../js/storage.js"></script>
+    <script src="../js/statistics.js"></script>
+</body>
+</html>
