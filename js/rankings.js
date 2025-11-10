@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     displayRanking();
     updateChampionshipStats();
+    initializeH2HSelectors();
 });
 
 // Charger les données nécessaires

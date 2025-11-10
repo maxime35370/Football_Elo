@@ -134,6 +134,32 @@
                     </div>
                 </div>
 
+                <div class="ranking-section">
+                    <h3>🔄 Résultats face à une équipe</h3>
+                    
+                    <div class="controls-container">
+                        <div class="control-group">
+                            <label for="h2hTeamSelect">Équipe sélectionnée :</label>
+                            <select id="h2hTeamSelect">
+                                <option value="">Choisir une équipe...</option>
+                            </select>
+                        </div>
+                        
+                        <div class="control-group">
+                            <label for="h2hMatchdaySelect">Journée :</label>
+                            <select id="h2hMatchdaySelect">
+                                <option value="all">Toutes les journées</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="table-wrapper">
+                        <div id="h2hTableContainer">
+                            <p class="info-message">Sélectionnez une équipe pour voir ses résultats face aux autres équipes</p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Statistiques du championnat -->
                 <div class="championship-stats">
                     <h3>📈 Statistiques du championnat</h3>
@@ -178,5 +204,6 @@
         <script src="../js/app.js"></script>
         <script src="../js/elo.js"></script>
         <script src="../js/rankings.js"></script>
+        <script src="../js/head-to-head.js"></script>
     </body>
 </html>

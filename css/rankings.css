@@ -251,6 +251,159 @@
 .ranking-table .no-change {
     color: #95a5a6;
 }
+/* === SECTION HEAD TO HEAD === */
+.ranking-section h3 {
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+    text-align: center;
+}
+
+/* === CONTRÔLES H2H === */
+.controls-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 2rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 10px;
+    flex-wrap: wrap;
+}
+
+.control-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.control-group label {
+    color: #2c3e50;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.control-group select {
+    padding: 0.5rem 1rem;
+    border: 2px solid #e9ecef;
+    border-radius: 5px;
+    font-size: 1rem;
+    color: #2c3e50;
+    background: white;
+    min-width: 200px;
+    cursor: pointer;
+    transition: border-color 0.3s ease;
+}
+
+.control-group select:focus {
+    outline: none;
+    border-color: #3498db;
+}
+
+.control-group select:hover {
+    border-color: #bdc3c7;
+}
+
+/* === TABLE HEAD TO HEAD === */
+.table-container {
+    overflow-x: auto;
+}
+
+.h2h-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+    background: white;
+}
+
+.h2h-table th,
+.h2h-table td {
+    padding: 1rem 0.5rem;
+    text-align: center;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.h2h-table th {
+    background: linear-gradient(135deg, #2c3e50, #34495e);
+    color: white;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.h2h-table tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+.h2h-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.h2h-table tbody tr:nth-child(even) {
+    background-color: #fafbfc;
+}
+
+.h2h-table .rank-column {
+    width: 60px;
+    font-weight: bold;
+    color: #7f8c8d;
+}
+
+.h2h-table .team-column {
+    text-align: left;
+    font-weight: 600;
+    padding-left: 1rem;
+    color: #2c3e50;
+}
+
+.h2h-table .result-cell {
+    font-weight: 700;
+    font-size: 0.95rem;
+    min-width: 80px;
+}
+
+/* Couleurs pastels claires pour les résultats */
+.h2h-table .result-win {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.h2h-table .result-draw {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.h2h-table .result-loss {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.h2h-table .result-none {
+    background-color: #f8f9fa;
+    color: transparent;
+}
+
+.h2h-table .result-selected {
+    background-color: #e7f3ff;
+    font-style: italic;
+    color: #6c757d;
+}
+
+/* Info message */
+.info-message {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: #7f8c8d;
+    font-style: italic;
+    font-size: 1.1rem;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 10px;
+}
 
 /* Responsive */
 @media (max-width: 768px) {
@@ -279,3 +432,4 @@
         font-size: 1.5rem;
     }
 }
+

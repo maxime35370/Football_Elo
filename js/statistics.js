@@ -643,24 +643,53 @@ function displayComparisonChart(goalsFor, goalsAgainst, sliceSize) {
 // === STATISTIQUES GÉNÉRALES ===
 
 function updateGeneralStats() {
+    // Collecter tous les buts avec leurs informations complètes
     let allGoals = [];
-    
+
     allMatches.forEach(match => {
         if (match.goals && match.goals.length > 0) {
             match.goals.forEach(goal => {
-                allGoals.push(parseInt(goal.minute));
+                const minute = parseFloat(goal.minute);
+                const extraTime = goal.extraTime || 0;
+                
+                allGoals.push({
+                    minute: minute,
+                    extraTime: extraTime
+                });
             });
         }
     });
-    
+
     const totalGoals = allGoals.length;
     const totalMatches = allMatches.length;
     const avgGoalsPerMatch = totalMatches > 0 ? (totalGoals / totalMatches).toFixed(2) : 0;
-    
+
+    // Trouver la minute la plus prolifique avec gestion des temps additionnels
     const minuteCounts = {};
-    allGoals.forEach(minute => {
-        const roundedMinute = Math.floor(minute);
-        minuteCounts[roundedMinute] = (minuteCounts[roundedMinute] || 0) + 1;
+
+    allGoals.forEach(goal => {
+        let key;
+        
+        // Gestion spéciale pour les temps additionnels
+        if (goal.extraTime > 0) {
+            // Pour 45+1, 45+2, etc. on crée des clés séparées
+            if (goal.minute === 45) {
+                key = `45+${goal.extraTime}`;
+            } 
+            // Pour 90+1, 90+2, etc. on crée des clés séparées
+            else if (goal.minute === 90) {
+                key = `90+${goal.extraTime}`;
+            }
+            // Autres cas (peu probable mais au cas où)
+            else {
+                key = `${goal.minute}+${goal.extraTime}`;
+            }
+        } else {
+            // Minute normale sans temps additionnel
+            key = `${Math.floor(goal.minute)}`;
+        }
+        
+        minuteCounts[key] = (minuteCounts[key] || 0) + 1;
     });
     
     let mostScoringMinute = '-';
