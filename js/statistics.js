@@ -26,6 +26,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (showExtraTime) {
         showExtraTime.addEventListener('change', updateTimeAnalysis);
     }
+    // Initialiser le graphique de performance (ajouter cette ligne)
+    initPerformanceChart();
 });
 
 // === GESTION DES SAISONS ===
@@ -702,4 +704,450 @@ function updateGeneralStats() {
     document.getElementById('totalGoals').textContent = totalGoals;
     document.getElementById('avgGoalsPerMatch').textContent = avgGoalsPerMatch;
     document.getElementById('mostScoringMinute').textContent = mostScoringMinute;
+}
+
+
+// === GRAPHIQUE PERFORMANCE OFFENSIVE VS DÉFENSIVE ===
+
+let performanceChart = null;
+let selectedTeams = []; // Équipes sélectionnées
+
+// Initialiser le graphique de performance
+function initPerformanceChart() {
+    const matchdaySelect = document.getElementById('performanceMatchday');
+    const teamFilter = document.getElementById('performanceTeamFilter');
+    const selectAllBtn = document.getElementById('selectAllTeams');
+    const clearAllBtn = document.getElementById('clearAllTeams');
+    const showAverageLineCheckbox = document.getElementById('showAverageLine');
+    
+    if (!matchdaySelect || !teamFilter) return;
+    
+    // Remplir le sélecteur de journées
+    const maxMatchday = Math.max(...allMatches.map(m => m.matchDay || 0));
+    matchdaySelect.innerHTML = '<option value="all">Toute la saison</option>';
+    for (let i = 1; i <= maxMatchday; i++) {
+        const option = document.createElement('option');
+        option.value = i;
+        option.textContent = `Journée ${i}`;
+        matchdaySelect.appendChild(option);
+    }
+    
+    // Remplir le sélecteur d'équipes
+    teamFilter.innerHTML = '';
+    allTeams.forEach(team => {
+        const option = document.createElement('option');
+        option.value = team.id;
+        option.textContent = team.name;
+        option.selected = true; // Toutes sélectionnées par défaut
+        teamFilter.appendChild(option);
+    });
+    
+    // Initialiser la liste des équipes sélectionnées
+    updateSelectedTeams();
+    
+    // Événements
+    matchdaySelect.addEventListener('change', updatePerformanceChart);
+    teamFilter.addEventListener('change', () => {
+        updateSelectedTeams();
+        updatePerformanceChart();
+    });
+    
+    selectAllBtn.addEventListener('click', () => {
+        Array.from(teamFilter.options).forEach(option => option.selected = true);
+        updateSelectedTeams();
+        updatePerformanceChart();
+    });
+    
+    clearAllBtn.addEventListener('click', () => {
+        Array.from(teamFilter.options).forEach(option => option.selected = false);
+        updateSelectedTeams();
+        updatePerformanceChart();
+    });
+    
+    showAverageLineCheckbox.addEventListener('change', updatePerformanceChart);
+    
+    // Afficher le graphique initial
+    updatePerformanceChart();
+}
+
+// Mettre à jour la liste des équipes sélectionnées
+function updateSelectedTeams() {
+    const teamFilter = document.getElementById('performanceTeamFilter');
+    selectedTeams = Array.from(teamFilter.selectedOptions).map(option => parseInt(option.value));
+}
+
+// Mettre à jour le graphique de performance
+function updatePerformanceChart() {
+    const matchdaySelect = document.getElementById('performanceMatchday');
+    const showAverageLine = document.getElementById('showAverageLine').checked;
+    const selectedMatchday = matchdaySelect.value;
+    
+    if (selectedTeams.length === 0) {
+        // Afficher un message si aucune équipe n'est sélectionnée
+        if (performanceChart) {
+            performanceChart.destroy();
+            performanceChart = null;
+        }
+        return;
+    }
+    
+    // Filtrer les matchs
+    let filteredMatches = allMatches;
+    if (selectedMatchday !== 'all') {
+        const matchday = parseInt(selectedMatchday);
+        filteredMatches = allMatches.filter(m => m.matchDay <= matchday);
+    }
+    
+    // Calculer les données pour chaque équipe
+    const teamData = calculateTeamPerformanceData(filteredMatches);
+    
+    // Créer le graphique
+    renderPerformanceChart(teamData, selectedMatchday, showAverageLine);
+}
+
+// Calculer les données de performance pour chaque équipe
+function calculateTeamPerformanceData(matches) {
+    const teamStats = {};
+    
+    // Initialiser les stats pour chaque équipe
+    allTeams.forEach(team => {
+        teamStats[team.id] = {
+            id: team.id,
+            name: team.shortName,
+            matchesPlayed: 0,
+            goalsScored: 0,
+            goalsConceded: 0,
+            byMatchday: {}, // Stats par journée
+            cumulativeAvg: [] // Moyennes cumulatives par journée
+        };
+    });
+    
+    // Calculer les stats par journée
+    matches.forEach(match => {
+        const matchDay = match.matchDay;
+        const homeId = match.homeTeamId;
+        const awayId = match.awayTeamId;
+        const homeScore = match.finalScore.home;
+        const awayScore = match.finalScore.away;
+        
+        if (!teamStats[homeId] || !teamStats[awayId]) return;
+        
+        // Stats globales
+        teamStats[homeId].matchesPlayed++;
+        teamStats[homeId].goalsScored += homeScore;
+        teamStats[homeId].goalsConceded += awayScore;
+        
+        teamStats[awayId].matchesPlayed++;
+        teamStats[awayId].goalsScored += awayScore;
+        teamStats[awayId].goalsConceded += homeScore;
+        
+        // Stats par journée
+        if (!teamStats[homeId].byMatchday[matchDay]) {
+            teamStats[homeId].byMatchday[matchDay] = { scored: 0, conceded: 0, matches: 0 };
+        }
+        if (!teamStats[awayId].byMatchday[matchDay]) {
+            teamStats[awayId].byMatchday[matchDay] = { scored: 0, conceded: 0, matches: 0 };
+        }
+        
+        teamStats[homeId].byMatchday[matchDay].scored += homeScore;
+        teamStats[homeId].byMatchday[matchDay].conceded += awayScore;
+        teamStats[homeId].byMatchday[matchDay].matches++;
+        
+        teamStats[awayId].byMatchday[matchDay].scored += awayScore;
+        teamStats[awayId].byMatchday[matchDay].conceded += homeScore;
+        teamStats[awayId].byMatchday[matchDay].matches++;
+    });
+    
+    // Calculer les moyennes par match et les moyennes cumulatives
+    Object.keys(teamStats).forEach(teamId => {
+        const stats = teamStats[teamId];
+        
+        if (stats.matchesPlayed > 0) {
+            stats.avgScored = stats.goalsScored / stats.matchesPlayed;
+            stats.avgConceded = stats.goalsConceded / stats.matchesPlayed;
+        } else {
+            stats.avgScored = 0;
+            stats.avgConceded = 0;
+        }
+        
+        // Calculer les moyennes cumulatives par journée
+        let cumulativeScored = 0;
+        let cumulativeConceded = 0;
+        let cumulativeMatches = 0;
+        
+        const matchdays = Object.keys(stats.byMatchday).map(Number).sort((a, b) => a - b);
+        
+        matchdays.forEach(day => {
+            const dayStats = stats.byMatchday[day];
+            cumulativeScored += dayStats.scored;
+            cumulativeConceded += dayStats.conceded;
+            cumulativeMatches += dayStats.matches;
+            
+            stats.cumulativeAvg.push({
+                matchday: day,
+                avgScored: cumulativeScored / cumulativeMatches,
+                avgConceded: cumulativeConceded / cumulativeMatches
+            });
+        });
+    });
+    
+    return teamStats;
+}
+
+// Générer des couleurs distinctes pour chaque équipe
+function getTeamColor(teamId) {
+    const colors = {
+        1: '#e74c3c',   2: '#3498db',   3: '#2ecc71',   4: '#f39c12',
+        5: '#9b59b6',   6: '#1abc9c',   7: '#e67e22',   8: '#34495e',
+        9: '#16a085',   10: '#c0392b',  11: '#27ae60',  12: '#2980b9',
+        13: '#8e44ad',  14: '#f1c40f',  15: '#d35400',  16: '#2c3e50',
+        17: '#7f8c8d',  18: '#95a5a6'
+    };
+    return colors[teamId] || '#95a5a6';
+}
+
+// Afficher le graphique
+function renderPerformanceChart(teamData, selectedMatchday, showAverageLine) {
+    const ctx = document.getElementById('performanceChart');
+    if (!ctx) return;
+    
+    // Détruire le graphique existant
+    if (performanceChart) {
+        performanceChart.destroy();
+    }
+    
+    // Calculer la moyenne globale
+    const filteredTeamData = Object.values(teamData).filter(t => selectedTeams.includes(t.id) && t.matchesPlayed > 0);
+    
+    const allAvgScored = filteredTeamData.map(t => t.avgScored);
+    const allAvgConceded = filteredTeamData.map(t => t.avgConceded);
+    
+    const globalAvgScored = allAvgScored.reduce((a, b) => a + b, 0) / allAvgScored.length;
+    const globalAvgConceded = allAvgConceded.reduce((a, b) => a + b, 0) / allAvgConceded.length;
+    
+    // Préparer les datasets
+    const datasets = [];
+    
+    filteredTeamData.forEach((team) => {
+        const color = getTeamColor(team.id);
+        
+        if (selectedMatchday === 'all') {
+            // Mode "Toute la saison"
+            
+            // Dataset 1 : Ligne d'évolution de la moyenne cumulative
+            if (showAverageLine && team.cumulativeAvg.length > 0) {
+                datasets.push({
+                    label: `${team.name} - Évolution`,
+                    data: team.cumulativeAvg.map(avg => ({
+                        x: avg.avgScored,
+                        y: avg.avgConceded,
+                        label: `${team.name} (J${avg.matchday})`
+                    })),
+                    backgroundColor: 'transparent',
+                    borderColor: color,
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    pointHoverRadius: 0,
+                    showLine: true,
+                    tension: 0.3,
+                    order: 2
+                });
+            }
+            
+            // Dataset 2 : Gros point final (moyenne de la saison)
+            datasets.push({
+                label: team.name,
+                data: [{
+                    x: team.avgScored,
+                    y: team.avgConceded,
+                    label: team.name
+                }],
+                backgroundColor: color,
+                borderColor: color,
+                borderWidth: 3,
+                pointRadius: 10,
+                pointHoverRadius: 12,
+                showLine: false,
+                order: 1
+            });
+            
+        } else {
+            // Mode "Jusqu'à la journée X"
+            const matchday = parseInt(selectedMatchday);
+            const pointsByMatchday = [];
+            
+            // Petits points par journée
+            for (let day = 1; day <= matchday; day++) {
+                const dayStats = team.byMatchday[day];
+                if (dayStats && dayStats.matches > 0) {
+                    pointsByMatchday.push({
+                        x: dayStats.scored / dayStats.matches,
+                        y: dayStats.conceded / dayStats.matches,
+                        label: `${team.name} (J${day})`,
+                        isAverage: false
+                    });
+                }
+            }
+            
+            // Ligne d'évolution de la moyenne cumulative
+            if (showAverageLine && team.cumulativeAvg.length > 0) {
+                const cumulativeData = team.cumulativeAvg
+                    .filter(avg => avg.matchday <= matchday)
+                    .map(avg => ({
+                        x: avg.avgScored,
+                        y: avg.avgConceded,
+                        label: `${team.name} Moy (J${avg.matchday})`
+                    }));
+                
+                datasets.push({
+                    label: `${team.name} - Évolution moyenne`,
+                    data: cumulativeData,
+                    backgroundColor: 'transparent',
+                    borderColor: color,
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    pointRadius: 0,
+                    pointHoverRadius: 0,
+                    showLine: true,
+                    tension: 0.3,
+                    order: 3
+                });
+            }
+            
+            // Points par journée
+            datasets.push({
+                label: `${team.name} - Par journée`,
+                data: pointsByMatchday,
+                backgroundColor: color,
+                borderColor: color,
+                borderWidth: 2,
+                pointRadius: 5,
+                pointHoverRadius: 7,
+                showLine: false,
+                order: 2
+            });
+            
+            // Gros point moyen final
+            datasets.push({
+                label: `${team.name} - Moyenne`,
+                data: [{
+                    x: team.avgScored,
+                    y: team.avgConceded,
+                    label: `${team.name} (Moy)`,
+                    isAverage: true
+                }],
+                backgroundColor: color,
+                borderColor: color,
+                borderWidth: 3,
+                pointRadius: 10,
+                pointHoverRadius: 12,
+                showLine: false,
+                order: 1
+            });
+        }
+    });
+    
+    // Créer le graphique
+    performanceChart = new Chart(ctx, {
+        type: 'scatter',
+        data: { datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const point = context.raw;
+                            if (!point.label) return '';
+                            return [
+                                point.label,
+                                `Buts marqués: ${point.x.toFixed(2)}/match`,
+                                `Buts encaissés: ${point.y.toFixed(2)}/match`
+                            ];
+                        }
+                    }
+                },
+                datalabels: {
+                    display: function(context) {
+                        // Afficher les labels seulement pour les gros points
+                        const dataset = context.dataset;
+                        return dataset.label && !dataset.label.includes('Évolution') && !dataset.label.includes('Par journée');
+                    },
+                    formatter: function(value, context) {
+                        if (!value.label) return '';
+                        return value.label.split(' ')[0]; // Nom court
+                    },
+                    anchor: 'end',
+                    align: 'top',
+                    offset: 4,
+                    font: {
+                        size: 11,
+                        weight: 'bold'
+                    },
+                    color: function(context) {
+                        return context.dataset.borderColor;
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    type: 'linear',
+                    position: 'bottom',
+                    title: {
+                        display: true,
+                        text: 'Buts marqués par match →',
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        }
+                    },
+                    grid: {
+                        color: function(context) {
+                            if (Math.abs(context.tick.value - globalAvgScored) < 0.01) {
+                                return 'rgba(0, 0, 0, 0.3)';
+                            }
+                            return 'rgba(0, 0, 0, 0.05)';
+                        },
+                        lineWidth: function(context) {
+                            if (Math.abs(context.tick.value - globalAvgScored) < 0.01) {
+                                return 2;
+                            }
+                            return 1;
+                        }
+                    }
+                },
+                y: {
+                    type: 'linear',
+                    reverse: true,
+                    title: {
+                        display: true,
+                        text: '← Buts encaissés par match (inversé : haut = moins)',
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        }
+                    },
+                    grid: {
+                        color: function(context) {
+                            if (Math.abs(context.tick.value - globalAvgConceded) < 0.01) {
+                                return 'rgba(0, 0, 0, 0.3)';
+                            }
+                            return 'rgba(0, 0, 0, 0.05)';
+                        },
+                        lineWidth: function(context) {
+                            if (Math.abs(context.tick.value - globalAvgConceded) < 0.01) {
+                                return 2;
+                            }
+                            return 1;
+                        }
+                    }
+                }
+            }
+        },
+        plugins: [ChartDataLabels]
+    });
 }

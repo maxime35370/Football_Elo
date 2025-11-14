@@ -6,6 +6,8 @@
     <title>Statistiques - Football Elo</title>
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/statistics.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 </head>
 <body>
     <header>
@@ -146,6 +148,72 @@
                     <div class="stat-card">
                         <span class="stat-value" id="mostScoringMinute">-</span>
                         <span class="stat-label">Minute la plus prolifique</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Graphique de performance offensive/défensive -->
+            <section class="stat-section">
+                <h3>🎯 Analyse Offensive vs Défensive</h3>
+                <p style="text-align: center; color: #7f8c8d; margin-bottom: 1.5rem;">
+                    Position des équipes selon leurs performances offensives (buts marqués) et défensives (buts encaissés) par rapport à la moyenne
+                </p>
+                
+                <div class="chart-controls" style="display: flex; justify-content: center; align-items: center; gap: 2rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <label for="performanceMatchday" style="font-weight: 600;">
+                            📅 Journée :
+                        </label>
+                        <select id="performanceMatchday" style="padding: 0.5rem 1rem; border: 2px solid #e9ecef; border-radius: 5px; font-size: 1rem;">
+                            <option value="all">Toute la saison</option>
+                        </select>
+                    </div>
+                    
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <label for="performanceTeamFilter" style="font-weight: 600;">
+                            ⚽ Équipes à afficher :
+                        </label>
+                        <select id="performanceTeamFilter" multiple size="5" style="padding: 0.5rem; border: 2px solid #e9ecef; border-radius: 5px; font-size: 0.9rem; min-width: 200px;">
+                            <!-- Options ajoutées dynamiquement -->
+                        </select>
+                    </div>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <button id="selectAllTeams" class="btn" style="padding: 0.4rem 1rem; font-size: 0.9rem;">✅ Tout sélectionner</button>
+                        <button id="clearAllTeams" class="btn" style="padding: 0.4rem 1rem; font-size: 0.9rem;">❌ Tout désélectionner</button>
+                    </div>
+                    
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <label style="font-weight: 600;">
+                            <input type="checkbox" id="showAverageLine" checked>
+                            📈 Afficher ligne d'évolution moyenne
+                        </label>
+                    </div>
+                </div>
+                
+                <div style="position: relative; height: 600px; background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <canvas id="performanceChart"></canvas>
+                </div>
+                
+                <div class="chart-legend" style="margin-top: 1.5rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                    <h4 style="margin-bottom: 0.5rem; color: #2c3e50;">📖 Légende des quadrants :</h4>
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 1rem;">
+                        <div style="padding: 0.75rem; background: rgba(46, 204, 113, 0.1); border-left: 4px solid #2ecc71; border-radius: 5px;">
+                            <strong style="color: #27ae60;">🟢 Haut Droite</strong>
+                            <p style="margin: 0.25rem 0 0 0; font-size: 0.9rem; color: #5a6c7d;">Marque beaucoup + Encaisse peu = Équipes dominantes</p>
+                        </div>
+                        <div style="padding: 0.75rem; background: rgba(52, 152, 219, 0.1); border-left: 4px solid #3498db; border-radius: 5px;">
+                            <strong style="color: #2980b9;">🔵 Haut Gauche</strong>
+                            <p style="margin: 0.25rem 0 0 0; font-size: 0.9rem; color: #5a6c7d;">Marque peu + Encaisse peu = Défense solide</p>
+                        </div>
+                        <div style="padding: 0.75rem; background: rgba(231, 76, 60, 0.1); border-left: 4px solid #e74c3c; border-radius: 5px;">
+                            <strong style="color: #c0392b;">🔴 Bas Droite</strong>
+                            <p style="margin: 0.25rem 0 0 0; font-size: 0.9rem; color: #5a6c7d;">Marque beaucoup + Encaisse beaucoup = Matchs spectaculaires</p>
+                        </div>
+                        <div style="padding: 0.75rem; background: rgba(241, 196, 15, 0.1); border-left: 4px solid #f1c40f; border-radius: 5px;">
+                            <strong style="color: #f39c12;">🟡 Bas Gauche</strong>
+                            <p style="margin: 0.25rem 0 0 0; font-size: 0.9rem; color: #5a6c7d;">Marque peu + Encaisse beaucoup = Équipes en difficulté</p>
+                        </div>
                     </div>
                 </div>
             </section>
