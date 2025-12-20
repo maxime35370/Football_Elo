@@ -3,6 +3,8 @@
 let currentMatchDay = null;
 let selectedSeason = null; // ← AJOUTER CETTE LIGNE
 let teamsWithElo = [];
+let halftimeMode = false;
+let fromMatchDay = null;
 
 // Initialisation de la page
 document.addEventListener('DOMContentLoaded', function() {
@@ -17,6 +19,12 @@ document.addEventListener('DOMContentLoaded', function() {
         displayEloRanking();
         displayComparison();
     }
+    // Mode mi-temps
+    document.getElementById('halftimeMode').addEventListener('change', function() {
+        halftimeMode = this.checked;
+        displayRanking();
+        updateChampionshipStats();
+    });
 
     displayRanking();
     updateChampionshipStats();
@@ -81,21 +89,26 @@ function recalculateEloRatings() {
 // Configurer le sélecteur de journée
 function setupMatchDaySelector() {
     const matchDaySelect = document.getElementById('matchDaySelect');
-    const season = selectedSeason || getCurrentSeason(); // ← AJOUTER
+    const fromMatchDaySelect = document.getElementById('fromMatchDaySelect');
+    const season = selectedSeason || getCurrentSeason();
     const lastMatchDay = getLastPlayedMatchDay(season);
+    const teams = getTeamsBySeason(season);
+    const maxMatchDay = (teams.length - 1) * 2;
     
-    // Vider le sélecteur
-    matchDaySelect.innerHTML = '<option value="">Classement actuel</option>';
-    
-    // Ajouter les journées jouées
-    for (let i = 1; i <= lastMatchDay; i++) {
-        const option = document.createElement('option');
-        option.value = i;
-        option.textContent = `Journée ${i}`;
-        matchDaySelect.appendChild(option);
+    // Sélecteur "jusqu'à"
+    matchDaySelect.innerHTML = '<option value="">Actuel</option>';
+    for (let i = 1; i <= maxMatchDay; i++) {
+        const played = i <= lastMatchDay ? ' ✓' : '';
+        matchDaySelect.innerHTML += `<option value="${i}">J${i}${played}</option>`;
     }
     
-    // Écouteur de changement
+    // Sélecteur "depuis"
+    fromMatchDaySelect.innerHTML = '<option value="">1</option>';
+    for (let i = 2; i <= maxMatchDay; i++) {
+        fromMatchDaySelect.innerHTML += `<option value="${i}">${i}</option>`;
+    }
+    
+    // Événement "jusqu'à"
     matchDaySelect.addEventListener('change', function() {
         currentMatchDay = this.value ? parseInt(this.value) : null;
         displayRanking();
@@ -103,8 +116,16 @@ function setupMatchDaySelector() {
             displayEloRanking();
             displayComparison();
         }
-
         updateMatchDayInfo();
+        updateChampionshipStats();
+    });
+    
+    // Événement "depuis"
+    fromMatchDaySelect.addEventListener('change', function() {
+        fromMatchDay = this.value ? parseInt(this.value) : null;
+        displayRanking();
+        updateMatchDayInfo();
+        updateChampionshipStats();
     });
     
     updateMatchDayInfo();
@@ -177,7 +198,7 @@ function updateMatchDayInfo() {
 // Afficher le classement
 function displayRanking() {
     const season = selectedSeason || getCurrentSeason();
-    const ranking = generateRanking(currentMatchDay, season);
+    const ranking = generateRanking(currentMatchDay, season, fromMatchDay, halftimeMode);
     const tableBody = document.querySelector('#traditionalRanking tbody');
     const noMatchesMessage = document.getElementById('noMatchesMessage');
     
@@ -186,6 +207,14 @@ function displayRanking() {
     const seasonTeamIds = seasonTeams.map(t => t.id);
     const filteredRanking = ranking.filter(team => seasonTeamIds.includes(team.id));
     
+    // Mettre à jour le titre selon le mode
+    const sectionTitle = document.querySelector('.ranking-section h3');
+    if (sectionTitle) {
+        sectionTitle.innerHTML = halftimeMode 
+            ? '⏱️ Classement à la mi-temps (45\')' 
+            : '📊 Classement traditionnel (points)';
+    }
+
     // Vérifier s'il y a des matchs - UTILISER filteredRanking
     if (filteredRanking.length === 0 || filteredRanking.every(team => team.played === 0)) {
         document.querySelector('.ranking-section').style.display = 'none';

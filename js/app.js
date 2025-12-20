@@ -3,6 +3,7 @@
 // Calculer les statistiques d'une équipe jusqu'à une journée donnée
 function calculateTeamStats(teamId, upToMatchDay, season) {
     season = season || getCurrentSeason();
+    fromMatchDay = fromMatchDay || 1;
     const matches = getStoredMatches().filter(m => m.season === season);
     const stats = {
         teamId: teamId,
@@ -19,6 +20,9 @@ function calculateTeamStats(teamId, upToMatchDay, season) {
     matches.forEach(match => {
         // Filtrer par journée si spécifié
         if (upToMatchDay && match.matchDay > upToMatchDay) {
+            return;
+        }
+        if (fromMatchDay && match.matchDay < fromMatchDay) {
             return;
         }
         
@@ -66,14 +70,94 @@ function calculateTeamStats(teamId, upToMatchDay, season) {
     return stats;
 }
 
+// Calculer les stats basées sur le score à la mi-temps
+function calculateTeamStatsHalftime(teamId, upToMatchDay, season, fromMatchDay) {
+    season = season || getCurrentSeason();
+    fromMatchDay = fromMatchDay || 1;
+    
+    const matches = getStoredMatches().filter(m => m.season === season);
+    const stats = {
+        teamId: teamId,
+        played: 0,
+        won: 0,
+        drawn: 0,
+        lost: 0,
+        goalsFor: 0,
+        goalsAgainst: 0,
+        goalDifference: 0,
+        points: 0
+    };
+    
+    matches.forEach(match => {
+        if (upToMatchDay && match.matchDay > upToMatchDay) return;
+        if (fromMatchDay && match.matchDay < fromMatchDay) return;
+        
+        const isHome = match.homeTeamId == teamId;
+        const isAway = match.awayTeamId == teamId;
+        
+        if (!isHome && !isAway) return;
+        
+        // Calculer le score mi-temps depuis les buts (minute <= 45 inclut 45+X)
+        let homeHT = 0, awayHT = 0;
+        
+        if (match.goals && match.goals.length > 0) {
+            match.goals.forEach(goal => {
+                const minute = parseInt(goal.minute);
+                if (minute <= 45) {
+                    if (goal.teamId == match.homeTeamId) {
+                        homeHT++;
+                    } else {
+                        awayHT++;
+                    }
+                }
+            });
+        }
+        
+        stats.played++;
+        
+        if (isHome) {
+            stats.goalsFor += homeHT;
+            stats.goalsAgainst += awayHT;
+            
+            if (homeHT > awayHT) {
+                stats.won++;
+                stats.points += 3;
+            } else if (homeHT === awayHT) {
+                stats.drawn++;
+                stats.points += 1;
+            } else {
+                stats.lost++;
+            }
+        } else {
+            stats.goalsFor += awayHT;
+            stats.goalsAgainst += homeHT;
+            
+            if (awayHT > homeHT) {
+                stats.won++;
+                stats.points += 3;
+            } else if (awayHT === homeHT) {
+                stats.drawn++;
+                stats.points += 1;
+            } else {
+                stats.lost++;
+            }
+        }
+    });
+    
+    stats.goalDifference = stats.goalsFor - stats.goalsAgainst;
+    return stats;
+}
+
 // Générer le classement complet jusqu'à une journée donnée
-function generateRanking(upToMatchDay, season) {
+function generateRanking(upToMatchDay, season, fromMatchDay, useHalftime) {
     season = season || getCurrentSeason();
     const teams = getStoredTeams();
     const ranking = [];
     
     teams.forEach(team => {
-        const stats = calculateTeamStats(team.id, upToMatchDay, season);
+        const stats = useHalftime 
+            ? calculateTeamStatsHalftime(team.id, upToMatchDay, season, fromMatchDay)
+            : calculateTeamStats(team.id, upToMatchDay, season, fromMatchDay);
         ranking.push({
             ...team,
             ...stats

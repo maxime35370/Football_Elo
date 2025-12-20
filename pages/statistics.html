@@ -42,182 +42,218 @@
                 </div>
             </div>
 
-            <!-- Top 10 Buteurs -->
-            <section class="stat-section">
-                <h3>⚽ Top 10 Buteurs</h3>
-                <div class="scorers-table-wrapper">
-                    <table id="topScorersTable" class="stats-table">
-                        <thead>
-                            <tr>
-                                <th>Rang</th>
-                                <th>Joueur</th>
-                                <th>Équipe</th>
-                                <th>Buts</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Données dynamiques -->
-                        </tbody>
-                    </table>
-                </div>
-            </section>
+            <!-- ========== STATS GÉNÉRALES (sans équipe) ========== -->
+            <div id="generalStatsWrapper">
+                <!-- Top 10 Buteurs -->
+                <section class="stat-section">
+                    <h3>⚽ Top 10 Buteurs</h3>
+                    <div class="scorers-table-wrapper">
+                        <table id="topScorersTable" class="stats-table">
+                            <thead>
+                                <tr>
+                                    <th>Rang</th>
+                                    <th>Joueur</th>
+                                    <th>Équipe</th>
+                                    <th>Buts</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Données dynamiques -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
 
-            <!-- Analyse temporelle des buts -->
-            <section class="stat-section">
-                <h3>⏰ Analyse temporelle des buts</h3>
-                
-                <div class="time-analysis-controls">
-                    <div class="control-group">
-                        <label for="teamSelect">Équipe :</label>
-                        <select id="teamSelect">
-                            <option value="all">Toutes les équipes</option>
-                        </select>
+                <!-- Statistiques supplémentaires -->
+                <section class="stat-section">
+                    <h3>📊 Statistiques générales</h3>
+                    <div class="general-stats-grid">
+                        <div class="stat-card">
+                            <span class="stat-value" id="totalGoals">0</span>
+                            <span class="stat-label">Total buts</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value" id="avgGoalsPerMatch">0</span>
+                            <span class="stat-label">Moy. buts/match</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value" id="mostScoringMinute">-</span>
+                            <span class="stat-label">Minute la plus prolifique</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Graphique de performance offensive/défensive -->
+                <section class="stat-section">
+                    <h3>🎯 Analyse Offensive vs Défensive</h3>
+                    <p style="text-align: center; color: #7f8c8d; margin-bottom: 1.5rem;">
+                        Position des équipes selon leurs performances offensives (buts marqués) et défensives (buts encaissés) par rapport à la moyenne
+                    </p>
+                    
+                    <div class="chart-controls" style="display: flex; justify-content: center; align-items: center; gap: 2rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <label for="performanceMatchday" style="font-weight: 600;">
+                                📅 Journée :
+                            </label>
+                            <select id="performanceMatchday" style="padding: 0.5rem 1rem; border: 2px solid #e9ecef; border-radius: 5px; font-size: 1rem;">
+                                <option value="all">Toute la saison</option>
+                            </select>
+                        </div>
+                        
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <label for="performanceTeamFilter" style="font-weight: 600;">
+                                ⚽ Équipes à afficher :
+                            </label>
+                            <select id="performanceTeamFilter" multiple size="5" style="padding: 0.5rem; border: 2px solid #e9ecef; border-radius: 5px; font-size: 0.9rem; min-width: 200px;">
+                                <!-- Options ajoutées dynamiquement -->
+                            </select>
+                        </div>
+                        
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                            <button id="selectAllTeams" class="btn" style="padding: 0.4rem 1rem; font-size: 0.9rem;">✅ Tout sélectionner</button>
+                            <button id="clearAllTeams" class="btn" style="padding: 0.4rem 1rem; font-size: 0.9rem;">❌ Tout désélectionner</button>
+                        </div>
+                        
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <label style="font-weight: 600;">
+                                <input type="checkbox" id="showAverageLine" checked>
+                                📈 Afficher ligne d'évolution moyenne
+                            </label>
+                        </div>
                     </div>
                     
-                    <div class="control-group">
-                        <label for="timeSliceSelect">Tranches de temps :</label>
-                        <select id="timeSliceSelect">
-                            <option value="5">5 minutes (1-5, 6-10, ...)</option>
-                            <option value="15">15 minutes (1-15, 16-30, ...)</option>
-                            <option value="half" selected>Par mi-temps</option>
-                        </select>
+                    <div style="position: relative; height: 600px; background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <canvas id="performanceChart"></canvas>
                     </div>
                     
-                    <div class="control-group">
-                        <label>
-                            <input type="checkbox" id="showExtraTime" checked>
-                            Inclure temps additionnel
-                        </label>
+                    <div class="chart-legend" style="margin-top: 1.5rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                        <h4 style="margin-bottom: 0.5rem; color: #2c3e50;">📖 Légende des quadrants :</h4>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 1rem;">
+                            <div style="padding: 0.75rem; background: rgba(46, 204, 113, 0.1); border-left: 4px solid #2ecc71; border-radius: 5px;">
+                                <strong style="color: #27ae60;">🟢 Haut Droite</strong>
+                                <p style="margin: 0.25rem 0 0 0; font-size: 0.9rem; color: #5a6c7d;">Marque beaucoup + Encaisse peu = Équipes dominantes</p>
+                            </div>
+                            <div style="padding: 0.75rem; background: rgba(52, 152, 219, 0.1); border-left: 4px solid #3498db; border-radius: 5px;">
+                                <strong style="color: #2980b9;">🔵 Haut Gauche</strong>
+                                <p style="margin: 0.25rem 0 0 0; font-size: 0.9rem; color: #5a6c7d;">Marque peu + Encaisse peu = Défense solide</p>
+                            </div>
+                            <div style="padding: 0.75rem; background: rgba(231, 76, 60, 0.1); border-left: 4px solid #e74c3c; border-radius: 5px;">
+                                <strong style="color: #c0392b;">🔴 Bas Droite</strong>
+                                <p style="margin: 0.25rem 0 0 0; font-size: 0.9rem; color: #5a6c7d;">Marque beaucoup + Encaisse beaucoup = Matchs spectaculaires</p>
+                            </div>
+                            <div style="padding: 0.75rem; background: rgba(241, 196, 15, 0.1); border-left: 4px solid #f1c40f; border-radius: 5px;">
+                                <strong style="color: #f39c12;">🟡 Bas Gauche</strong>
+                                <p style="margin: 0.25rem 0 0 0; font-size: 0.9rem; color: #5a6c7d;">Marque peu + Encaisse beaucoup = Équipes en difficulté</p>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                </section>
 
-                <!-- Buts marqués -->
-                <div class="time-chart-container">
-                    <h4>🎯 Buts marqués</h4>
-                    <div id="goalsForChart" class="chart">
-                        <!-- Graphique généré dynamiquement -->
+                <section class="stat-section">
+                    <h3>🎯 Distribution des scores</h3>
+                    <div id="scoreDistributionGeneral" class="score-distribution-grid">
+                        <!-- Généré dynamiquement -->
                     </div>
-                    <div id="goalsForSummary" class="chart-summary"></div>
-                </div>
+                </section>
+            </div>
 
-                <!-- Buts encaissés -->
-                <div class="time-chart-container">
-                    <h4>🛡️ Buts encaissés</h4>
-                    <div id="goalsAgainstChart" class="chart">
-                        <!-- Graphique généré dynamiquement -->
-                    </div>
-                    <div id="goalsAgainstSummary" class="chart-summary"></div>
-                </div>
+            <div id="teamStatsWrapper" style="display: none;"></div>
 
-                <!-- Analyse comparative -->
-                <div class="time-chart-container">
-                    <h4>⚖️ Comparaison Buts pour/contre</h4>
-                    <div id="comparisonChart" class="chart comparison-chart">
-                        <!-- Graphique comparatif -->
+                <!-- Buteurs de l'équipe sélectionnée -->
+                <section class="stat-section" id="teamScorersSection" style="display: none;">
+                    <h3>⚽ Buteurs de <span id="selectedTeamName"></span></h3>
+                    <div class="scorers-table-wrapper">
+                        <table id="teamScorersTable" class="stats-table">
+                            <thead>
+                                <tr>
+                                    <th>Rang</th>
+                                    <th>Joueur</th>
+                                    <th>Buts</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            <!-- Minutes exactes des buts -->
-            <section class="stat-section">
-                <h3>📋 Détail minute par minute</h3>
-                <div class="minutes-detail-container">
-                    <div class="minutes-column">
-                        <h4>⚽ Buts marqués</h4>
-                        <div id="minutesForList" class="minutes-list"></div>
+                <!-- Analyse temporelle des buts -->
+                <section class="stat-section">
+                    <h3>⏰ Analyse temporelle des buts</h3>
+                    
+                    <div class="time-analysis-controls">
+                        <div class="control-group">
+                            <label for="teamSelect">Équipe :</label>
+                            <select id="teamSelect">
+                                <option value="all">Toutes les équipes</option>
+                            </select>
+                        </div>
+                        
+                        <div class="control-group">
+                            <label for="timeSliceSelect">Tranches de temps :</label>
+                            <select id="timeSliceSelect">
+                                <option value="5">5 minutes (1-5, 6-10, ...)</option>
+                                <option value="15">15 minutes (1-15, 16-30, ...)</option>
+                                <option value="half" selected>Par mi-temps</option>
+                            </select>
+                        </div>
+                        
+                        <div class="control-group">
+                            <label>
+                                <input type="checkbox" id="showExtraTime" checked>
+                                Inclure temps additionnel
+                            </label>
+                        </div>
                     </div>
-                    <div class="minutes-column">
+
+                    <!-- Buts marqués -->
+                    <div class="time-chart-container">
+                        <h4>🎯 Buts marqués</h4>
+                        <div id="goalsForChart" class="chart">
+                            <!-- Graphique généré dynamiquement -->
+                        </div>
+                        <div id="goalsForSummary" class="chart-summary"></div>
+                    </div>
+
+                    <!-- Buts encaissés -->
+                    <div class="time-chart-container">
                         <h4>🛡️ Buts encaissés</h4>
-                        <div id="minutesAgainstList" class="minutes-list"></div>
+                        <div id="goalsAgainstChart" class="chart">
+                            <!-- Graphique généré dynamiquement -->
+                        </div>
+                        <div id="goalsAgainstSummary" class="chart-summary"></div>
                     </div>
-                </div>
-            </section>
 
-            <!-- Statistiques supplémentaires -->
-            <section class="stat-section">
-                <h3>📊 Statistiques générales</h3>
-                <div class="general-stats-grid">
-                    <div class="stat-card">
-                        <span class="stat-value" id="totalGoals">0</span>
-                        <span class="stat-label">Total buts</span>
+                    <!-- Analyse comparative -->
+                    <div class="time-chart-container">
+                        <h4>⚖️ Comparaison Buts pour/contre</h4>
+                        <div id="comparisonChart" class="chart comparison-chart">
+                            <!-- Graphique comparatif -->
+                        </div>
                     </div>
-                    <div class="stat-card">
-                        <span class="stat-value" id="avgGoalsPerMatch">0</span>
-                        <span class="stat-label">Moy. buts/match</span>
-                    </div>
-                    <div class="stat-card">
-                        <span class="stat-value" id="mostScoringMinute">-</span>
-                        <span class="stat-label">Minute la plus prolifique</span>
-                    </div>
-                </div>
-            </section>
+                </section>
 
-            <!-- Graphique de performance offensive/défensive -->
-            <section class="stat-section">
-                <h3>🎯 Analyse Offensive vs Défensive</h3>
-                <p style="text-align: center; color: #7f8c8d; margin-bottom: 1.5rem;">
-                    Position des équipes selon leurs performances offensives (buts marqués) et défensives (buts encaissés) par rapport à la moyenne
-                </p>
-                
-                <div class="chart-controls" style="display: flex; justify-content: center; align-items: center; gap: 2rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
-                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <label for="performanceMatchday" style="font-weight: 600;">
-                            📅 Journée :
-                        </label>
-                        <select id="performanceMatchday" style="padding: 0.5rem 1rem; border: 2px solid #e9ecef; border-radius: 5px; font-size: 1rem;">
-                            <option value="all">Toute la saison</option>
-                        </select>
-                    </div>
-                    
-                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <label for="performanceTeamFilter" style="font-weight: 600;">
-                            ⚽ Équipes à afficher :
-                        </label>
-                        <select id="performanceTeamFilter" multiple size="5" style="padding: 0.5rem; border: 2px solid #e9ecef; border-radius: 5px; font-size: 0.9rem; min-width: 200px;">
-                            <!-- Options ajoutées dynamiquement -->
-                        </select>
-                    </div>
-                    
-                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                        <button id="selectAllTeams" class="btn" style="padding: 0.4rem 1rem; font-size: 0.9rem;">✅ Tout sélectionner</button>
-                        <button id="clearAllTeams" class="btn" style="padding: 0.4rem 1rem; font-size: 0.9rem;">❌ Tout désélectionner</button>
-                    </div>
-                    
-                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <label style="font-weight: 600;">
-                            <input type="checkbox" id="showAverageLine" checked>
-                            📈 Afficher ligne d'évolution moyenne
-                        </label>
-                    </div>
-                </div>
-                
-                <div style="position: relative; height: 600px; background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                    <canvas id="performanceChart"></canvas>
-                </div>
-                
-                <div class="chart-legend" style="margin-top: 1.5rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
-                    <h4 style="margin-bottom: 0.5rem; color: #2c3e50;">📖 Légende des quadrants :</h4>
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 1rem;">
-                        <div style="padding: 0.75rem; background: rgba(46, 204, 113, 0.1); border-left: 4px solid #2ecc71; border-radius: 5px;">
-                            <strong style="color: #27ae60;">🟢 Haut Droite</strong>
-                            <p style="margin: 0.25rem 0 0 0; font-size: 0.9rem; color: #5a6c7d;">Marque beaucoup + Encaisse peu = Équipes dominantes</p>
+                <!-- Minutes exactes des buts -->
+                <section class="stat-section">
+                    <h3>📋 Détail minute par minute</h3>
+                    <div class="minutes-detail-container">
+                        <div class="minutes-column">
+                            <h4>⚽ Buts marqués</h4>
+                            <div id="minutesForList" class="minutes-list"></div>
                         </div>
-                        <div style="padding: 0.75rem; background: rgba(52, 152, 219, 0.1); border-left: 4px solid #3498db; border-radius: 5px;">
-                            <strong style="color: #2980b9;">🔵 Haut Gauche</strong>
-                            <p style="margin: 0.25rem 0 0 0; font-size: 0.9rem; color: #5a6c7d;">Marque peu + Encaisse peu = Défense solide</p>
-                        </div>
-                        <div style="padding: 0.75rem; background: rgba(231, 76, 60, 0.1); border-left: 4px solid #e74c3c; border-radius: 5px;">
-                            <strong style="color: #c0392b;">🔴 Bas Droite</strong>
-                            <p style="margin: 0.25rem 0 0 0; font-size: 0.9rem; color: #5a6c7d;">Marque beaucoup + Encaisse beaucoup = Matchs spectaculaires</p>
-                        </div>
-                        <div style="padding: 0.75rem; background: rgba(241, 196, 15, 0.1); border-left: 4px solid #f1c40f; border-radius: 5px;">
-                            <strong style="color: #f39c12;">🟡 Bas Gauche</strong>
-                            <p style="margin: 0.25rem 0 0 0; font-size: 0.9rem; color: #5a6c7d;">Marque peu + Encaisse beaucoup = Équipes en difficulté</p>
+                        <div class="minutes-column">
+                            <h4>🛡️ Buts encaissés</h4>
+                            <div id="minutesAgainstList" class="minutes-list"></div>
                         </div>
                     </div>
-                </div>
-            </section>
-
+                </section>
+                <!-- NOUVEAU : Distribution des scores de l'équipe -->
+                <section class="stat-section">
+                    <h3>🎯 Distribution des scores</h3>
+                    <div id="scoreDistributionTeam" class="score-distribution-grid">
+                        <!-- Généré dynamiquement -->
+                    </div>
+                </section>
+            </div>
         </div>
     </main>
 

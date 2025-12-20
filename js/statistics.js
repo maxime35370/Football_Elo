@@ -18,7 +18,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // Événements
     document.getElementById('seasonSelect').addEventListener('change', onSeasonChange);
-    document.getElementById('teamSelect').addEventListener('change', updateTimeAnalysis);
+    document.getElementById('teamSelect').addEventListener('change', function() {
+        toggleStatsView();
+    });
     document.getElementById('timeSliceSelect').addEventListener('change', updateTimeAnalysis);
     
     // Vérifier si les checkboxes existent avant d'ajouter les événements
@@ -117,6 +119,7 @@ async function loadSeasonData() {
     updateTopScorers();
     updateTimeAnalysis();
     updateGeneralStats();
+    toggleStatsView();
 }
 
 function showEmptyState() {
@@ -212,6 +215,192 @@ function populateTeamSelector() {
         allTeams.map(team => 
             `<option value="${team.id}">${team.shortName}</option>`
         ).join('');
+}
+
+// Afficher les buteurs de l'équipe sélectionnée
+function updateTeamScorers() {
+    const selectedTeamId = document.getElementById('teamSelect').value;
+    const section = document.getElementById('teamScorersSection');
+    
+    if (!section) return;
+    
+    if (selectedTeamId === 'all') {
+        section.style.display = 'none';
+        return;
+    }
+    
+    section.style.display = 'block';
+    
+    const team = allTeams.find(t => t.id == selectedTeamId);
+    document.getElementById('selectedTeamName').textContent = team ? team.shortName : '';
+    
+    // Collecter les buteurs de cette équipe
+    const scorers = {};
+    
+    allMatches.forEach(match => {
+        if (match.goals && match.goals.length > 0) {
+            match.goals.forEach(goal => {
+                if (goal.teamId == selectedTeamId) {
+                    // Normaliser le nom (tirets → espaces, trim, majuscules uniformes)
+                    const name = goal.scorer.replace(/-/g, ' ').trim().toLowerCase()
+                        .split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+                    if (!scorers[name]) {
+                        scorers[name] = { name, goals: 0, matches: new Set() };
+                    }
+                    scorers[name].goals++;
+                    scorers[name].matches.add(match.id);
+                }
+            });
+        }
+    });
+    
+    // Convertir et trier
+    const scorersArray = Object.values(scorers)
+        .map(s => ({
+            ...s,
+            matchesPlayed: s.matches.size,
+            goalsPerMatch: (s.goals / s.matches.size).toFixed(2)
+        }))
+        .sort((a, b) => b.goals - a.goals);
+    
+    // Afficher
+    const tbody = document.querySelector('#teamScorersTable tbody');
+    
+    if (scorersArray.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" style="text-align: center; padding: 2rem; color: #7f8c8d;">
+                    Aucun buteur enregistré pour cette équipe
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = scorersArray.map((scorer, index) => {
+        let rankClass = 'rank';
+        if (index === 0) rankClass += ' rank-1';
+        else if (index === 1) rankClass += ' rank-2';
+        else if (index === 2) rankClass += ' rank-3';
+        
+        return `
+            <tr>
+                <td class="${rankClass}">${index + 1}</td>
+                <td class="player-name">${scorer.name}</td>
+                <td class="goals-count">${scorer.goals}</td>
+            </tr>
+        `;
+}).join('');
+}
+
+// Basculer entre stats générales et stats par équipe
+function toggleStatsView() {
+    const selectedTeamId = document.getElementById('teamSelect').value;
+    const generalWrapper = document.getElementById('generalStatsWrapper');
+    const teamWrapper = document.getElementById('teamStatsWrapper');
+    
+    if (selectedTeamId === 'all') {
+        // Afficher stats générales
+        generalWrapper.style.display = 'block';
+        teamWrapper.style.display = 'none';
+        updateScoreDistributionGeneral();
+    } else {
+        // Afficher stats équipe
+        generalWrapper.style.display = 'none';
+        teamWrapper.style.display = 'block';
+        updateTeamScorers();
+        updateTimeAnalysis();
+        updateScoreDistributionTeam(selectedTeamId);
+    }
+}
+
+// Distribution des scores - Stats générales
+function updateScoreDistributionGeneral() {
+    const container = document.getElementById('scoreDistributionGeneral');
+    if (!container) return;
+    
+    // Compter les scores
+    const scoreCounts = {};
+    
+    allMatches.forEach(match => {
+        const home = match.finalScore.home;
+        const away = match.finalScore.away;
+        const scoreKey = `${home}-${away}`;
+        
+        scoreCounts[scoreKey] = (scoreCounts[scoreKey] || 0) + 1;
+    });
+    
+    // Trier par fréquence
+    const sortedScores = Object.entries(scoreCounts)
+        .sort((a, b) => b[1] - a[1]);
+    
+    if (sortedScores.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #7f8c8d;">Aucun match joué</p>';
+        return;
+    }
+    
+    // Générer le HTML
+    container.innerHTML = sortedScores.map(([score, count]) => {
+        const percentage = ((count / allMatches.length) * 100).toFixed(1);
+        return `
+            <div class="score-item">
+                <span class="score-label">${score}</span>
+                <span class="score-count">${count} match${count > 1 ? 's' : ''}</span>
+                <span class="score-percentage">${percentage}%</span>
+            </div>
+        `;
+    }).join('');
+}
+
+// Distribution des scores - Stats équipe
+function updateScoreDistributionTeam(teamId) {
+    const container = document.getElementById('scoreDistributionTeam');
+    if (!container) return;
+    
+    // Filtrer les matchs de l'équipe
+    const teamMatches = allMatches.filter(m => 
+        m.homeTeamId == teamId || m.awayTeamId == teamId
+    );
+    
+    // Compter les scores (du point de vue de l'équipe)
+    const scoreCounts = {};
+    
+    teamMatches.forEach(match => {
+        const isHome = match.homeTeamId == teamId;
+        const goalsFor = isHome ? match.finalScore.home : match.finalScore.away;
+        const goalsAgainst = isHome ? match.finalScore.away : match.finalScore.home;
+        const scoreKey = `${goalsFor}-${goalsAgainst}`;
+        
+        scoreCounts[scoreKey] = (scoreCounts[scoreKey] || 0) + 1;
+    });
+    
+    // Trier par fréquence
+    const sortedScores = Object.entries(scoreCounts)
+        .sort((a, b) => b[1] - a[1]);
+    
+    if (sortedScores.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #7f8c8d;">Aucun match joué</p>';
+        return;
+    }
+    
+    // Générer le HTML
+    container.innerHTML = sortedScores.map(([score, count]) => {
+        const percentage = ((count / teamMatches.length) * 100).toFixed(1);
+        const [goalsFor, goalsAgainst] = score.split('-').map(Number);
+        
+        // Couleur selon résultat
+        let resultClass = 'draw';
+        if (goalsFor > goalsAgainst) resultClass = 'win';
+        else if (goalsFor < goalsAgainst) resultClass = 'loss';
+        
+        return `
+            <div class="score-item ${resultClass}">
+                <span class="score-label">${score}</span>
+                <span class="score-count">${count} match${count > 1 ? 's' : ''}</span>
+                <span class="score-percentage">${percentage}%</span>
+            </div>
+        `;
+    }).join('');
 }
 
 // === ANALYSE TEMPORELLE DES BUTS ===

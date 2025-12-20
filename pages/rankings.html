@@ -31,17 +31,27 @@
                 <!-- En-tête avec sélecteur de journée -->
                 <div class="rankings-header">
                     <h2>🏆 Classement du championnat</h2>
+                    <div class="ranking-mode-selector" style="margin-bottom: 1rem; text-align: center;">
+                        <label style="cursor: pointer; padding: 0.5rem 1rem; background: #f8f9fa; border-radius: 8px;">
+                            <input type="checkbox" id="halftimeMode" style="margin-right: 0.5rem;"> 
+                            ⏱️ Classement à la mi-temps (score à la 45')
+                        </label>
+                    </div>
+
                     <div class="matchday-selector">
 
                         <label for="seasonSelect">Saison :</label>
                         <select id="seasonSelect">
                             <option value="">Chargement...</option>
                         </select>
+                        <label for="fromMatchDaySelect">De J:</label>
+                        <select id="fromMatchDaySelect">
+                            <option value="">1</option>
+                        </select>
 
-
-                        <label for="matchDaySelect">Afficher jusqu'à la journée :</label>
+                        <label for="matchDaySelect">à J:</label>
                         <select id="matchDaySelect">
-                            <option value="">Classement actuel</option>
+                            <option value="">Actuel</option>
                         </select>
                         <span id="matchDayInfo" class="matchday-info"></span>
                     </div>
