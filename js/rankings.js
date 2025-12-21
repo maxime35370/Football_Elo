@@ -386,8 +386,8 @@ function refreshRankings() {
 // Obtenir toutes les équipes qui ont joué au moins un match
 function getAllTeamsWithMatches() {
     const season = selectedSeason || getCurrentSeason();
-    const ranking = generateRanking(currentMatchDay, season, fromMatchDay, halftimeMode, locationFilter);
-    return ranking.filter(team => team.played > 0);
+    const teamRanking = generateRanking(currentMatchDay, season, fromMatchDay, halftimeMode, locationFilter);
+    return teamRanking.filter(team => team.played > 0);
 }
 
 // Récupérer la configuration de saison (fonction partagée)
