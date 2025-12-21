@@ -6,6 +6,7 @@
         <title>Classements - Football Elo</title>
         <link rel="stylesheet" href="../css/style.css">
         <link rel="stylesheet" href="../css/rankings.css">
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     </head>
     <body>
         <header>
@@ -199,6 +200,49 @@
                             <span class="stat-value" id="currentMatchDay">0</span>
                             <span class="stat-label">Journée actuelle</span>
                         </div>
+                    </div>
+                </div>
+                <!-- Évolution du classement -->
+                <div class="ranking-section">
+                    <h3>📈 Évolution du classement</h3>
+                    <div class="chart-controls">
+                        <div class="control-group">
+                            <label for="rankingChartTeams">Équipes :</label>
+                            <select id="rankingChartTeams" multiple size="6">
+                                <!-- Généré dynamiquement -->
+                            </select>
+                        </div>
+                        <div class="control-buttons">
+                            <button type="button" id="selectTop6" class="btn-small">Top 6</button>
+                            <button type="button" id="selectBottom6" class="btn-small">Bottom 6</button>
+                            <button type="button" id="selectAllTeams" class="btn-small">Toutes</button>
+                            <button type="button" id="clearTeams" class="btn-small">Effacer</button>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="rankingEvolutionChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Évolution Elo -->
+                <div class="ranking-section">
+                    <h3>🎯 Évolution du rating Elo</h3>
+                    <div class="chart-controls">
+                        <div class="control-group">
+                            <label for="eloChartTeams">Équipes :</label>
+                            <select id="eloChartTeams" multiple size="6">
+                                <!-- Généré dynamiquement -->
+                            </select>
+                        </div>
+                        <div class="control-buttons">
+                            <button type="button" id="selectTop6Elo" class="btn-small">Top 6</button>
+                            <button type="button" id="selectBottom6Elo" class="btn-small">Bottom 6</button>
+                            <button type="button" id="selectAllTeamsElo" class="btn-small">Toutes</button>
+                            <button type="button" id="clearTeamsElo" class="btn-small">Effacer</button>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="eloEvolutionChart"></canvas>
                     </div>
                 </div>
             </div>

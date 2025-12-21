@@ -6,6 +6,8 @@ let teamsWithElo = [];
 let halftimeMode = false;
 let fromMatchDay = null;
 let locationFilter = 'all'; // 'all', 'home', 'away'
+let rankingEvolutionChart = null;
+let eloEvolutionChart = null;
 
 // Initialisation de la page
 document.addEventListener('DOMContentLoaded', function() {
@@ -46,6 +48,7 @@ document.addEventListener('DOMContentLoaded', function() {
     displayRanking();
     updateChampionshipStats();
     initializeH2HSelectors();
+    initEvolutionCharts();
 });
 
 // Charger les données nécessaires
@@ -195,6 +198,7 @@ function populateSeasonSelector() {
         displayRanking();
         updateChampionshipStats();
         updateSeasonTitle();
+        initEvolutionCharts();
     });
 }
 
@@ -570,6 +574,448 @@ function createComparisonRow(team) {
     row.title = `${team.name}`;
     
     return row;
+}
+
+// ===============================
+// GRAPHIQUES D'ÉVOLUTION
+// ===============================
+
+// Couleurs pour les équipes
+const teamColors = [
+    '#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c',
+    '#e67e22', '#34495e', '#16a085', '#c0392b', '#27ae60', '#2980b9',
+    '#8e44ad', '#f1c40f', '#d35400', '#2c3e50', '#7f8c8d', '#95a5a6'
+];
+
+function getTeamColor(index) {
+    return teamColors[index % teamColors.length];
+}
+
+// Initialiser les sélecteurs d'équipes pour les graphiques
+function initEvolutionCharts() {
+    const season = selectedSeason || getCurrentSeason();
+    const teams = getTeamsBySeason(season);
+    const ranking = generateRanking(null, season, null, false, 'all');
+    
+    // Trier par classement actuel
+    const sortedTeams = ranking
+        .filter(t => t.played > 0)
+        .sort((a, b) => b.points - a.points);
+    
+    // Remplir les sélecteurs
+    const rankingSelect = document.getElementById('rankingChartTeams');
+    const eloSelect = document.getElementById('eloChartTeams');
+    
+    if (rankingSelect) {
+        rankingSelect.innerHTML = sortedTeams.map((team, index) => 
+            `<option value="${team.id}">${index + 1}. ${team.shortName}</option>`
+        ).join('');
+    }
+    
+    if (eloSelect) {
+        eloSelect.innerHTML = sortedTeams.map((team, index) => 
+            `<option value="${team.id}">${index + 1}. ${team.shortName}</option>`
+        ).join('');
+    }
+    
+    // Événements pour les boutons
+    setupChartButtons();
+    
+    // Événements pour les sélecteurs
+    if (rankingSelect) {
+        rankingSelect.addEventListener('change', updateRankingEvolutionChart);
+    }
+    if (eloSelect) {
+        eloSelect.addEventListener('change', updateEloEvolutionChart);
+    }
+    
+    // Sélectionner le top 6 par défaut
+    selectTopTeams(6, 'rankingChartTeams');
+    selectTopTeams(6, 'eloChartTeams');
+    
+    // Générer les graphiques
+    updateRankingEvolutionChart();
+    updateEloEvolutionChart();
+}
+
+// Configurer les boutons de sélection
+function setupChartButtons() {
+    // Boutons pour le classement
+    document.getElementById('selectTop6')?.addEventListener('click', () => {
+        selectTopTeams(6, 'rankingChartTeams');
+        updateRankingEvolutionChart();
+    });
+    
+    document.getElementById('selectBottom6')?.addEventListener('click', () => {
+        selectBottomTeams(6, 'rankingChartTeams');
+        updateRankingEvolutionChart();
+    });
+    
+    document.getElementById('selectAllTeams')?.addEventListener('click', () => {
+        selectAllTeamsInSelect('rankingChartTeams');
+        updateRankingEvolutionChart();
+    });
+    
+    document.getElementById('clearTeams')?.addEventListener('click', () => {
+        clearSelection('rankingChartTeams');
+        updateRankingEvolutionChart();
+    });
+    
+    // Boutons pour l'Elo
+    document.getElementById('selectTop6Elo')?.addEventListener('click', () => {
+        selectTopTeams(6, 'eloChartTeams');
+        updateEloEvolutionChart();
+    });
+    
+    document.getElementById('selectBottom6Elo')?.addEventListener('click', () => {
+        selectBottomTeams(6, 'eloChartTeams');
+        updateEloEvolutionChart();
+    });
+    
+    document.getElementById('selectAllTeamsElo')?.addEventListener('click', () => {
+        selectAllTeamsInSelect('eloChartTeams');
+        updateEloEvolutionChart();
+    });
+    
+    document.getElementById('clearTeamsElo')?.addEventListener('click', () => {
+        clearSelection('eloChartTeams');
+        updateEloEvolutionChart();
+    });
+}
+
+function selectTopTeams(count, selectId) {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+    
+    Array.from(select.options).forEach((option, index) => {
+        option.selected = index < count;
+    });
+}
+
+function selectBottomTeams(count, selectId) {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+    
+    const total = select.options.length;
+    Array.from(select.options).forEach((option, index) => {
+        option.selected = index >= total - count;
+    });
+}
+
+function selectAllTeamsInSelect(selectId) {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+    
+    Array.from(select.options).forEach(option => {
+        option.selected = true;
+    });
+}
+
+function clearSelection(selectId) {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+    
+    Array.from(select.options).forEach(option => {
+        option.selected = false;
+    });
+}
+
+// Calculer le classement à chaque journée
+function calculateRankingByMatchDay() {
+    const season = selectedSeason || getCurrentSeason();
+    const matches = getMatchesBySeason(season);
+    const teams = getTeamsBySeason(season);
+    
+    const maxMatchDay = Math.max(...matches.map(m => m.matchDay || 0), 0);
+    
+    const rankingHistory = {};
+    
+    // Initialiser l'historique pour chaque équipe
+    teams.forEach(team => {
+        rankingHistory[team.id] = {
+            team: team,
+            positions: [] // Position à chaque journée
+        };
+    });
+    
+    // Calculer le classement à chaque journée
+    for (let day = 1; day <= maxMatchDay; day++) {
+        const ranking = generateRanking(day, season, null, false, 'all');
+        
+        // Filtrer les équipes qui ont joué
+        const activeTeams = ranking.filter(t => t.played > 0);
+        
+        activeTeams.forEach((team, index) => {
+            if (rankingHistory[team.id]) {
+                rankingHistory[team.id].positions.push({
+                    matchDay: day,
+                    position: index + 1,
+                    points: team.points
+                });
+            }
+        });
+        
+        // Pour les équipes qui n'ont pas encore joué, ne pas ajouter de position
+    }
+    
+    return { rankingHistory, maxMatchDay };
+}
+
+// Mettre à jour le graphique d'évolution du classement
+function updateRankingEvolutionChart() {
+    const canvas = document.getElementById('rankingEvolutionChart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    
+    // Détruire le graphique existant
+    if (rankingEvolutionChart) {
+        rankingEvolutionChart.destroy();
+    }
+    
+    // Récupérer les équipes sélectionnées
+    const select = document.getElementById('rankingChartTeams');
+    const selectedTeamIds = Array.from(select.selectedOptions).map(opt => opt.value);
+    
+    if (selectedTeamIds.length === 0) {
+        return;
+    }
+    
+    // Calculer l'historique des classements
+    const { rankingHistory, maxMatchDay } = calculateRankingByMatchDay();
+    
+    // Préparer les datasets
+    const datasets = [];
+    
+    selectedTeamIds.forEach((teamId, index) => {
+        const history = rankingHistory[teamId];
+        if (!history || history.positions.length === 0) return;
+        
+        const color = getTeamColor(index);
+        
+        datasets.push({
+            label: history.team.shortName,
+            data: history.positions.map(p => ({ x: p.matchDay, y: p.position })),
+            borderColor: color,
+            backgroundColor: color,
+            borderWidth: 2,
+            pointRadius: 1,
+            pointHoverRadius: 5,
+            fill: false,
+            tension: 0.2
+        });
+    });
+    
+    // Créer le graphique
+    rankingEvolutionChart = new Chart(ctx, {
+        type: 'line',
+        data: { datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 15
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.dataset.label}: ${context.parsed.y}${getOrdinalSuffix(context.parsed.y)} place`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    type: 'linear',
+                    title: {
+                        display: true,
+                        text: 'Journée',
+                        font: { weight: 'bold' }
+                    },
+                    min: 1,
+                    max: maxMatchDay,
+                    ticks: {
+                        stepSize: 1,
+                        callback: function(value) {
+                            return 'J' + value;
+                        }
+                    }
+                },
+                y: {
+                    reverse: true, // 1er en haut
+                    title: {
+                        display: true,
+                        text: 'Position',
+                        font: { weight: 'bold' }
+                    },
+                    min: 1,
+                    ticks: {
+                        stepSize: 1,
+                        callback: function(value) {
+                            return value + getOrdinalSuffix(value);
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Mettre à jour le graphique d'évolution Elo
+function updateEloEvolutionChart() {
+    const canvas = document.getElementById('eloEvolutionChart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    
+    // Détruire le graphique existant
+    if (eloEvolutionChart) {
+        eloEvolutionChart.destroy();
+    }
+    
+    // Récupérer les équipes sélectionnées
+    const select = document.getElementById('eloChartTeams');
+    const selectedTeamIds = Array.from(select.selectedOptions).map(opt => opt.value);
+    
+    if (selectedTeamIds.length === 0) {
+        return;
+    }
+    
+    // Vérifier que le système Elo est chargé
+    if (typeof EloSystem === 'undefined' || teamsWithElo.length === 0) {
+        return;
+    }
+    
+    // Préparer les datasets
+    const datasets = [];
+    const initialRating = EloSystem.ELO_CONFIG?.INITIAL_RATING || 1500;
+    
+    selectedTeamIds.forEach((teamId, index) => {
+        const team = teamsWithElo.find(t => t.id == teamId);
+        if (!team || !team.eloHistory || team.eloHistory.length === 0) return;
+        
+        const color = getTeamColor(index);
+        
+        // Ajouter le point initial (avant J1)
+        const data = [{ x: 0, y: initialRating }];
+        
+        // Ajouter les points après chaque journée
+        team.eloHistory.forEach(h => {
+            data.push({ x: h.matchDay, y: h.rating });
+        });
+        
+        datasets.push({
+            label: team.shortName,
+            data: data,
+            borderColor: color,
+            backgroundColor: color,
+            borderWidth: 2,
+            pointRadius: 0.5,
+            pointHoverRadius: 5,
+            fill: false,
+            tension: 0.25
+
+        });
+    });
+    
+    // Trouver les bornes du graphique
+    let minElo = initialRating;
+    let maxElo = initialRating;
+    let maxMatchDay = 1;
+    
+    datasets.forEach(ds => {
+        ds.data.forEach(point => {
+            if (point.y < minElo) minElo = point.y;
+            if (point.y > maxElo) maxElo = point.y;
+            if (point.x > maxMatchDay) maxMatchDay = point.x;
+        });
+    });
+    
+    // Créer le graphique
+    eloEvolutionChart = new Chart(ctx, {
+        type: 'line',
+        data: { datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 15
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const diff = context.parsed.y - initialRating;
+                            const sign = diff >= 0 ? '+' : '';
+                            return `${context.dataset.label}: ${Math.round(context.parsed.y)} (${sign}${Math.round(diff)})`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    type: 'linear',
+                    title: {
+                        display: true,
+                        text: 'Journée',
+                        font: { weight: 'bold' }
+                    },
+                    min: 0,
+                    max: maxMatchDay,
+                    ticks: {
+                        stepSize: 1,
+                        callback: function(value) {
+                            return value === 0 ? 'Début' : 'J' + value;
+                        }
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Rating Elo',
+                        font: { weight: 'bold' }
+                    },
+                    min: Math.floor((minElo - 50) / 50) * 50,
+                    max: Math.ceil((maxElo + 50) / 50) * 50,
+                    ticks: {
+                        stepSize: 50
+                    }
+                }
+            },
+            annotation: {
+                annotations: {
+                    line1: {
+                        type: 'line',
+                        yMin: initialRating,
+                        yMax: initialRating,
+                        borderColor: 'rgba(0, 0, 0, 0.3)',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        label: {
+                            display: true,
+                            content: 'Rating initial',
+                            position: 'end'
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Helper pour les suffixes ordinaux
+function getOrdinalSuffix(n) {
+    if (n === 1) return 'er';
+    return 'e';
 }
 
 // Exposer la fonction pour l'utiliser depuis d'autres scripts
