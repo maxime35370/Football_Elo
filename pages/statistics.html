@@ -71,6 +71,51 @@
                         </table>
                     </div>
                 </section>
+                <!-- Heatmap des buts par minute -->
+                <section class="stat-section">
+                    <h3>🔥 Heatmap des buts par minute</h3>
+                    <div class="heatmap-container">
+                        <div class="heatmap-legend">
+                            <span>Moins de buts</span>
+                            <div class="heatmap-gradient"></div>
+                            <span>Plus de buts</span>
+                        </div>
+                        <div id="goalsHeatmapGeneral" class="heatmap-timeline">
+                            <!-- Généré dynamiquement -->
+                        </div>
+                        <div class="heatmap-labels">
+                            <span>0'</span>
+                            <span>15'</span>
+                            <span>30'</span>
+                            <span>45'</span>
+                            <span>MT</span>
+                            <span>60'</span>
+                            <span>75'</span>
+                            <span>90'</span>
+                            <span>90'+</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Carte des résultats globale -->
+                <section class="stat-section">
+                    <h3>📊 Carte des résultats</h3>
+                    <div class="results-card-legend">
+                        <span class="legend-item"><span class="legend-dot win"></span> Victoire</span>
+                        <span class="legend-item"><span class="legend-dot draw"></span> Nul</span>
+                        <span class="legend-item"><span class="legend-dot loss"></span> Défaite</span>
+                    </div>
+                    <div class="results-card-wrapper">
+                        <table id="resultsCardGlobal" class="results-card-table">
+                            <thead>
+                                <!-- Généré dynamiquement -->
+                            </thead>
+                            <tbody>
+                                <!-- Généré dynamiquement -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
 
                 <!-- Statistiques supplémentaires -->
                 <section class="stat-section">
@@ -173,6 +218,14 @@
 
             <div id="teamStatsWrapper" style="display: none;">
 
+                <!-- Carte des résultats de l'équipe -->
+                <section class="stat-section">
+                    <h3>📋 Parcours de <span class="selected-team-name-results"></span></h3>
+                    <div id="resultsCardTeam" class="results-card-team">
+                        <!-- Généré dynamiquement -->
+                    </div>
+                </section>
+
                 <!-- Buteurs de l'équipe sélectionnée -->
                 <section class="stat-section" id="teamScorersSection" style="display: none;">
                     <h3>⚽ Buteurs de <span id="selectedTeamName"></span></h3>
@@ -263,6 +316,43 @@
                     <h3>🏅 Records de <span class="selected-team-name-record"></span></h3>
                     <div id="seasonRecordsTeam" class="records-grid">
                         <!-- Généré dynamiquement -->
+                    </div>
+                </section>
+
+                <!-- Heatmap des buts de l'équipe -->
+                <section class="stat-section">
+                    <h3>🔥 Heatmap des buts de <span class="selected-team-name-heatmap"></span></h3>
+                    <div class="heatmap-container">
+                        <div class="heatmap-legend">
+                            <span>Moins de buts</span>
+                            <div class="heatmap-gradient"></div>
+                            <span>Plus de buts</span>
+                        </div>
+                        <div class="heatmap-dual">
+                            <div class="heatmap-section">
+                                <h4>⚽ Buts marqués</h4>
+                                <div id="goalsHeatmapTeamFor" class="heatmap-timeline">
+                                    <!-- Généré dynamiquement -->
+                                </div>
+                            </div>
+                            <div class="heatmap-section">
+                                <h4>🛡️ Buts encaissés</h4>
+                                <div id="goalsHeatmapTeamAgainst" class="heatmap-timeline">
+                                    <!-- Généré dynamiquement -->
+                                </div>
+                            </div>
+                        </div>
+                        <div class="heatmap-labels">
+                            <span>0'</span>
+                            <span>15'</span>
+                            <span>30'</span>
+                            <span>45'</span>
+                            <span>MT</span>
+                            <span>60'</span>
+                            <span>75'</span>
+                            <span>90'</span>
+                            <span>90'+</span>
+                        </div>
                     </div>
                 </section>
             </div>

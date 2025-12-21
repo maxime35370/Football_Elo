@@ -305,6 +305,8 @@ function toggleStatsView() {
         teamWrapper.style.display = 'none';
         updateScoreDistributionGeneral();
         updateSeasonRecordsGeneral();
+        updateGoalsHeatmapGeneral();
+        updateResultsCardGlobal();
     } else {
         // Afficher stats équipe
         generalWrapper.style.display = 'none';
@@ -313,6 +315,8 @@ function toggleStatsView() {
         updateTimeAnalysis();
         updateScoreDistributionTeam(selectedTeamId);
         updateSeasonRecordsTeam(selectedTeamId);
+        updateGoalsHeatmapTeam(selectedTeamId);
+        updateResultsCardTeam(selectedTeamId);
     }
 }
 
@@ -1776,4 +1780,301 @@ function updateSeasonRecordsTeam(teamId) {
     `;
     
     container.innerHTML = html;
+}
+
+// ===============================
+// HEATMAP DES BUTS PAR MINUTE
+// ===============================
+
+// Définir les tranches de temps pour la heatmap
+function getTimeSlices() {
+    return [
+        { label: '1-15', min: 1, max: 15 },
+        { label: '16-30', min: 16, max: 30 },
+        { label: '31-45', min: 31, max: 45 },
+        { label: '45+', min: 45.01, max: 45.99 },
+        { label: '46-60', min: 46, max: 60 },
+        { label: '61-75', min: 61, max: 75 },
+        { label: '76-90', min: 76, max: 90 },
+        { label: '90+', min: 90.01, max: 999 }
+    ];
+}
+
+// Obtenir la couleur selon l'intensité (0 à 1)
+function getHeatmapColor(intensity) {
+    if (intensity === 0) return '#e9ecef';
+    if (intensity < 0.2) return '#fff3cd';
+    if (intensity < 0.4) return '#ffc107';
+    if (intensity < 0.6) return '#fd7e14';
+    if (intensity < 0.8) return '#dc3545';
+    return '#721c24';
+}
+
+// Générer la heatmap générale
+function updateGoalsHeatmapGeneral() {
+    const container = document.getElementById('goalsHeatmapGeneral');
+    if (!container) return;
+    
+    const timeSlices = getTimeSlices();
+    const goalCounts = timeSlices.map(() => 0);
+    
+    // Compter les buts par tranche
+    allMatches.forEach(match => {
+        if (match.goals && match.goals.length > 0) {
+            match.goals.forEach(goal => {
+                const minute = parseFloat(goal.minute);
+                const extraTime = parseFloat(goal.extraTime) || 0;
+                
+                // Déterminer la tranche
+                let realMinute = minute;
+                if (extraTime > 0 && minute === 45) {
+                    realMinute = 45.5; // Mi-temps additionnelle
+                } else if (extraTime > 0 && minute === 90) {
+                    realMinute = 90.5; // Fin de match additionnelle
+                }
+                
+                timeSlices.forEach((slice, index) => {
+                    if (realMinute >= slice.min && realMinute <= slice.max) {
+                        goalCounts[index]++;
+                    }
+                });
+            });
+        }
+    });
+    
+    const maxGoals = Math.max(...goalCounts, 1);
+    
+    // Générer le HTML
+    container.innerHTML = timeSlices.map((slice, index) => {
+        const count = goalCounts[index];
+        const intensity = count / maxGoals;
+        const color = getHeatmapColor(intensity);
+        const percentage = allMatches.length > 0 ? ((count / goalCounts.reduce((a, b) => a + b, 0)) * 100).toFixed(1) : 0;
+        
+        return `
+            <div class="heatmap-segment" style="background-color: ${color}">
+                ${count}
+                <span class="tooltip">${slice.label}' : ${count} buts (${percentage}%)</span>
+            </div>
+        `;
+    }).join('');
+}
+
+// Générer la heatmap pour une équipe
+function updateGoalsHeatmapTeam(teamId) {
+    const containerFor = document.getElementById('goalsHeatmapTeamFor');
+    const containerAgainst = document.getElementById('goalsHeatmapTeamAgainst');
+    if (!containerFor || !containerAgainst) return;
+    
+    const team = allTeams.find(t => t.id == teamId);
+    document.querySelectorAll('.selected-team-name-heatmap').forEach(el => {
+        el.textContent = team ? team.shortName : '';
+    });
+    
+    const timeSlices = getTimeSlices();
+    const goalCountsFor = timeSlices.map(() => 0);
+    const goalCountsAgainst = timeSlices.map(() => 0);
+    
+    // Filtrer les matchs de l'équipe
+    const teamMatches = allMatches.filter(m => m.homeTeamId == teamId || m.awayTeamId == teamId);
+    
+    // Compter les buts par tranche
+    teamMatches.forEach(match => {
+        const isHome = match.homeTeamId == teamId;
+        
+        if (match.goals && match.goals.length > 0) {
+            match.goals.forEach(goal => {
+                const minute = parseFloat(goal.minute);
+                const extraTime = parseFloat(goal.extraTime) || 0;
+                const isTeamGoal = goal.teamId == teamId;
+                
+                let realMinute = minute;
+                if (extraTime > 0 && minute === 45) {
+                    realMinute = 45.5;
+                } else if (extraTime > 0 && minute === 90) {
+                    realMinute = 90.5;
+                }
+                
+                timeSlices.forEach((slice, index) => {
+                    if (realMinute >= slice.min && realMinute <= slice.max) {
+                        if (isTeamGoal) {
+                            goalCountsFor[index]++;
+                        } else {
+                            goalCountsAgainst[index]++;
+                        }
+                    }
+                });
+            });
+        }
+    });
+    
+    const maxGoalsFor = Math.max(...goalCountsFor, 1);
+    const maxGoalsAgainst = Math.max(...goalCountsAgainst, 1);
+    
+    // Générer le HTML pour les buts marqués
+    containerFor.innerHTML = timeSlices.map((slice, index) => {
+        const count = goalCountsFor[index];
+        const intensity = count / maxGoalsFor;
+        const color = getHeatmapColor(intensity);
+        const total = goalCountsFor.reduce((a, b) => a + b, 0);
+        const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
+        
+        return `
+            <div class="heatmap-segment" style="background-color: ${color}">
+                ${count}
+                <span class="tooltip">${slice.label}' : ${count} buts (${percentage}%)</span>
+            </div>
+        `;
+    }).join('');
+    
+    // Générer le HTML pour les buts encaissés
+    containerAgainst.innerHTML = timeSlices.map((slice, index) => {
+        const count = goalCountsAgainst[index];
+        const intensity = count / maxGoalsAgainst;
+        const color = getHeatmapColor(intensity);
+        const total = goalCountsAgainst.reduce((a, b) => a + b, 0);
+        const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
+        
+        return `
+            <div class="heatmap-segment" style="background-color: ${color}">
+                ${count}
+                <span class="tooltip">${slice.label}' : ${count} buts (${percentage}%)</span>
+            </div>
+        `;
+    }).join('');
+}
+
+// ===============================
+// CARTE DES RÉSULTATS GLOBALE
+// ===============================
+
+function updateResultsCardGlobal() {
+    const table = document.getElementById('resultsCardGlobal');
+    if (!table) return;
+    
+    // Trouver le nombre max de journées
+    const maxMatchDay = Math.max(...allMatches.map(m => m.matchDay || 0), 0);
+    
+    if (maxMatchDay === 0) {
+        table.innerHTML = '<tr><td colspan="100%" style="text-align:center;padding:2rem;color:#7f8c8d;">Aucun match joué</td></tr>';
+        return;
+    }
+    
+    // Générer l'en-tête
+    let headerHTML = '<tr><th>Équipe</th>';
+    for (let i = 1; i <= maxMatchDay; i++) {
+        headerHTML += `<th>J${i}</th>`;
+    }
+    headerHTML += '</tr>';
+    
+    // Générer les lignes pour chaque équipe
+    let bodyHTML = '';
+    
+    // Trier les équipes par points (classement actuel)
+    const ranking = allTeams.map(team => {
+        const teamMatches = allMatches.filter(m => m.homeTeamId == team.id || m.awayTeamId == team.id);
+        let points = 0;
+        teamMatches.forEach(match => {
+            const isHome = match.homeTeamId == team.id;
+            const goalsFor = isHome ? match.finalScore.home : match.finalScore.away;
+            const goalsAgainst = isHome ? match.finalScore.away : match.finalScore.home;
+            if (goalsFor > goalsAgainst) points += 3;
+            else if (goalsFor === goalsAgainst) points += 1;
+        });
+        return { ...team, points, matchCount: teamMatches.length };
+    }).filter(t => t.matchCount > 0).sort((a, b) => b.points - a.points);
+    
+    ranking.forEach(team => {
+        bodyHTML += `<tr><td>${team.shortName}</td>`;
+        
+        for (let day = 1; day <= maxMatchDay; day++) {
+            const match = allMatches.find(m => 
+                m.matchDay === day && (m.homeTeamId == team.id || m.awayTeamId == team.id)
+            );
+            
+            if (match) {
+                const isHome = match.homeTeamId == team.id;
+                const goalsFor = isHome ? match.finalScore.home : match.finalScore.away;
+                const goalsAgainst = isHome ? match.finalScore.away : match.finalScore.home;
+                
+                let resultClass = 'draw';
+                let resultText = 'N';
+                if (goalsFor > goalsAgainst) {
+                    resultClass = 'win';
+                    resultText = 'V';
+                } else if (goalsFor < goalsAgainst) {
+                    resultClass = 'loss';
+                    resultText = 'D';
+                }
+                
+                const opponent = allTeams.find(t => t.id == (isHome ? match.awayTeamId : match.homeTeamId));
+                const tooltip = `${isHome ? 'vs' : '@'} ${opponent ? opponent.shortName : '?'} (${goalsFor}-${goalsAgainst})`;
+                
+                bodyHTML += `<td><span class="result-cell ${resultClass}" title="${tooltip}">${resultText}</span></td>`;
+            } else {
+                bodyHTML += `<td><span class="result-cell empty">-</span></td>`;
+            }
+        }
+        
+        bodyHTML += '</tr>';
+    });
+    
+    table.querySelector('thead').innerHTML = headerHTML;
+    table.querySelector('tbody').innerHTML = bodyHTML;
+}
+
+// ===============================
+// CARTE DES RÉSULTATS ÉQUIPE
+// ===============================
+
+function updateResultsCardTeam(teamId) {
+    const container = document.getElementById('resultsCardTeam');
+    if (!container) return;
+    
+    const team = allTeams.find(t => t.id == teamId);
+    document.querySelectorAll('.selected-team-name-results').forEach(el => {
+        el.textContent = team ? team.shortName : '';
+    });
+    
+    // Récupérer les matchs de l'équipe triés par journée
+    const teamMatches = allMatches
+        .filter(m => m.homeTeamId == teamId || m.awayTeamId == teamId)
+        .sort((a, b) => (a.matchDay || 0) - (b.matchDay || 0));
+    
+    if (teamMatches.length === 0) {
+        container.innerHTML = '<p style="text-align:center;color:#7f8c8d;">Aucun match joué</p>';
+        return;
+    }
+    
+    // Générer le HTML
+    container.innerHTML = teamMatches.map(match => {
+        const isHome = match.homeTeamId == teamId;
+        const goalsFor = isHome ? match.finalScore.home : match.finalScore.away;
+        const goalsAgainst = isHome ? match.finalScore.away : match.finalScore.home;
+        const opponent = allTeams.find(t => t.id == (isHome ? match.awayTeamId : match.homeTeamId));
+        
+        let resultClass = 'draw';
+        let resultText = 'N';
+        if (goalsFor > goalsAgainst) {
+            resultClass = 'win';
+            resultText = 'V';
+        } else if (goalsFor < goalsAgainst) {
+            resultClass = 'loss';
+            resultText = 'D';
+        }
+        
+        const location = isHome ? '🏠 Domicile' : '✈️ Extérieur';
+        
+        return `
+            <div class="result-match-card ${resultClass}">
+                <div class="result-matchday">J${match.matchDay || '?'}</div>
+                <div class="result-badge ${resultClass}">${resultText}</div>
+                <div class="result-info">
+                    <div class="result-opponent">${isHome ? 'vs' : '@'} ${opponent ? opponent.shortName : '?'}</div>
+                    <div class="result-score">${goalsFor} - ${goalsAgainst}</div>
+                    <div class="result-location">${location}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
 }
