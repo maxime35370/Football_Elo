@@ -107,6 +107,7 @@
                 <button class="calendar-tab" data-tab="difficulty">🎯 Difficulté</button>
                 <button class="calendar-tab" data-tab="objectives">🏆 Objectifs</button>
                 <button class="calendar-tab" data-tab="simulation">🔮 Simulation</button>
+                <button class="calendar-tab" data-tab="predictions">🎰 Pronostics</button>
             </div>
 
             <!-- Contenu des onglets -->
@@ -177,6 +178,29 @@
                     </div>
                 </div>
 
+                <!-- Onglet Pronostics -->
+                <div id="predictionsTab" class="tab-pane">
+                    <div class="predictions-header">
+                        <h3 id="predictionsTitle">🎰 Pronostics - Journée X</h3>
+                        <div class="predictions-actions">
+                            <button id="generateAllPredictionsBtn" class="btn btn-primary">🔮 Générer tous les pronostics</button>
+                            <button id="recalculatePredictionsBtn" class="btn btn-secondary">🔄 Recalculer</button>
+                        </div>
+                    </div>
+                    <div class="predictions-nav-bar">
+                        <button id="prevMatchdayBtn" class="btn-nav">◀ Journée précédente</button>
+                        <button id="nextMatchdayBtn" class="btn-nav">Journée suivante ▶</button>
+                    </div>
+                    <div class="predictions-intro">
+                        <p>Les pronostics sont calculés en fonction de : <strong>Elo</strong>, <strong>forme récente</strong>, 
+                        <strong>enjeux</strong> (titre, Europe, maintien), <strong>adversaire direct</strong>, 
+                        <strong>domicile/extérieur</strong>, et une <strong>part d'aléatoire</strong>.</p>
+                        <p><em>💡 Les pronostics des journées suivantes prennent en compte l'évolution de l'Elo simulé.</em></p>
+                    </div>
+                    <div id="predictionsContent" class="predictions-grid">
+                        <!-- Généré dynamiquement -->
+                    </div>
+                </div>
             </div>
         </div>
     </main>
