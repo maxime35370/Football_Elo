@@ -304,6 +304,7 @@ function toggleStatsView() {
         generalWrapper.style.display = 'block';
         teamWrapper.style.display = 'none';
         updateScoreDistributionGeneral();
+        updateSeasonRecordsGeneral();
     } else {
         // Afficher stats équipe
         generalWrapper.style.display = 'none';
@@ -311,6 +312,7 @@ function toggleStatsView() {
         updateTeamScorers();
         updateTimeAnalysis();
         updateScoreDistributionTeam(selectedTeamId);
+        updateSeasonRecordsTeam(selectedTeamId);
     }
 }
 
@@ -1346,4 +1348,432 @@ function renderPerformanceChart(teamData, selectedMatchday, showAverageLine) {
         },
         plugins: [ChartDataLabels]
     });
+}
+
+// ===============================
+// RECORDS DE LA SAISON
+// ===============================
+
+// Calculer tous les records de la saison (global)
+function calculateSeasonRecords() {
+    const records = {
+        largestVictory: null,      // Plus large victoire
+        highestScoring: null,      // Plus gros score
+        longestWinStreak: null,    // Plus longue série de victoires
+        longestUnbeatenStreak: null, // Plus longue série sans défaite
+        longestScoringStreak: null,  // Plus longue série avec but marqué
+        longestCleanSheetStreak: null // Plus longue série sans encaisser
+    };
+    
+    if (allMatches.length === 0) return records;
+    
+    // Plus large victoire et plus gros score
+    allMatches.forEach(match => {
+        const homeScore = match.finalScore.home;
+        const awayScore = match.finalScore.away;
+        const totalGoals = homeScore + awayScore;
+        const diff = Math.abs(homeScore - awayScore);
+        
+        // Plus gros score
+        if (!records.highestScoring || totalGoals > records.highestScoring.totalGoals) {
+            const homeTeam = allTeams.find(t => t.id == match.homeTeamId);
+            const awayTeam = allTeams.find(t => t.id == match.awayTeamId);
+            records.highestScoring = {
+                match: match,
+                homeTeam: homeTeam,
+                awayTeam: awayTeam,
+                score: `${homeScore} - ${awayScore}`,
+                totalGoals: totalGoals
+            };
+        }
+        
+        // Plus large victoire
+        if (diff > 0 && (!records.largestVictory || diff > records.largestVictory.diff)) {
+            const homeTeam = allTeams.find(t => t.id == match.homeTeamId);
+            const awayTeam = allTeams.find(t => t.id == match.awayTeamId);
+            const winner = homeScore > awayScore ? homeTeam : awayTeam;
+            records.largestVictory = {
+                match: match,
+                homeTeam: homeTeam,
+                awayTeam: awayTeam,
+                winner: winner,
+                score: `${homeScore} - ${awayScore}`,
+                diff: diff
+            };
+        }
+    });
+    
+    // Calculer les séries pour chaque équipe
+    const streakRecords = {
+        winStreak: { team: null, count: 0, isActive: false },
+        unbeatenStreak: { team: null, count: 0, isActive: false },
+        scoringStreak: { team: null, count: 0, isActive: false },
+        cleanSheetStreak: { team: null, count: 0, isActive: false }
+    };
+    
+    allTeams.forEach(team => {
+        const teamStreaks = calculateTeamStreaks(team.id);
+        
+        if (teamStreaks.winStreak.best > streakRecords.winStreak.count) {
+            streakRecords.winStreak = { 
+                team: team, 
+                count: teamStreaks.winStreak.best, 
+                isActive: teamStreaks.winStreak.isActive 
+            };
+        }
+        
+        if (teamStreaks.unbeatenStreak.best > streakRecords.unbeatenStreak.count) {
+            streakRecords.unbeatenStreak = { 
+                team: team, 
+                count: teamStreaks.unbeatenStreak.best, 
+                isActive: teamStreaks.unbeatenStreak.isActive 
+            };
+        }
+        
+        if (teamStreaks.scoringStreak.best > streakRecords.scoringStreak.count) {
+            streakRecords.scoringStreak = { 
+                team: team, 
+                count: teamStreaks.scoringStreak.best, 
+                isActive: teamStreaks.scoringStreak.isActive 
+            };
+        }
+        
+        if (teamStreaks.cleanSheetStreak.best > streakRecords.cleanSheetStreak.count) {
+            streakRecords.cleanSheetStreak = { 
+                team: team, 
+                count: teamStreaks.cleanSheetStreak.best, 
+                isActive: teamStreaks.cleanSheetStreak.isActive 
+            };
+        }
+    });
+    
+    records.longestWinStreak = streakRecords.winStreak;
+    records.longestUnbeatenStreak = streakRecords.unbeatenStreak;
+    records.longestScoringStreak = streakRecords.scoringStreak;
+    records.longestCleanSheetStreak = streakRecords.cleanSheetStreak;
+    
+    return records;
+}
+
+// Calculer les séries d'une équipe spécifique
+function calculateTeamStreaks(teamId) {
+    const teamMatches = allMatches
+        .filter(m => m.homeTeamId == teamId || m.awayTeamId == teamId)
+        .sort((a, b) => (a.matchDay || 0) - (b.matchDay || 0));
+    
+    const streaks = {
+        winStreak: { current: 0, best: 0, isActive: false },
+        unbeatenStreak: { current: 0, best: 0, isActive: false },
+        scoringStreak: { current: 0, best: 0, isActive: false },
+        cleanSheetStreak: { current: 0, best: 0, isActive: false }
+    };
+    
+    teamMatches.forEach((match, index) => {
+        const isHome = match.homeTeamId == teamId;
+        const goalsFor = isHome ? match.finalScore.home : match.finalScore.away;
+        const goalsAgainst = isHome ? match.finalScore.away : match.finalScore.home;
+        
+        const isWin = goalsFor > goalsAgainst;
+        const isDraw = goalsFor === goalsAgainst;
+        const isUnbeaten = isWin || isDraw;
+        const hasScored = goalsFor > 0;
+        const isCleanSheet = goalsAgainst === 0;
+        
+        // Série de victoires
+        if (isWin) {
+            streaks.winStreak.current++;
+            if (streaks.winStreak.current > streaks.winStreak.best) {
+                streaks.winStreak.best = streaks.winStreak.current;
+            }
+        } else {
+            streaks.winStreak.current = 0;
+        }
+        
+        // Série sans défaite
+        if (isUnbeaten) {
+            streaks.unbeatenStreak.current++;
+            if (streaks.unbeatenStreak.current > streaks.unbeatenStreak.best) {
+                streaks.unbeatenStreak.best = streaks.unbeatenStreak.current;
+            }
+        } else {
+            streaks.unbeatenStreak.current = 0;
+        }
+        
+        // Série avec but marqué
+        if (hasScored) {
+            streaks.scoringStreak.current++;
+            if (streaks.scoringStreak.current > streaks.scoringStreak.best) {
+                streaks.scoringStreak.best = streaks.scoringStreak.current;
+            }
+        } else {
+            streaks.scoringStreak.current = 0;
+        }
+        
+        // Série clean sheet
+        if (isCleanSheet) {
+            streaks.cleanSheetStreak.current++;
+            if (streaks.cleanSheetStreak.current > streaks.cleanSheetStreak.best) {
+                streaks.cleanSheetStreak.best = streaks.cleanSheetStreak.current;
+            }
+        } else {
+            streaks.cleanSheetStreak.current = 0;
+        }
+    });
+    
+    // Vérifier si les séries sont toujours actives (= série actuelle == meilleure série)
+    streaks.winStreak.isActive = streaks.winStreak.current === streaks.winStreak.best && streaks.winStreak.current > 0;
+    streaks.unbeatenStreak.isActive = streaks.unbeatenStreak.current === streaks.unbeatenStreak.best && streaks.unbeatenStreak.current > 0;
+    streaks.scoringStreak.isActive = streaks.scoringStreak.current === streaks.scoringStreak.best && streaks.scoringStreak.current > 0;
+    streaks.cleanSheetStreak.isActive = streaks.cleanSheetStreak.current === streaks.cleanSheetStreak.best && streaks.cleanSheetStreak.current > 0;
+    
+    return streaks;
+}
+
+// Afficher les records globaux
+function updateSeasonRecordsGeneral() {
+    const container = document.getElementById('seasonRecordsGeneral');
+    if (!container) return;
+    
+    const records = calculateSeasonRecords();
+    
+    let html = '';
+    
+    // Plus large victoire
+    if (records.largestVictory) {
+        const r = records.largestVictory;
+        html += `
+            <div class="record-card victory">
+                <div class="record-title">🎯 Plus large victoire</div>
+                <div class="record-value">${r.score}</div>
+                <div class="record-details">
+                    ${r.homeTeam.shortName} vs ${r.awayTeam.shortName}
+                    <br>Journée ${r.match.matchDay || '?'}
+                </div>
+                <span class="record-holder">${r.winner.shortName} (+${r.diff})</span>
+            </div>
+        `;
+    }
+    
+    // Plus gros score
+    if (records.highestScoring) {
+        const r = records.highestScoring;
+        html += `
+            <div class="record-card goals">
+                <div class="record-title">⚽ Plus gros score</div>
+                <div class="record-value">${r.score}</div>
+                <div class="record-details">
+                    ${r.homeTeam.shortName} vs ${r.awayTeam.shortName}
+                    <br>Journée ${r.match.matchDay || '?'} • ${r.totalGoals} buts
+                </div>
+            </div>
+        `;
+    }
+    
+    // Série de victoires
+    if (records.longestWinStreak && records.longestWinStreak.count > 0) {
+        const r = records.longestWinStreak;
+        html += `
+            <div class="record-card streak-win">
+                <div class="record-title">🔥 Victoires consécutives</div>
+                <div class="record-value">${r.count} matchs</div>
+                <span class="record-holder ${r.isActive ? 'active' : ''}">${r.team.shortName}</span>
+                ${r.isActive ? '<div class="record-details" style="margin-top:0.5rem;color:#27ae60;">Série en cours !</div>' : ''}
+            </div>
+        `;
+    }
+    
+    // Série sans défaite
+    if (records.longestUnbeatenStreak && records.longestUnbeatenStreak.count > 0) {
+        const r = records.longestUnbeatenStreak;
+        html += `
+            <div class="record-card streak-unbeaten">
+                <div class="record-title">🛡️ Matchs sans défaite</div>
+                <div class="record-value">${r.count} matchs</div>
+                <span class="record-holder ${r.isActive ? 'active' : ''}">${r.team.shortName}</span>
+                ${r.isActive ? '<div class="record-details" style="margin-top:0.5rem;color:#27ae60;">Série en cours !</div>' : ''}
+            </div>
+        `;
+    }
+    
+    // Série avec but marqué
+    if (records.longestScoringStreak && records.longestScoringStreak.count > 0) {
+        const r = records.longestScoringStreak;
+        html += `
+            <div class="record-card streak-scoring">
+                <div class="record-title">⚡ Matchs avec but marqué</div>
+                <div class="record-value">${r.count} matchs</div>
+                <span class="record-holder ${r.isActive ? 'active' : ''}">${r.team.shortName}</span>
+                ${r.isActive ? '<div class="record-details" style="margin-top:0.5rem;color:#27ae60;">Série en cours !</div>' : ''}
+            </div>
+        `;
+    }
+    
+    // Série clean sheet
+    if (records.longestCleanSheetStreak && records.longestCleanSheetStreak.count > 0) {
+        const r = records.longestCleanSheetStreak;
+        html += `
+            <div class="record-card clean-sheet">
+                <div class="record-title">🧤 Clean sheets consécutifs</div>
+                <div class="record-value">${r.count} matchs</div>
+                <span class="record-holder ${r.isActive ? 'active' : ''}">${r.team.shortName}</span>
+                ${r.isActive ? '<div class="record-details" style="margin-top:0.5rem;color:#27ae60;">Série en cours !</div>' : ''}
+            </div>
+        `;
+    }
+    
+    container.innerHTML = html || '<p style="text-align:center;color:#7f8c8d;">Aucun record disponible</p>';
+}
+
+// Afficher les records d'une équipe spécifique
+function updateSeasonRecordsTeam(teamId) {
+    const container = document.getElementById('seasonRecordsTeam');
+    if (!container) return;
+    
+    const team = allTeams.find(t => t.id == teamId);
+    if (!team) return;
+    
+    // Mettre à jour le nom de l'équipe dans le titre
+    document.querySelectorAll('.selected-team-name-record').forEach(el => {
+        el.textContent = team.shortName;
+    });
+    
+    const globalRecords = calculateSeasonRecords();
+    const teamStreaks = calculateTeamStreaks(teamId);
+    
+    // Trouver les matchs records de l'équipe
+    const teamMatches = allMatches.filter(m => m.homeTeamId == teamId || m.awayTeamId == teamId);
+    
+    let teamLargestVictory = null;
+    let teamHighestScoring = null;
+    
+    teamMatches.forEach(match => {
+        const isHome = match.homeTeamId == teamId;
+        const goalsFor = isHome ? match.finalScore.home : match.finalScore.away;
+        const goalsAgainst = isHome ? match.finalScore.away : match.finalScore.home;
+        const totalGoals = goalsFor + goalsAgainst;
+        const diff = goalsFor - goalsAgainst;
+        
+        // Plus large victoire de l'équipe
+        if (diff > 0 && (!teamLargestVictory || diff > teamLargestVictory.diff)) {
+            const opponent = allTeams.find(t => t.id == (isHome ? match.awayTeamId : match.homeTeamId));
+            teamLargestVictory = {
+                match: match,
+                opponent: opponent,
+                score: isHome ? `${goalsFor} - ${goalsAgainst}` : `${goalsAgainst} - ${goalsFor}`,
+                displayScore: `${goalsFor} - ${goalsAgainst}`,
+                diff: diff,
+                isHome: isHome
+            };
+        }
+        
+        // Plus gros score de l'équipe
+        if (!teamHighestScoring || totalGoals > teamHighestScoring.totalGoals) {
+            const opponent = allTeams.find(t => t.id == (isHome ? match.awayTeamId : match.homeTeamId));
+            teamHighestScoring = {
+                match: match,
+                opponent: opponent,
+                score: isHome ? `${goalsFor} - ${goalsAgainst}` : `${goalsAgainst} - ${goalsFor}`,
+                totalGoals: totalGoals,
+                isHome: isHome
+            };
+        }
+    });
+    
+    let html = '';
+    
+    // Plus large victoire de l'équipe
+    if (teamLargestVictory) {
+        const r = teamLargestVictory;
+        const globalBest = globalRecords.largestVictory ? globalRecords.largestVictory.diff : 0;
+        const isGlobalRecord = r.diff >= globalBest;
+        html += `
+            <div class="record-card victory">
+                <div class="record-title">🎯 Plus large victoire</div>
+                <div class="record-value">${r.displayScore}</div>
+                <div class="record-details">
+                    ${r.isHome ? 'vs' : '@'} ${r.opponent.shortName}
+                    <br>Journée ${r.match.matchDay || '?'}
+                </div>
+                ${isGlobalRecord ? '<span class="record-holder active">Record de la saison !</span>' : `
+                <div class="record-comparison">
+                    Record saison : <span class="record-best">${globalRecords.largestVictory.winner.shortName} (+${globalBest})</span>
+                </div>`}
+            </div>
+        `;
+    }
+    
+    // Plus gros score de l'équipe
+    if (teamHighestScoring) {
+        const r = teamHighestScoring;
+        const globalBest = globalRecords.highestScoring ? globalRecords.highestScoring.totalGoals : 0;
+        const isGlobalRecord = r.totalGoals >= globalBest;
+        html += `
+            <div class="record-card goals">
+                <div class="record-title">⚽ Plus gros score</div>
+                <div class="record-value">${r.score}</div>
+                <div class="record-details">
+                    ${r.isHome ? 'vs' : '@'} ${r.opponent.shortName}
+                    <br>Journée ${r.match.matchDay || '?'} • ${r.totalGoals} buts
+                </div>
+                ${isGlobalRecord ? '<span class="record-holder active">Record de la saison !</span>' : `
+                <div class="record-comparison">
+                    Record saison : <span class="record-best">${globalRecords.highestScoring.totalGoals} buts</span>
+                </div>`}
+            </div>
+        `;
+    }
+    
+    // Série de victoires
+    const winRecord = globalRecords.longestWinStreak;
+    html += `
+        <div class="record-card streak-win">
+            <div class="record-title">🔥 Victoires consécutives</div>
+            <div class="record-value">${teamStreaks.winStreak.best} matchs</div>
+            ${teamStreaks.winStreak.isActive ? '<div class="record-details" style="color:#27ae60;">Série en cours !</div>' : ''}
+            ${winRecord && winRecord.team && winRecord.team.id == teamId ? 
+                '<span class="record-holder active">Record de la saison !</span>' : 
+                `<div class="record-comparison">Record saison : <span class="record-best">${winRecord.team ? winRecord.team.shortName : '-'} (${winRecord.count})</span></div>`}
+        </div>
+    `;
+    
+    // Série sans défaite
+    const unbeatenRecord = globalRecords.longestUnbeatenStreak;
+    html += `
+        <div class="record-card streak-unbeaten">
+            <div class="record-title">🛡️ Matchs sans défaite</div>
+            <div class="record-value">${teamStreaks.unbeatenStreak.best} matchs</div>
+            ${teamStreaks.unbeatenStreak.isActive ? '<div class="record-details" style="color:#27ae60;">Série en cours !</div>' : ''}
+            ${unbeatenRecord && unbeatenRecord.team && unbeatenRecord.team.id == teamId ? 
+                '<span class="record-holder active">Record de la saison !</span>' : 
+                `<div class="record-comparison">Record saison : <span class="record-best">${unbeatenRecord.team ? unbeatenRecord.team.shortName : '-'} (${unbeatenRecord.count})</span></div>`}
+        </div>
+    `;
+    
+    // Série avec but marqué
+    const scoringRecord = globalRecords.longestScoringStreak;
+    html += `
+        <div class="record-card streak-scoring">
+            <div class="record-title">⚡ Matchs avec but marqué</div>
+            <div class="record-value">${teamStreaks.scoringStreak.best} matchs</div>
+            ${teamStreaks.scoringStreak.isActive ? '<div class="record-details" style="color:#27ae60;">Série en cours !</div>' : ''}
+            ${scoringRecord && scoringRecord.team && scoringRecord.team.id == teamId ? 
+                '<span class="record-holder active">Record de la saison !</span>' : 
+                `<div class="record-comparison">Record saison : <span class="record-best">${scoringRecord.team ? scoringRecord.team.shortName : '-'} (${scoringRecord.count})</span></div>`}
+        </div>
+    `;
+    
+    // Série clean sheet
+    const cleanSheetRecord = globalRecords.longestCleanSheetStreak;
+    html += `
+        <div class="record-card clean-sheet">
+            <div class="record-title">🧤 Clean sheets consécutifs</div>
+            <div class="record-value">${teamStreaks.cleanSheetStreak.best} matchs</div>
+            ${teamStreaks.cleanSheetStreak.isActive ? '<div class="record-details" style="color:#27ae60;">Série en cours !</div>' : ''}
+            ${cleanSheetRecord && cleanSheetRecord.team && cleanSheetRecord.team.id == teamId ? 
+                '<span class="record-holder active">Record de la saison !</span>' : 
+                `<div class="record-comparison">Record saison : <span class="record-best">${cleanSheetRecord.team ? cleanSheetRecord.team.shortName : '-'} (${cleanSheetRecord.count})</span></div>`}
+        </div>
+    `;
+    
+    container.innerHTML = html;
 }

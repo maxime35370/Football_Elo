@@ -215,6 +215,7 @@ function updateMatchDayInfo() {
 // Afficher le classement
 function displayRanking() {
     const season = selectedSeason || getCurrentSeason();
+    const ranking = generateRanking(currentMatchDay, season, fromMatchDay, halftimeMode, locationFilter);
     
     const tableBody = document.querySelector('#traditionalRanking tbody');
     const noMatchesMessage = document.getElementById('noMatchesMessage');
@@ -224,7 +225,6 @@ function displayRanking() {
     const filteredRanking = ranking.filter(team => seasonTeamIds.includes(team.id)); 
     // Mettre à jour le titre selon le mode
     const sectionTitle = document.querySelector('.ranking-section h3');
-    const ranking = generateRanking(currentMatchDay, season, fromMatchDay, halftimeMode, locationFilter);
 
     // Mettre à jour le titre selon le filtre
     const titleElement = document.getElementById('rankingTitle');
@@ -285,8 +285,8 @@ function createRankingRow(team, position) {
     
     // Calculer la forme et la série
     const season = selectedSeason || getCurrentSeason();
-    const form = getTeamForm(team.id, currentMatchDay, season, 5);
-    const streak = getTeamStreak(team.id, currentMatchDay, season);
+    const form = getTeamForm(team.id, currentMatchDay, season, 5, locationFilter);
+    const streak = getTeamStreak(team.id, currentMatchDay, season, locationFilter);
 
     // Générer les badges de forme
     const formHTML = form.map(result => {

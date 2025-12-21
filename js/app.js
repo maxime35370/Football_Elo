@@ -196,11 +196,19 @@ function getLastPlayedMatchDay(season) {
 }
 
 // Calculer la forme récente d'une équipe (5 derniers matchs)
-function getTeamForm(teamId, upToMatchDay, season, limit = 5) {
+function getTeamForm(teamId, upToMatchDay, season, limit = 5, locationFilter = 'all') {
     season = season || getCurrentSeason();
-    const matches = getStoredMatches()
-        .filter(m => m.season === season)
-        .filter(m => m.homeTeamId == teamId || m.awayTeamId == teamId);
+    let matches = getStoredMatches()
+        .filter(m => m.season === season);
+    
+    // Filtrer par domicile/extérieur
+    if (locationFilter === 'home') {
+        matches = matches.filter(m => m.homeTeamId == teamId);
+    } else if (locationFilter === 'away') {
+        matches = matches.filter(m => m.awayTeamId == teamId);
+    } else {
+        matches = matches.filter(m => m.homeTeamId == teamId || m.awayTeamId == teamId);
+    }
     
     // Filtrer par journée si spécifié
     let filteredMatches = matches;
@@ -230,11 +238,19 @@ function getTeamForm(teamId, upToMatchDay, season, limit = 5) {
 }
 
 // Calculer la série en cours d'une équipe
-function getTeamStreak(teamId, upToMatchDay, season) {
+function getTeamStreak(teamId, upToMatchDay, season, locationFilter = 'all') {
     season = season || getCurrentSeason();
-    const matches = getStoredMatches()
-        .filter(m => m.season === season)
-        .filter(m => m.homeTeamId == teamId || m.awayTeamId == teamId);
+    let matches = getStoredMatches()
+        .filter(m => m.season === season);
+    
+    // Filtrer par domicile/extérieur
+    if (locationFilter === 'home') {
+        matches = matches.filter(m => m.homeTeamId == teamId);
+    } else if (locationFilter === 'away') {
+        matches = matches.filter(m => m.awayTeamId == teamId);
+    } else {
+        matches = matches.filter(m => m.homeTeamId == teamId || m.awayTeamId == teamId);
+    }
     
     // Filtrer par journée si spécifié
     let filteredMatches = matches;

@@ -464,3 +464,102 @@
         font-size: 2rem;
     }
 }
+
+/* Records de la saison */
+.records-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    padding: 1rem;
+}
+
+.record-card {
+    background: linear-gradient(135deg, #f8f9fa, #fff);
+    border-radius: 12px;
+    padding: 1.5rem;
+    border-left: 4px solid #3498db;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.record-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+}
+
+.record-card.victory {
+    border-left-color: #27ae60;
+}
+
+.record-card.goals {
+    border-left-color: #e74c3c;
+}
+
+.record-card.streak-win {
+    border-left-color: #f39c12;
+}
+
+.record-card.streak-unbeaten {
+    border-left-color: #9b59b6;
+}
+
+.record-card.streak-scoring {
+    border-left-color: #1abc9c;
+}
+
+.record-card.clean-sheet {
+    border-left-color: #34495e;
+}
+
+.record-title {
+    font-size: 0.85rem;
+    color: #7f8c8d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+}
+
+.record-value {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.record-details {
+    font-size: 0.9rem;
+    color: #5a6c7d;
+    line-height: 1.4;
+}
+
+.record-holder {
+    display: inline-block;
+    background: #3498db;
+    color: white;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-top: 0.5rem;
+}
+
+.record-holder.active {
+    background: #27ae60;
+}
+
+.record-holder.active::after {
+    content: " 🔥";
+}
+
+.record-comparison {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px dashed #e0e0e0;
+    font-size: 0.85rem;
+    color: #7f8c8d;
+}
+
+.record-comparison .record-best {
+    color: #27ae60;
+    font-weight: 600;
+}
