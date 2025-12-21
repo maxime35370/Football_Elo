@@ -182,3 +182,95 @@ function getLastPlayedMatchDay(season) {
     
     return Math.max(...matches.map(match => match.matchDay || 1));
 }
+
+// Calculer la forme récente d'une équipe (5 derniers matchs)
+function getTeamForm(teamId, upToMatchDay, season, limit = 5) {
+    season = season || getCurrentSeason();
+    const matches = getStoredMatches()
+        .filter(m => m.season === season)
+        .filter(m => m.homeTeamId == teamId || m.awayTeamId == teamId);
+    
+    // Filtrer par journée si spécifié
+    let filteredMatches = matches;
+    if (upToMatchDay) {
+        filteredMatches = matches.filter(m => m.matchDay <= upToMatchDay);
+    }
+    
+    // Trier par journée décroissante (plus récent d'abord)
+    filteredMatches.sort((a, b) => (b.matchDay || 0) - (a.matchDay || 0));
+    
+    // Prendre les X derniers matchs
+    const recentMatches = filteredMatches.slice(0, limit);
+    
+    // Calculer le résultat pour chaque match
+    const form = recentMatches.map(match => {
+        const isHome = match.homeTeamId == teamId;
+        const goalsFor = isHome ? match.finalScore.home : match.finalScore.away;
+        const goalsAgainst = isHome ? match.finalScore.away : match.finalScore.home;
+        
+        if (goalsFor > goalsAgainst) return 'V';
+        if (goalsFor < goalsAgainst) return 'D';
+        return 'N';
+    });
+    
+    // Inverser pour avoir du plus ancien au plus récent (lecture gauche à droite)
+    return form.reverse();
+}
+
+// Calculer la série en cours d'une équipe
+function getTeamStreak(teamId, upToMatchDay, season) {
+    season = season || getCurrentSeason();
+    const matches = getStoredMatches()
+        .filter(m => m.season === season)
+        .filter(m => m.homeTeamId == teamId || m.awayTeamId == teamId);
+    
+    // Filtrer par journée si spécifié
+    let filteredMatches = matches;
+    if (upToMatchDay) {
+        filteredMatches = matches.filter(m => m.matchDay <= upToMatchDay);
+    }
+    
+    // Trier par journée décroissante (plus récent d'abord)
+    filteredMatches.sort((a, b) => (b.matchDay || 0) - (a.matchDay || 0));
+    
+    if (filteredMatches.length === 0) {
+        return { type: null, count: 0, text: '-' };
+    }
+    
+    // Déterminer le résultat du dernier match
+    const getResult = (match) => {
+        const isHome = match.homeTeamId == teamId;
+        const goalsFor = isHome ? match.finalScore.home : match.finalScore.away;
+        const goalsAgainst = isHome ? match.finalScore.away : match.finalScore.home;
+        
+        if (goalsFor > goalsAgainst) return 'V';
+        if (goalsFor < goalsAgainst) return 'D';
+        return 'N';
+    };
+    
+    const firstResult = getResult(filteredMatches[0]);
+    let count = 0;
+    
+    // Compter la série
+    for (const match of filteredMatches) {
+        if (getResult(match) === firstResult) {
+            count++;
+        } else {
+            break;
+        }
+    }
+    
+    // Générer le texte
+    let text = '';
+    let type = firstResult;
+    
+    if (firstResult === 'V') {
+        text = `${count} victoire${count > 1 ? 's' : ''}`;
+    } else if (firstResult === 'D') {
+        text = `${count} défaite${count > 1 ? 's' : ''}`;
+    } else {
+        text = `${count} nul${count > 1 ? 's' : ''}`;
+    }
+    
+    return { type, count, text };
+}

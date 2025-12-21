@@ -405,6 +405,74 @@
     border-radius: 10px;
 }
 
+/* Forme récente */
+.form-cell {
+    white-space: nowrap;
+}
+
+.form-badge {
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    line-height: 22px;
+    text-align: center;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    margin: 0 1px;
+    color: white;
+}
+
+.form-win {
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+}
+
+.form-draw {
+    background: linear-gradient(135deg, #f39c12, #f1c40f);
+}
+
+.form-loss {
+    background: linear-gradient(135deg, #c0392b, #e74c3c);
+}
+
+/* Série en cours */
+.streak-cell {
+    white-space: nowrap;
+}
+
+.streak-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: white;
+}
+
+.streak-win {
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+}
+
+.streak-draw {
+    background: linear-gradient(135deg, #f39c12, #f1c40f);
+}
+
+.streak-loss {
+    background: linear-gradient(135deg, #c0392b, #e74c3c);
+}
+
+/* Responsive - cacher sur petits écrans */
+@media (max-width: 768px) {
+    .form-cell, .streak-cell {
+        display: none;
+    }
+    
+    .ranking-table th:nth-child(11),
+    .ranking-table th:nth-child(12) {
+        display: none;
+    }
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .rankings-container {

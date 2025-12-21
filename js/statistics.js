@@ -341,9 +341,16 @@ function updateScoreDistributionGeneral() {
     
     // Générer le HTML
     container.innerHTML = sortedScores.map(([score, count]) => {
-        const percentage = ((count / allMatches.length) * 100).toFixed(1);
-        return `
-            <div class="score-item">
+    const percentage = ((count / allMatches.length) * 100).toFixed(1);
+    
+    // Couleur selon résultat domicile/extérieur
+    const [home, away] = score.split('-').map(Number);
+    let resultClass = 'draw';
+    if (home > away) resultClass = 'win';
+    else if (home < away) resultClass = 'loss';
+    
+    return `
+        <div class="score-item ${resultClass}">
                 <span class="score-label">${score}</span>
                 <span class="score-count">${count} match${count > 1 ? 's' : ''}</span>
                 <span class="score-percentage">${percentage}%</span>

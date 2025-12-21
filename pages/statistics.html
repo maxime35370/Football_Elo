@@ -34,11 +34,19 @@
             <!-- Sélecteur de saison -->
             <div class="stats-header">
                 <h2>📈 Statistiques de la saison</h2>
-                <div class="season-selector">
-                    <label for="seasonSelect">Saison :</label>
-                    <select id="seasonSelect">
-                        <option value="">Chargement...</option>
-                    </select>
+                <div class="season-selector" style="display: flex; gap: 2rem; justify-content: center; flex-wrap: wrap;">
+                    <div>
+                        <label for="seasonSelect">Saison :</label>
+                        <select id="seasonSelect">
+                            <option value="">Chargement...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="teamSelect">Équipe :</label>
+                        <select id="teamSelect">
+                            <option value="all">Toutes (Stats générales)</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -157,7 +165,7 @@
                 </section>
             </div>
 
-            <div id="teamStatsWrapper" style="display: none;"></div>
+            <div id="teamStatsWrapper" style="display: none;">
 
                 <!-- Buteurs de l'équipe sélectionnée -->
                 <section class="stat-section" id="teamScorersSection" style="display: none;">
@@ -181,13 +189,6 @@
                     <h3>⏰ Analyse temporelle des buts</h3>
                     
                     <div class="time-analysis-controls">
-                        <div class="control-group">
-                            <label for="teamSelect">Équipe :</label>
-                            <select id="teamSelect">
-                                <option value="all">Toutes les équipes</option>
-                            </select>
-                        </div>
-                        
                         <div class="control-group">
                             <label for="timeSliceSelect">Tranches de temps :</label>
                             <select id="timeSliceSelect">

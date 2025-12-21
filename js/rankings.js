@@ -254,6 +254,30 @@ function createRankingRow(team, position) {
         }
     }
     
+    // Calculer la forme et la série
+    const season = selectedSeason || getCurrentSeason();
+    const form = getTeamForm(team.id, currentMatchDay, season, 5);
+    const streak = getTeamStreak(team.id, currentMatchDay, season);
+
+    // Générer les badges de forme
+    const formHTML = form.map(result => {
+        let className = 'form-badge ';
+        if (result === 'V') className += 'form-win';
+        else if (result === 'D') className += 'form-loss';
+        else className += 'form-draw';
+        return `<span class="${className}">${result}</span>`;
+    }).join('');
+
+    // Générer le badge de série
+    let streakClass = 'streak-badge ';
+    if (streak.type === 'V') streakClass += 'streak-win';
+    else if (streak.type === 'D') streakClass += 'streak-loss';
+    else if (streak.type === 'N') streakClass += 'streak-draw';
+
+    const streakHTML = streak.count > 0 
+        ? `<span class="${streakClass}">${streak.count}${streak.type}</span>`
+        : '-';
+
     row.innerHTML = `
         <td class="position">${position}</td>
         <td class="team-name">${team.shortName}</td>
@@ -265,6 +289,8 @@ function createRankingRow(team, position) {
         <td>${team.goalsAgainst}</td>
         <td class="${team.goalDifference >= 0 ? 'positive' : 'negative'}">${team.goalDifference > 0 ? '+' : ''}${team.goalDifference}</td>
         <td class="points">${team.points}</td>
+        <td class="form-cell">${formHTML || '-'}</td>
+        <td class="streak-cell">${streakHTML}</td>
     `;
     
     // Tooltip avec le nom complet et la position
