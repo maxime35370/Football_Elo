@@ -40,7 +40,7 @@ function createSeasonCard(season) {
     
     // Récupérer les statistiques de la saison
     const stats = getSeasonStats(season.name);
-    const ranking = generateRanking(null, season.name);
+    const ranking = generateRanking(null, season.name, null, false, 'all');
     
     // Trouver le champion
     const champion = ranking.length > 0 ? ranking[0] : null;

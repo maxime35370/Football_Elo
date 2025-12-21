@@ -1,7 +1,7 @@
 // app.js - Logique principale du système de classement
 
 // Calculer les statistiques d'une équipe jusqu'à une journée donnée
-function calculateTeamStats(teamId, upToMatchDay, season) {
+function calculateTeamStats(teamId, upToMatchDay, season, fromMatchDay, locationFilter) {
     season = season || getCurrentSeason();
     fromMatchDay = fromMatchDay || 1;
     const matches = getStoredMatches().filter(m => m.season === season);
@@ -25,7 +25,12 @@ function calculateTeamStats(teamId, upToMatchDay, season) {
         if (fromMatchDay && match.matchDay < fromMatchDay) {
             return;
         }
-        
+        if (locationFilter === 'home' && match.homeTeamId != teamId) {
+            return;
+        }
+        if (locationFilter === 'away' && match.awayTeamId != teamId) {
+            return;
+        }
         // Vérifier si l'équipe a joué ce match
         const isHome = match.homeTeamId == teamId;
         const isAway = match.awayTeamId == teamId;
@@ -71,7 +76,7 @@ function calculateTeamStats(teamId, upToMatchDay, season) {
 }
 
 // Calculer les stats basées sur le score à la mi-temps
-function calculateTeamStatsHalftime(teamId, upToMatchDay, season, fromMatchDay) {
+function calculateTeamStatsHalftime(teamId, upToMatchDay, season, fromMatchDay, locationFilter) {
     season = season || getCurrentSeason();
     fromMatchDay = fromMatchDay || 1;
     
@@ -91,6 +96,13 @@ function calculateTeamStatsHalftime(teamId, upToMatchDay, season, fromMatchDay) 
     matches.forEach(match => {
         if (upToMatchDay && match.matchDay > upToMatchDay) return;
         if (fromMatchDay && match.matchDay < fromMatchDay) return;
+        // Filtrer par domicile/extérieur
+        if (locationFilter === 'home' && match.homeTeamId != teamId) {
+            return;
+        }
+        if (locationFilter === 'away' && match.awayTeamId != teamId) {
+            return;
+        }
         
         const isHome = match.homeTeamId == teamId;
         const isAway = match.awayTeamId == teamId;
@@ -149,15 +161,15 @@ function calculateTeamStatsHalftime(teamId, upToMatchDay, season, fromMatchDay) 
 }
 
 // Générer le classement complet jusqu'à une journée donnée
-function generateRanking(upToMatchDay, season, fromMatchDay, useHalftime) {
+function generateRanking(upToMatchDay, season, fromMatchDay, useHalftime, locationFilter) {
     season = season || getCurrentSeason();
     const teams = getStoredTeams();
     const ranking = [];
     
     teams.forEach(team => {
         const stats = useHalftime 
-            ? calculateTeamStatsHalftime(team.id, upToMatchDay, season, fromMatchDay)
-            : calculateTeamStats(team.id, upToMatchDay, season, fromMatchDay);
+            ? calculateTeamStatsHalftime(team.id, upToMatchDay, season, fromMatchDay, locationFilter)
+            : calculateTeamStats(team.id, upToMatchDay, season, fromMatchDay, locationFilter);
         ranking.push({
             ...team,
             ...stats

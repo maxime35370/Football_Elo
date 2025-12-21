@@ -58,8 +58,15 @@
                 </div>
 
                 <!-- Classement traditionnel -->
+               <!-- Classement traditionnel -->
                 <div class="ranking-section">
-                    <h3>📊 Classement traditionnel (points)</h3>
+                    <h3 id="rankingTitle">📊 Classement traditionnel (points)</h3>
+                    
+                    <div class="ranking-tabs">
+                        <button class="ranking-tab active" data-filter="all">🏟️ Général</button>
+                        <button class="ranking-tab" data-filter="home">🏠 Domicile</button>
+                        <button class="ranking-tab" data-filter="away">✈️ Extérieur</button>
+                    </div>
                     <div class="table-wrapper">
                         <table id="traditionalRanking" class="ranking-table">
                             <thead>

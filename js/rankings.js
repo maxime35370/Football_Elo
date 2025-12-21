@@ -5,6 +5,7 @@ let selectedSeason = null; // ← AJOUTER CETTE LIGNE
 let teamsWithElo = [];
 let halftimeMode = false;
 let fromMatchDay = null;
+let locationFilter = 'all'; // 'all', 'home', 'away'
 
 // Initialisation de la page
 document.addEventListener('DOMContentLoaded', function() {
@@ -24,6 +25,22 @@ document.addEventListener('DOMContentLoaded', function() {
         halftimeMode = this.checked;
         displayRanking();
         updateChampionshipStats();
+    });
+
+    // Onglets domicile/extérieur
+    document.querySelectorAll('.ranking-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            // Retirer la classe active de tous les onglets
+            document.querySelectorAll('.ranking-tab').forEach(t => t.classList.remove('active'));
+            // Ajouter la classe active à l'onglet cliqué
+            this.classList.add('active');
+            
+            // Mettre à jour le filtre
+            locationFilter = this.dataset.filter;
+            
+            // Rafraîchir le classement
+            displayRanking();
+        });
     });
 
     displayRanking();
@@ -198,17 +215,29 @@ function updateMatchDayInfo() {
 // Afficher le classement
 function displayRanking() {
     const season = selectedSeason || getCurrentSeason();
-    const ranking = generateRanking(currentMatchDay, season, fromMatchDay, halftimeMode);
+    
     const tableBody = document.querySelector('#traditionalRanking tbody');
     const noMatchesMessage = document.getElementById('noMatchesMessage');
-    
     // Filtrer seulement les équipes de la saison
     const seasonTeams = getTeamsBySeason(season);
     const seasonTeamIds = seasonTeams.map(t => t.id);
-    const filteredRanking = ranking.filter(team => seasonTeamIds.includes(team.id));
-    
+    const filteredRanking = ranking.filter(team => seasonTeamIds.includes(team.id)); 
     // Mettre à jour le titre selon le mode
     const sectionTitle = document.querySelector('.ranking-section h3');
+    const ranking = generateRanking(currentMatchDay, season, fromMatchDay, halftimeMode, locationFilter);
+
+    // Mettre à jour le titre selon le filtre
+    const titleElement = document.getElementById('rankingTitle');
+    if (titleElement) {
+        let titleText = halftimeMode ? '⏱️ Classement à la mi-temps' : '📊 Classement traditionnel';
+        if (locationFilter === 'home') {
+            titleText += ' (Domicile)';
+        } else if (locationFilter === 'away') {
+            titleText += ' (Extérieur)';
+        }
+        titleElement.textContent = titleText;
+    }
+
     if (sectionTitle) {
         sectionTitle.innerHTML = halftimeMode 
             ? '⏱️ Classement à la mi-temps (45\')' 
@@ -356,7 +385,8 @@ function refreshRankings() {
 
 // Obtenir toutes les équipes qui ont joué au moins un match
 function getAllTeamsWithMatches() {
-    const ranking = generateRanking(currentMatchDay);
+    const season = selectedSeason || getCurrentSeason();
+    const ranking = generateRanking(currentMatchDay, season, fromMatchDay, halftimeMode, locationFilter);
     return ranking.filter(team => team.played > 0);
 }
 
@@ -489,7 +519,7 @@ function displayComparison() {
     if (!tableBody) return;
     
     const season = selectedSeason || getCurrentSeason();
-    const traditionalRanking = generateRanking(currentMatchDay, season);
+    const traditionalRanking = generateRanking(currentMatchDay, season, fromMatchDay, halftimeMode, locationFilter);
     
     // Filtrer pour la saison
     const seasonTeams = getTeamsBySeason(season);
