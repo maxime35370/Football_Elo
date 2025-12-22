@@ -30,6 +30,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     // Initialiser le graphique de performance (ajouter cette ligne)
     initPerformanceChart();
+    // Après le chargement des données
+    displayConfrontations();
+    initConfrontationsListeners();
 });
 
 // === GESTION DES SAISONS ===
@@ -2077,4 +2080,363 @@ function updateResultsCardTeam(teamId) {
             </div>
         `;
     }).join('');
+}
+
+
+// ===============================
+// CARTE DES CONFRONTATIONS
+// ===============================
+
+let confrontationSimulation = null;
+
+function displayConfrontations() {
+    const container = document.getElementById('confrontationsGraph');
+    const detailsContainer = document.getElementById('confrontationDetails');
+    
+    if (!container) return;
+    
+    // Vérifier si D3 est chargé
+    if (typeof d3 === 'undefined') {
+        container.innerHTML = '<p style="text-align:center;color:#e74c3c;padding:2rem;">Erreur: D3.js non chargé</p>';
+        return;
+    }
+    
+    // Nettoyer
+    container.innerHTML = '';
+    if (detailsContainer) {
+        detailsContainer.innerHTML = '<p>Cliquez sur un lien ou une équipe pour voir les détails</p>';
+        detailsContainer.classList.add('empty');
+    }
+    
+    // Récupérer les options
+    const showDraws = document.getElementById('showDraws')?.checked ?? true;
+    const showLabels = document.getElementById('showLabels')?.checked ?? true;
+    const filter = document.getElementById('confrontationFilter')?.value || 'all';
+    
+    // Récupérer les équipes et matchs
+    const teams = getTeamsBySeason(currentSeason);
+    const matches = allMatches.filter(m => m.season === currentSeason && m.finalScore);
+    
+    if (teams.length === 0 || matches.length === 0) {
+        container.innerHTML = '<p style="text-align:center;color:#7f8c8d;padding:2rem;">Pas assez de données pour afficher le graphe</p>';
+        return;
+    }
+    
+    // Préparer les nœuds
+    const nodes = teams.map(team => ({
+        id: team.id,
+        name: team.shortName,
+        fullName: team.name,
+        elo: team.eloRating || 1500
+    }));
+    
+    // Préparer les liens
+    const matchesBetween = {};
+    
+    matches.forEach(match => {
+        const pairKey = [match.homeTeamId, match.awayTeamId].sort((a, b) => a - b).join('-');
+        
+        if (!matchesBetween[pairKey]) {
+            matchesBetween[pairKey] = [];
+        }
+        
+        const homeScore = match.finalScore.home;
+        const awayScore = match.finalScore.away;
+        
+        matchesBetween[pairKey].push({
+            homeTeamId: match.homeTeamId,
+            awayTeamId: match.awayTeamId,
+            homeScore,
+            awayScore,
+            matchDay: match.matchDay,
+            isDraw: homeScore === awayScore,
+            winnerId: homeScore > awayScore ? match.homeTeamId : (awayScore > homeScore ? match.awayTeamId : null)
+        });
+    });
+    
+    // Créer les liens
+    const links = [];
+    
+    Object.entries(matchesBetween).forEach(([pairKey, pairMatches]) => {
+        const [team1, team2] = pairKey.split('-').map(Number);
+        
+        let team1Wins = 0, team2Wins = 0, draws = 0;
+        
+        pairMatches.forEach(m => {
+            if (m.isDraw) draws++;
+            else if (m.winnerId == team1) team1Wins++;
+            else team2Wins++;
+        });
+        
+        // Filtrer selon l'option
+        let filteredMatches = [...pairMatches];
+        if (filter === 'home') {
+            filteredMatches = pairMatches.filter(m => 
+                (m.homeTeamId == m.winnerId)
+            );
+        } else if (filter === 'away') {
+            filteredMatches = pairMatches.filter(m => 
+                (m.awayTeamId == m.winnerId)
+            );
+        }
+        
+        if (filteredMatches.length === 0) return;
+        
+        // Créer le lien de victoire
+        if (team1Wins > 0 || team2Wins > 0) {
+            const dominant = team1Wins >= team2Wins ? team1 : team2;
+            const subordinate = dominant == team1 ? team2 : team1;
+            
+            links.push({
+                source: dominant,
+                target: subordinate,
+                type: 'win',
+                matches: pairMatches,
+                team1, team2,
+                team1Wins, team2Wins, draws
+            });
+        } else if (showDraws && draws > 0) {
+            // Seulement des nuls
+            links.push({
+                source: team1,
+                target: team2,
+                type: 'draw',
+                matches: pairMatches,
+                team1, team2,
+                team1Wins: 0, team2Wins: 0, draws
+            });
+        }
+    });
+    
+    // Dimensions
+    const width = container.clientWidth || 800;
+    const height = container.clientHeight || 550;
+    
+    // Créer le SVG
+    const svg = d3.select(container)
+        .append('svg')
+        .attr('width', width)
+        .attr('height', height);
+    
+    // Marqueur de flèche
+    svg.append('defs').append('marker')
+        .attr('id', 'arrowhead')
+        .attr('viewBox', '-0 -5 10 10')
+        .attr('refX', 28)
+        .attr('refY', 0)
+        .attr('orient', 'auto')
+        .attr('markerWidth', 5)
+        .attr('markerHeight', 5)
+        .append('path')
+        .attr('d', 'M 0,-5 L 10,0 L 0,5')
+        .attr('class', 'arrow-head');
+    
+    // Groupe principal
+    const g = svg.append('g');
+    
+    // Zoom
+    svg.call(d3.zoom()
+        .scaleExtent([0.3, 3])
+        .on('zoom', (event) => g.attr('transform', event.transform)));
+    
+    // Simulation de force
+    confrontationSimulation = d3.forceSimulation(nodes)
+        .force('link', d3.forceLink(links).id(d => d.id).distance(120))
+        .force('charge', d3.forceManyBody().strength(-400))
+        .force('center', d3.forceCenter(width / 2, height / 2))
+        .force('collision', d3.forceCollide().radius(35));
+    
+    // Dessiner les liens
+    const link = g.append('g')
+        .selectAll('path')
+        .data(links)
+        .enter()
+        .append('path')
+        .attr('class', d => `link ${d.type}`)
+        .attr('marker-end', d => d.type === 'win' ? 'url(#arrowhead)' : null)
+        .on('click', (event, d) => showLinkDetails(d, teams))
+        .on('mouseover', function() { d3.select(this).style('stroke-opacity', 1); })
+        .on('mouseout', function() { d3.select(this).style('stroke-opacity', 0.5); });
+    
+    // Labels des liens
+    const linkLabels = g.append('g')
+        .selectAll('text')
+        .data(links)
+        .enter()
+        .append('text')
+        .attr('class', 'link-label')
+        .style('display', showLabels ? 'block' : 'none')
+        .text(d => `${d.team1Wins}-${d.draws}-${d.team2Wins}`);
+    
+    // Dessiner les nœuds
+    const node = g.append('g')
+        .selectAll('g')
+        .data(nodes)
+        .enter()
+        .append('g')
+        .attr('class', 'node')
+        .call(d3.drag()
+            .on('start', (event, d) => {
+                if (!event.active) confrontationSimulation.alphaTarget(0.3).restart();
+                d.fx = d.x; d.fy = d.y;
+            })
+            .on('drag', (event, d) => { d.fx = event.x; d.fy = event.y; })
+            .on('end', (event, d) => {
+                if (!event.active) confrontationSimulation.alphaTarget(0);
+                d.fx = null; d.fy = null;
+            }))
+        .on('click', (event, d) => showNodeDetails(d, teams, matches));
+    
+    // Cercles
+    node.append('circle')
+        .attr('class', 'node-circle')
+        .attr('r', d => 18 + (d.elo - 1400) / 60)
+        .style('fill', d => getEloColor(d.elo));
+    
+    // Labels
+    node.append('text')
+        .attr('class', 'node-label')
+        .attr('dy', 3)
+        .text(d => d.name);
+    
+    // Elo
+    node.append('text')
+        .attr('class', 'node-elo')
+        .attr('dy', 16)
+        .text(d => d.elo);
+    
+    // Update positions
+    confrontationSimulation.on('tick', () => {
+        link.attr('d', d => {
+            const dx = d.target.x - d.source.x;
+            const dy = d.target.y - d.source.y;
+            const dr = Math.sqrt(dx * dx + dy * dy) * 1.2;
+            return `M${d.source.x},${d.source.y}A${dr},${dr} 0 0,1 ${d.target.x},${d.target.y}`;
+        });
+        
+        linkLabels
+            .attr('x', d => (d.source.x + d.target.x) / 2)
+            .attr('y', d => (d.source.y + d.target.y) / 2 - 5);
+        
+        node.attr('transform', d => `translate(${d.x},${d.y})`);
+    });
+    
+    // Événements des contrôles
+    document.getElementById('showDraws')?.addEventListener('change', displayConfrontations);
+    document.getElementById('showLabels')?.addEventListener('change', () => {
+        const show = document.getElementById('showLabels').checked;
+        d3.selectAll('.link-label').style('display', show ? 'block' : 'none');
+    });
+    document.getElementById('confrontationFilter')?.addEventListener('change', displayConfrontations);
+}
+
+function getEloColor(elo) {
+    const min = 1350, max = 1650;
+    const norm = Math.max(0, Math.min(1, (elo - min) / (max - min)));
+    const r = Math.round(220 * (1 - norm) + 50);
+    const g = Math.round(80 + 140 * norm);
+    const b = Math.round(80);
+    return `rgb(${r}, ${g}, ${b})`;
+}
+
+function showLinkDetails(linkData, teams) {
+    const container = document.getElementById('confrontationDetails');
+    if (!container) return;
+    
+    container.classList.remove('empty');
+    
+    const team1 = teams.find(t => t.id == linkData.team1);
+    const team2 = teams.find(t => t.id == linkData.team2);
+    
+    let html = `
+        <h4>⚔️ ${team1?.shortName || '?'} vs ${team2?.shortName || '?'}</h4>
+        <p><strong>Bilan :</strong> ${linkData.team1Wins}V ${team1?.shortName} - ${linkData.draws}N - ${linkData.team2Wins}V ${team2?.shortName}</p>
+        <div class="detail-matches">
+    `;
+    
+    linkData.matches.forEach(m => {
+        const home = teams.find(t => t.id == m.homeTeamId);
+        const away = teams.find(t => t.id == m.awayTeamId);
+        html += `
+            <div class="detail-match ${m.isDraw ? 'draw' : ''}">
+                <span class="matchday">J${m.matchDay}</span>
+                <span>${home?.shortName}</span>
+                <span class="score">${m.homeScore}-${m.awayScore}</span>
+                <span>${away?.shortName}</span>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function showNodeDetails(nodeData, teams, matches) {
+    const container = document.getElementById('confrontationDetails');
+    if (!container) return;
+    
+    container.classList.remove('empty');
+    
+    const teamMatches = matches.filter(m => 
+        (m.homeTeamId == nodeData.id || m.awayTeamId == nodeData.id) && m.finalScore
+    );
+    
+    let wins = 0, draws = 0, losses = 0;
+    const dominated = [], dominatedBy = [];
+    const opponents = {};
+    
+    teamMatches.forEach(m => {
+        const isHome = m.homeTeamId == nodeData.id;
+        const gf = isHome ? m.finalScore.home : m.finalScore.away;
+        const ga = isHome ? m.finalScore.away : m.finalScore.home;
+        const oppId = isHome ? m.awayTeamId : m.homeTeamId;
+        
+        if (gf > ga) wins++;
+        else if (gf < ga) losses++;
+        else draws++;
+        
+        if (!opponents[oppId]) opponents[oppId] = { w: 0, d: 0, l: 0 };
+        if (gf > ga) opponents[oppId].w++;
+        else if (gf < ga) opponents[oppId].l++;
+        else opponents[oppId].d++;
+    });
+    
+    Object.entries(opponents).forEach(([oppId, o]) => {
+        const opp = teams.find(t => t.id == oppId);
+        if (o.w > o.l) dominated.push(opp?.shortName);
+        else if (o.l > o.w) dominatedBy.push(opp?.shortName);
+    });
+    
+    container.innerHTML = `
+        <h4>📊 ${nodeData.name} (Elo: ${nodeData.elo})</h4>
+        <div class="team-bilan">
+            <div class="bilan-item"><strong>Bilan :</strong> ${wins}V - ${draws}N - ${losses}D</div>
+            <div class="bilan-item"><strong>Domine :</strong> ${dominated.length > 0 ? dominated.join(', ') : 'Aucune'}</div>
+            <div class="bilan-item"><strong>Dominé par :</strong> ${dominatedBy.length > 0 ? dominatedBy.join(', ') : 'Aucune'}</div>
+        </div>
+    `;
+}
+
+// Appeler la fonction quand les données sont chargées
+function initConfrontationsListeners() {
+    // Retirer les anciens listeners pour éviter les doublons
+    const showDraws = document.getElementById('showDraws');
+    const showLabels = document.getElementById('showLabels');
+    const confrontationFilter = document.getElementById('confrontationFilter');
+    
+    if (showDraws) {
+        showDraws.replaceWith(showDraws.cloneNode(true));
+        document.getElementById('showDraws').addEventListener('change', displayConfrontations);
+    }
+    if (showLabels) {
+        const newLabels = showLabels.cloneNode(true);
+        showLabels.replaceWith(newLabels);
+        newLabels.addEventListener('change', () => {
+            d3.selectAll('.link-label').style('display', newLabels.checked ? 'block' : 'none');
+        });
+    }
+    if (confrontationFilter) {
+        confrontationFilter.replaceWith(confrontationFilter.cloneNode(true));
+        document.getElementById('confrontationFilter').addEventListener('change', displayConfrontations);
+    }
 }

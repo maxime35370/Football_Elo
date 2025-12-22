@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="../css/statistics.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 <body>
     <header>
@@ -213,6 +214,37 @@
                     <h3>🏅 Records de la saison</h3>
                     <div id="seasonRecordsGeneral" class="records-grid">
                         <!-- Généré dynamiquement -->
+                    </div>
+                </section>
+                <!-- Carte des confrontations -->
+                <section class="stat-section">
+                    <h3>🕸️ Carte des Confrontations</h3>
+                    <div class="confrontations-intro">
+                        <p>Visualisez qui a battu qui cette saison. Les flèches vont du vainqueur vers le vaincu.</p>
+                    </div>
+                    <div class="confrontations-controls">
+                        <label>
+                            <input type="checkbox" id="showDraws" checked> Afficher les matchs nuls
+                        </label>
+                        <label>
+                            <input type="checkbox" id="showLabels" checked> Afficher les bilans
+                        </label>
+                        <select id="confrontationFilter">
+                            <option value="all">Tous les matchs</option>
+                            <option value="home">Victoires à domicile</option>
+                            <option value="away">Victoires à l'extérieur</option>
+                        </select>
+                    </div>
+                    <div class="confrontations-legend">
+                        <span class="legend-item"><span class="legend-line win"></span> Victoire</span>
+                        <span class="legend-item"><span class="legend-line draw"></span> Match nul</span>
+                        <span class="legend-item"><span class="legend-arrow">→</span> Vainqueur → Vaincu</span>
+                    </div>
+                    <div id="confrontationsGraph" class="confrontations-graph">
+                        <!-- Graphe D3.js -->
+                    </div>
+                    <div id="confrontationDetails" class="confrontation-details empty">
+                        <p>Cliquez sur un lien ou une équipe pour voir les détails</p>
                     </div>
                 </section>
             </div>
