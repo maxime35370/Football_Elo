@@ -1157,10 +1157,6 @@ function getSeasonConfig() {
     };
 }
 
-// ===============================
-// ONGLET SIMULATION
-// ===============================
-
 let simulatedResults = {};
 
 function displaySimulation() {
@@ -1193,7 +1189,7 @@ function displaySimulation() {
     `).join('');
     
     // Générer le classement simulé
-    const simulatedRanking = calculateSimulatedRanking();
+    const simulatedRanking = calculateSimulatedRankingFromResults();
     let rankingHtml = generateSimulatedRankingTable(simulatedRanking);
     
     container.innerHTML = `
@@ -1210,37 +1206,123 @@ function displaySimulation() {
     });
 }
 
+// Calculer le classement simulé à partir des résultats simulés
+function calculateSimulatedRankingFromResults() {
+    // Récupérer le classement actuel (basé sur les matchs réels)
+    const currentRanking = generateRanking(null, currentSeason, null, false, 'all');
+    
+    // Copier les stats actuelles
+    const simStats = {};
+    allTeams.forEach(team => {
+        const teamData = currentRanking.find(t => t.id == team.id);
+        simStats[team.id] = {
+            played: teamData ? teamData.played : 0,
+            won: teamData ? teamData.won : 0,
+            drawn: teamData ? teamData.drawn : 0,
+            lost: teamData ? teamData.lost : 0,
+            goalsFor: teamData ? teamData.goalsFor : 0,
+            goalsAgainst: teamData ? teamData.goalsAgainst : 0,
+            points: teamData ? teamData.points : 0
+        };
+    });
+    
+    // Appliquer les résultats simulés
+    Object.entries(simulatedResults).forEach(([matchKey, score]) => {
+        if (score.home === null || score.away === null) return;
+        
+        const parts = matchKey.split('-');
+        const homeId = parseInt(parts[0]);
+        const awayId = parseInt(parts[1]);
+        
+        if (!simStats[homeId] || !simStats[awayId]) return;
+        
+        simStats[homeId].played++;
+        simStats[awayId].played++;
+        simStats[homeId].goalsFor += score.home;
+        simStats[homeId].goalsAgainst += score.away;
+        simStats[awayId].goalsFor += score.away;
+        simStats[awayId].goalsAgainst += score.home;
+        
+        if (score.home > score.away) {
+            simStats[homeId].won++;
+            simStats[homeId].points += 3;
+            simStats[awayId].lost++;
+        } else if (score.home < score.away) {
+            simStats[awayId].won++;
+            simStats[awayId].points += 3;
+            simStats[homeId].lost++;
+        } else {
+            simStats[homeId].drawn++;
+            simStats[awayId].drawn++;
+            simStats[homeId].points += 1;
+            simStats[awayId].points += 1;
+        }
+    });
+    
+    // Créer le classement
+    const simRanking = allTeams.map(team => {
+        const stats = simStats[team.id];
+        return {
+            id: team.id,
+            shortName: team.shortName,
+            played: stats.played,
+            won: stats.won,
+            drawn: stats.drawn,
+            lost: stats.lost,
+            goalsFor: stats.goalsFor,
+            goalsAgainst: stats.goalsAgainst,
+            goalDifference: stats.goalsFor - stats.goalsAgainst,
+            points: stats.points
+        };
+    });
+    
+    // Trier
+    simRanking.sort((a, b) => {
+        if (a.points !== b.points) return b.points - a.points;
+        if (a.goalDifference !== b.goalDifference) return b.goalDifference - a.goalDifference;
+        return b.goalsFor - a.goalsFor;
+    });
+    
+    return simRanking;
+}
+
+
 function createSimulationMatchRow(match) {
     const homeTeam = allTeams.find(t => t.id == match.homeTeamId);
     const awayTeam = allTeams.find(t => t.id == match.awayTeamId);
     
-    const homeScore = simulatedResults[match.id]?.home ?? '';
-    const awayScore = simulatedResults[match.id]?.away ?? '';
+    // Utiliser une clé unique pour le match
+    const matchKey = `${match.homeTeamId}-${match.awayTeamId}-${match.matchDay}`;
+    
+    const homeScore = simulatedResults[matchKey]?.home ?? '';
+    const awayScore = simulatedResults[matchKey]?.away ?? '';
     
     return `
-        <div class="simulation-match" data-match-id="${match.id}">
+        <div class="simulation-match" data-match-key="${matchKey}">
             <span class="team-home">${homeTeam ? homeTeam.shortName : '?'}</span>
-            <input type="number" min="0" max="20" class="score-home" value="${homeScore}" data-match-id="${match.id}" data-type="home">
+            <input type="number" min="0" max="20" class="score-home" value="${homeScore}" data-match-key="${matchKey}" data-type="home">
             <span class="vs">-</span>
-            <input type="number" min="0" max="20" class="score-away" value="${awayScore}" data-match-id="${match.id}" data-type="away">
+            <input type="number" min="0" max="20" class="score-away" value="${awayScore}" data-match-key="${matchKey}" data-type="away">
             <span class="team-away">${awayTeam ? awayTeam.shortName : '?'}</span>
         </div>
     `;
 }
 
 function onSimulationInputChange(event) {
-    const matchId = event.target.dataset.matchId;
+    const matchKey = event.target.dataset.matchKey;
     const type = event.target.dataset.type;
-    const value = parseInt(event.target.value) || 0;
+    const value = parseInt(event.target.value);
     
-    if (!simulatedResults[matchId]) {
-        simulatedResults[matchId] = { home: null, away: null };
+    if (isNaN(value)) return;
+    
+    if (!simulatedResults[matchKey]) {
+        simulatedResults[matchKey] = { home: null, away: null };
     }
     
-    simulatedResults[matchId][type] = value;
+    simulatedResults[matchKey][type] = value;
     
     // Mettre à jour le classement
-    updateSimulatedRanking();
+    updateSimulatedRankingDisplay();
 }
 
 // Calculer le classement simulé à partir des stats
@@ -1306,6 +1388,7 @@ function calculateSimulatedRanking(simulatedStats) {
 function generateSimulatedRankingTable(ranking) {
     const config = getSeasonConfig();
     const totalTeams = ranking.length;
+    const relegationPosition = totalTeams - config.relegationPlaces;
     
     let html = `
         <table>
@@ -1314,6 +1397,7 @@ function generateSimulatedRankingTable(ranking) {
                     <th>Pos</th>
                     <th>Équipe</th>
                     <th>Pts</th>
+                    <th>MJ</th>
                     <th>Diff</th>
                 </tr>
             </thead>
@@ -1328,7 +1412,7 @@ function generateSimulatedRankingTable(ranking) {
             rowClass = 'champion';
         } else if (position <= config.europeanPlaces) {
             rowClass = 'european';
-        } else if (position > totalTeams - config.relegationPlaces) {
+        } else if (position > relegationPosition) {
             rowClass = 'relegation';
         }
         
@@ -1337,6 +1421,7 @@ function generateSimulatedRankingTable(ranking) {
                 <td>${position}</td>
                 <td>${team.shortName}</td>
                 <td><strong>${team.points}</strong></td>
+                <td>${team.played}</td>
                 <td>${team.goalDifference > 0 ? '+' : ''}${team.goalDifference}</td>
             </tr>
         `;
@@ -1346,8 +1431,8 @@ function generateSimulatedRankingTable(ranking) {
     return html;
 }
 
-function updateSimulatedRanking() {
-    const ranking = calculateSimulatedRanking();
+function updateSimulatedRankingDisplay() {
+    const ranking = calculateSimulatedRankingFromResults();
     const container = document.querySelector('.simulation-ranking');
     if (container) {
         container.innerHTML = `
@@ -1371,49 +1456,72 @@ function setupButtons() {
 }
 
 function simulateRandom() {
+    simulatedResults = {};
+    
     futureMatches.forEach(match => {
-        simulatedResults[match.id] = {
+        const matchKey = `${match.homeTeamId}-${match.awayTeamId}-${match.matchDay}`;
+        simulatedResults[matchKey] = {
             home: Math.floor(Math.random() * 5),
             away: Math.floor(Math.random() * 5)
         };
     });
+    
     displaySimulation();
 }
 
+
 function simulateWithElo() {
-    futureMatches.forEach(match => {
-        const homeTeam = teamsWithElo.find(t => t.id == match.homeTeamId);
-        const awayTeam = teamsWithElo.find(t => t.id == match.awayTeamId);
+    simulatedResults = {};
+    
+    // Créer une copie des Elo pour la simulation
+    const simElo = {};
+    teamsWithElo.forEach(t => {
+        simElo[t.id] = t.eloRating || 1500;
+    });
+    
+    // Trier les matchs par journée
+    const sortedMatches = [...futureMatches].sort((a, b) => (a.matchDay || 0) - (b.matchDay || 0));
+    
+    sortedMatches.forEach(match => {
+        const matchKey = `${match.homeTeamId}-${match.awayTeamId}-${match.matchDay}`;
         
-        const homeElo = homeTeam?.eloRating || 1500;
-        const awayElo = awayTeam?.eloRating || 1500;
+        const homeElo = simElo[match.homeTeamId] || 1500;
+        const awayElo = simElo[match.awayTeamId] || 1500;
         
-        // Avantage domicile
+        // Calculer les probabilités
         const homeAdvantage = 50;
         const adjustedHomeElo = homeElo + homeAdvantage;
         
-        // Probabilité de victoire domicile
+        const homeExpectancy = 1 / (1 + Math.pow(10, (awayElo - adjustedHomeElo) / 400));
+        
+        // Distribution avec nul
+        const eloDiff = Math.abs(adjustedHomeElo - awayElo);
+        const isCloseMatch = eloDiff < 100;
+        let drawProb = isCloseMatch ? 0.30 : 0.25;
+        
+        let homeWinProb = homeExpectancy * (1 - drawProb);
+        let awayWinProb = (1 - homeExpectancy) * (1 - drawProb);
+        
+        // Générer le score avec la même logique que les pronostics
+        const score = generatePredictedScore(homeWinProb, drawProb, awayWinProb, adjustedHomeElo, awayElo);
+        
+        simulatedResults[matchKey] = score;
+        
+        // Mettre à jour l'Elo simulé pour les prochains matchs
+        const K = 32;
         const expectedHome = 1 / (1 + Math.pow(10, (awayElo - adjustedHomeElo) / 400));
         
-        // Simuler le résultat
-        const rand = Math.random();
-        let homeScore, awayScore;
-        
-        if (rand < expectedHome * 0.7) {
-            // Victoire domicile
-            homeScore = Math.floor(Math.random() * 3) + 1;
-            awayScore = Math.floor(Math.random() * homeScore);
-        } else if (rand < expectedHome * 0.7 + (1 - expectedHome) * 0.7) {
-            // Victoire extérieur
-            awayScore = Math.floor(Math.random() * 3) + 1;
-            homeScore = Math.floor(Math.random() * awayScore);
+        let actualHome, actualAway;
+        if (score.home > score.away) {
+            actualHome = 1; actualAway = 0;
+        } else if (score.home < score.away) {
+            actualHome = 0; actualAway = 1;
         } else {
-            // Match nul
-            homeScore = Math.floor(Math.random() * 3);
-            awayScore = homeScore;
+            actualHome = 0.5; actualAway = 0.5;
         }
         
-        simulatedResults[match.id] = { home: homeScore, away: awayScore };
+        simElo[match.homeTeamId] += Math.round(K * (actualHome - expectedHome));
+        simElo[match.awayTeamId] += Math.round(K * (1 - actualHome - (1 - expectedHome)));
     });
     
     displaySimulation();
