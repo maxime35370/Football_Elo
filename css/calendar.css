@@ -1518,3 +1518,150 @@
 .prediction-card.has-result .prediction-score {
     opacity: 0.7;
 }
+
+/* ===============================
+   CLASSEMENT FINAL PROJETÉ
+   =============================== */
+
+.final-ranking-section {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, rgba(241, 196, 15, 0.1), rgba(243, 156, 18, 0.05));
+    border-radius: 15px;
+    border: 2px solid #f1c40f;
+}
+
+.final-ranking-section h3 {
+    text-align: center;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.final-ranking-intro {
+    text-align: center;
+    color: #7f8c8d;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+}
+
+.final-ranking-wrapper {
+    overflow-x: auto;
+}
+
+.final-ranking-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.final-ranking-table th,
+.final-ranking-table td {
+    padding: 0.75rem 0.5rem;
+    text-align: center;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.final-ranking-table th {
+    background: #2c3e50;
+    color: white;
+    font-weight: 600;
+}
+
+.final-ranking-table td:nth-child(2) {
+    text-align: left;
+    font-weight: 600;
+}
+
+.final-ranking-table tr.champion-row {
+    background: linear-gradient(135deg, rgba(241, 196, 15, 0.3), rgba(243, 156, 18, 0.2));
+}
+
+.final-ranking-table tr.europe-row {
+    background: linear-gradient(135deg, rgba(52, 152, 219, 0.2), rgba(41, 128, 185, 0.1));
+}
+
+.final-ranking-table tr.relegation-row {
+    background: linear-gradient(135deg, rgba(231, 76, 60, 0.2), rgba(192, 57, 43, 0.1));
+}
+
+.final-ranking-table .position {
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.final-ranking-table .position-change {
+    font-size: 0.75rem;
+    margin-left: 0.25rem;
+}
+
+.final-ranking-table .position-change.up {
+    color: #27ae60;
+}
+
+.final-ranking-table .position-change.down {
+    color: #e74c3c;
+}
+
+.final-ranking-table .position-change.same {
+    color: #7f8c8d;
+}
+
+.final-ranking-table .team-name {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.final-ranking-table .zone-badge {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.4rem;
+    border-radius: 8px;
+    font-weight: bold;
+}
+
+.zone-badge.champion {
+    background: #f1c40f;
+    color: #7d6608;
+}
+
+.zone-badge.europe {
+    background: #3498db;
+    color: white;
+}
+
+.zone-badge.relegation {
+    background: #e74c3c;
+    color: white;
+}
+
+.final-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 2px dashed #e9ecef;
+}
+
+.final-stat-card {
+    text-align: center;
+    padding: 1rem;
+    background: white;
+    border-radius: 10px;
+}
+
+.final-stat-card .stat-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.final-stat-card .stat-value {
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.final-stat-card .stat-label {
+    font-size: 0.8rem;
+    color: #7f8c8d;
+}

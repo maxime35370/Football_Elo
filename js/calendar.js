@@ -1272,54 +1272,35 @@ function calculateSimulatedRanking(simulatedStats) {
     return ranking;
 }
 
-function calculateSimulatedRanking() {
-    // Partir du classement actuel
-    const baseRanking = generateRanking(null, currentSeason, null, false, 'all');
-    
-    // Ajouter les résultats simulés
-    futureMatches.forEach(match => {
-        const result = simulatedResults[match.id];
-        if (result && result.home !== null && result.away !== null) {
-            const homeTeam = baseRanking.find(t => t.id == match.homeTeamId);
-            const awayTeam = baseRanking.find(t => t.id == match.awayTeamId);
-            
-            if (homeTeam && awayTeam) {
-                homeTeam.played++;
-                awayTeam.played++;
-                homeTeam.goalsFor += result.home;
-                homeTeam.goalsAgainst += result.away;
-                awayTeam.goalsFor += result.away;
-                awayTeam.goalsAgainst += result.home;
-                
-                if (result.home > result.away) {
-                    homeTeam.won++;
-                    homeTeam.points += 3;
-                    awayTeam.lost++;
-                } else if (result.home < result.away) {
-                    awayTeam.won++;
-                    awayTeam.points += 3;
-                    homeTeam.lost++;
-                } else {
-                    homeTeam.drawn++;
-                    awayTeam.drawn++;
-                    homeTeam.points += 1;
-                    awayTeam.points += 1;
-                }
-                
-                homeTeam.goalDifference = homeTeam.goalsFor - homeTeam.goalsAgainst;
-                awayTeam.goalDifference = awayTeam.goalsFor - awayTeam.goalsAgainst;
-            }
-        }
+// Calculer le classement simulé à partir des stats
+// Calculer le classement simulé à partir des stats
+function calculateSimulatedRanking(simulatedStats) {
+    const ranking = allTeams.map(team => {
+        const stats = simulatedStats[team.id] || { points: 0, goalsFor: 0, goalsAgainst: 0, played: 0 };
+        return {
+            id: team.id,
+            shortName: team.shortName,
+            points: stats.points || 0,
+            goalDifference: (stats.goalsFor || 0) - (stats.goalsAgainst || 0),
+            goalsFor: stats.goalsFor || 0,
+            played: stats.played || 0,
+            rank: 0
+        };
     });
     
-    // Trier
-    baseRanking.sort((a, b) => {
+    // Trier par points, puis différence de buts, puis buts marqués
+    ranking.sort((a, b) => {
         if (a.points !== b.points) return b.points - a.points;
         if (a.goalDifference !== b.goalDifference) return b.goalDifference - a.goalDifference;
         return b.goalsFor - a.goalsFor;
     });
     
-    return baseRanking.filter(t => allTeams.some(at => at.id === t.id));
+    // Ajouter le rang APRÈS le tri
+    for (let i = 0; i < ranking.length; i++) {
+        ranking[i].rank = i + 1;
+    }
+    
+    return ranking;
 }
 
 function generateSimulatedRankingTable(ranking) {
@@ -2058,93 +2039,93 @@ function getTeamRecentForm(teamId) {
 }
 
 function generatePredictedScore(homeWinProb, drawProb, awayWinProb, homeElo, awayElo) {
-    // Trier les résultats par probabilité
-    const results = [
-        { type: 'home', prob: homeWinProb },
-        { type: 'draw', prob: drawProb },
-        { type: 'away', prob: awayWinProb }
-    ].sort((a, b) => b.prob - a.prob);
+    // Stats réelles Ligue 1 : ~45% dom, ~27% nul, ~28% ext
+    // On va générer des scores directement au lieu de décider le résultat d'abord
     
-    const best = results[0];   // Favori
-    const second = results[1]; // 2ème
-    const third = results[2];  // Outsider
-    
-    // Calculer les écarts
-    const gapFirstSecond = best.prob - second.prob;
-    
-    // Déterminer le résultat avec possibilité de surprise
-    let result;
     const random = Math.random();
     
-    // Chance pour l'outsider (3ème) - proportionnelle à sa probabilité
-    // Minimum 3%, maximum basé sur sa vraie probabilité
-    const thirdChance = Math.max(0.03, third.prob * 0.3);
+    // Calculer si le match est serré (probabilités proches)
+    const maxProb = Math.max(homeWinProb, drawProb, awayWinProb);
+    const minProb = Math.min(homeWinProb, awayWinProb);
+    const isCloseMatch = (maxProb - minProb) < 0.20; // Écart < 20%
+    const isVeryCloseMatch = (maxProb - minProb) < 0.10; // Écart < 10%
     
-    if (random < thirdChance && third.prob >= 0.10) {
-        // Grosse surprise ! L'outsider gagne
-        result = third.type;
-    } else if (gapFirstSecond > 0.15) {
-        // Écart > 15% → toujours le favori
-        result = best.type;
-    } else if (gapFirstSecond > 0.10) {
-        // Écart 10-15% → 10% de chance pour le 2ème
-        result = Math.random() < 0.10 ? second.type : best.type;
-    } else if (gapFirstSecond > 0.05) {
-        // Écart 5-10% → 20% de chance pour le 2ème
-        result = Math.random() < 0.20 ? second.type : best.type;
+    // Pour les matchs serrés, augmenter fortement la chance de nul
+    let effectiveDrawProb = drawProb;
+    if (isVeryCloseMatch) {
+        effectiveDrawProb = Math.max(0.35, drawProb); // Minimum 35%
+    } else if (isCloseMatch) {
+        effectiveDrawProb = Math.max(0.28, drawProb); // Minimum 28%
     } else {
-        // Écart < 5% → 35% de chance pour le 2ème (match très serré)
-        result = Math.random() < 0.35 ? second.type : best.type;
+        effectiveDrawProb = Math.max(0.22, drawProb); // Minimum 22%
     }
     
-    // Générer un score réaliste basé sur le résultat
+    // Répartir le reste proportionnellement
+    const remaining = 1 - effectiveDrawProb;
+    const totalWinProb = homeWinProb + awayWinProb;
+    const effectiveHomeProb = remaining * (homeWinProb / totalWinProb);
+    const effectiveAwayProb = remaining * (awayWinProb / totalWinProb);
+    
+    // Décider du résultat
+    let result;
+    if (random < effectiveHomeProb) {
+        result = 'home';
+    } else if (random < effectiveHomeProb + effectiveDrawProb) {
+        result = 'draw';
+    } else {
+        result = 'away';
+    }
+    
+    // Générer le score
     let homeGoals, awayGoals;
     
-    // Estimer la force offensive basée sur l'Elo
-    const avgElo = 1500;
-    const homeOffense = 1.3 + (homeElo - avgElo) / 500;
-    const awayOffense = 1.0 + (awayElo - avgElo) / 500;
-    
-    if (result === 'home') {
-        // Victoire domicile
-        const dominance = homeWinProb - awayWinProb;
-        let scoreDiff;
-        if (dominance > 0.4) {
-            scoreDiff = 3;
-        } else if (dominance > 0.25) {
-            scoreDiff = 2;
+    if (result === 'draw') {
+        // Distribution réaliste des nuls
+        const randScore = Math.random();
+        if (randScore < 0.30) {
+            homeGoals = 0; awayGoals = 0; // 30% de 0-0
+        } else if (randScore < 0.70) {
+            homeGoals = 1; awayGoals = 1; // 40% de 1-1
+        } else if (randScore < 0.90) {
+            homeGoals = 2; awayGoals = 2; // 20% de 2-2
         } else {
-            scoreDiff = 1;
+            homeGoals = 3; awayGoals = 3; // 10% de 3-3
         }
-        
-        homeGoals = Math.max(1, Math.round(homeOffense));
-        awayGoals = Math.max(0, homeGoals - scoreDiff);
-    } else if (result === 'away') {
-        // Victoire extérieur
-        const dominance = awayWinProb - homeWinProb;
-        let scoreDiff;
-        if (dominance > 0.4) {
-            scoreDiff = 3;
-        } else if (dominance > 0.25) {
-            scoreDiff = 2;
+    } else if (result === 'home') {
+        // Victoire domicile - distribution des écarts
+        const randScore = Math.random();
+        if (randScore < 0.55) {
+            // 55% : victoire 1 but d'écart
+            const goals = Math.random() < 0.6 ? 1 : 2;
+            homeGoals = goals;
+            awayGoals = goals - 1;
+        } else if (randScore < 0.85) {
+            // 30% : victoire 2 buts d'écart
+            const goals = Math.random() < 0.5 ? 2 : 3;
+            homeGoals = goals;
+            awayGoals = goals - 2;
         } else {
-            scoreDiff = 1;
+            // 15% : victoire 3+ buts d'écart (carton)
+            homeGoals = Math.floor(Math.random() * 2) + 3; // 3 ou 4
+            awayGoals = Math.floor(Math.random() * 2); // 0 ou 1
         }
-        
-        awayGoals = Math.max(1, Math.round(awayOffense));
-        homeGoals = Math.max(0, awayGoals - scoreDiff);
     } else {
-        // Match nul
-        const avgOffense = (homeOffense + awayOffense) / 2;
-        if (avgOffense < 1.1) {
-            homeGoals = 0;
-            awayGoals = 0;
-        } else if (avgOffense < 1.4) {
-            homeGoals = 1;
-            awayGoals = 1;
+        // Victoire extérieur - distribution des écarts
+        const randScore = Math.random();
+        if (randScore < 0.60) {
+            // 60% : victoire 1 but d'écart (plus courant en extérieur)
+            const goals = Math.random() < 0.5 ? 1 : 2;
+            awayGoals = goals;
+            homeGoals = goals - 1;
+        } else if (randScore < 0.88) {
+            // 28% : victoire 2 buts d'écart
+            const goals = Math.random() < 0.5 ? 2 : 3;
+            awayGoals = goals;
+            homeGoals = goals - 2;
         } else {
-            homeGoals = 2;
-            awayGoals = 2;
+            // 12% : victoire 3+ buts d'écart
+            awayGoals = Math.floor(Math.random() * 2) + 3;
+            homeGoals = Math.floor(Math.random() * 2);
         }
     }
     
@@ -2372,6 +2353,7 @@ function generateAllPredictions() {
         
         // Calculer le classement simulé actuel
         const simulatedRanking = calculateSimulatedRanking(simulatedStats);
+        console.log(`Journée ${day} - Classement simulé:`, simulatedRanking.slice(0, 5));
         
         const dayPredictions = {
             matches: [],
@@ -2445,7 +2427,10 @@ function generateAllPredictions() {
                 simulatedStats[pred.awayTeamId].points += 1;
             }
         });
-        
+        // Debug : afficher le top 3 du classement simulé après cette journée
+        const rankingAfter = calculateSimulatedRanking(simulatedStats);
+        console.log(`Après J${day} - Top 3:`, rankingAfter.slice(0, 3).map(t => `${t.rank}. ${t.shortName} (${t.points} pts)`));
+
         // Stocker l'Elo simulé après cette journée
         dayPredictions.simulatedEloAfter = { ...simulatedElo };
         
@@ -2462,6 +2447,10 @@ function generateAllPredictions() {
     const numMatches = Object.values(storedPredictions.matchDays).reduce((sum, day) => sum + day.matches.length, 0);
     
     alert(`✅ Pronostics générés !\n\n📊 ${numMatches} matchs sur ${numDays} journées\n\nLes pronostics prennent en compte l'évolution de l'Elo ET du classement simulé après chaque journée.`);
+
+    // Afficher le classement final
+    displayFinalRanking();
+
 }
 
 // Recalculer les pronostics (efface et regénère)
@@ -3024,6 +3013,8 @@ function displayPredictions() {
     
     // Afficher les cartes de pronostics
     container.innerHTML = predictions.map(pred => createPredictionCard(pred)).join('');
+    // Afficher le classement final si pronostics générés
+    displayFinalRanking();
 }
 
 function updatePredictionNavButtons() {
@@ -3124,7 +3115,7 @@ function createPredictionCard(pred) {
     return `
         <div class="prediction-card ${pred.actualScore ? 'has-result' : ''}">
             <div class="prediction-card-header">
-                <span class="match-info">Match ${pred.homeRank || '?'}e vs ${pred.awayRank || '?'}e</span>
+                <span class="match-info">Match ${pred.homeRank > 0 ? pred.homeRank : '?'}e vs ${pred.awayRank > 0 ? pred.awayRank : '?'}e</span>
                 <div class="match-stakes">${stakeBadges}</div>
             </div>
             <div class="prediction-card-body">
@@ -3183,4 +3174,236 @@ function getPredictionResult(score) {
     if (score.home > score.away) return 'home';
     if (score.home < score.away) return 'away';
     return 'draw';
+}
+
+// ===============================
+// CLASSEMENT FINAL PROJETÉ
+// ===============================
+
+function displayFinalRanking() {
+    const section = document.getElementById('finalRankingSection');
+    const container = document.getElementById('finalRankingContent');
+    
+    if (!section || !container) return;
+    
+    // Vérifier si des pronostics existent
+    if (!storedPredictions || !storedPredictions.matchDays) {
+        section.style.display = 'none';
+        return;
+    }
+    
+    // Trouver la dernière journée
+    const matchDays = Object.keys(storedPredictions.matchDays).map(Number).sort((a, b) => a - b);
+    
+    if (matchDays.length === 0) {
+        section.style.display = 'none';
+        return;
+    }
+    
+    const lastMatchDay = matchDays[matchDays.length - 1];
+    
+    // Calculer le classement final
+    // Récupérer les stats actuelles
+    const currentRanking = generateRanking(null, currentSeason, null, false, 'all');
+    let finalStats = {};
+    
+    allTeams.forEach(team => {
+        const teamData = currentRanking.find(t => t.id == team.id);
+        finalStats[team.id] = {
+            played: teamData ? teamData.played : 0,
+            won: teamData ? teamData.won : 0,
+            drawn: teamData ? teamData.drawn : 0,
+            lost: teamData ? teamData.lost : 0,
+            goalsFor: teamData ? teamData.goalsFor : 0,
+            goalsAgainst: teamData ? teamData.goalsAgainst : 0,
+            points: teamData ? teamData.points : 0
+        };
+    });
+    
+    // Appliquer tous les pronostics
+    matchDays.forEach(day => {
+        const dayData = storedPredictions.matchDays[day];
+        if (!dayData || !dayData.matches) return;
+        
+        dayData.matches.forEach(pred => {
+            // Utiliser le résultat réel si disponible, sinon le pronostic
+            const homeScore = pred.actualScore ? pred.actualScore.home : pred.predictedScore.home;
+            const awayScore = pred.actualScore ? pred.actualScore.away : pred.predictedScore.away;
+            
+            finalStats[pred.homeTeamId].played++;
+            finalStats[pred.awayTeamId].played++;
+            finalStats[pred.homeTeamId].goalsFor += homeScore;
+            finalStats[pred.homeTeamId].goalsAgainst += awayScore;
+            finalStats[pred.awayTeamId].goalsFor += awayScore;
+            finalStats[pred.awayTeamId].goalsAgainst += homeScore;
+            
+            if (homeScore > awayScore) {
+                finalStats[pred.homeTeamId].won++;
+                finalStats[pred.homeTeamId].points += 3;
+                finalStats[pred.awayTeamId].lost++;
+            } else if (homeScore < awayScore) {
+                finalStats[pred.awayTeamId].won++;
+                finalStats[pred.awayTeamId].points += 3;
+                finalStats[pred.homeTeamId].lost++;
+            } else {
+                finalStats[pred.homeTeamId].drawn++;
+                finalStats[pred.awayTeamId].drawn++;
+                finalStats[pred.homeTeamId].points += 1;
+                finalStats[pred.awayTeamId].points += 1;
+            }
+        });
+    });
+    
+    // Créer le classement final
+    const finalRanking = allTeams.map(team => {
+        const stats = finalStats[team.id];
+        const currentTeamData = currentRanking.find(t => t.id == team.id);
+        const currentPosition = currentTeamData ? currentRanking.indexOf(currentTeamData) + 1 : 0;
+        
+        return {
+            id: team.id,
+            shortName: team.shortName,
+            played: stats.played,
+            won: stats.won,
+            drawn: stats.drawn,
+            lost: stats.lost,
+            goalsFor: stats.goalsFor,
+            goalsAgainst: stats.goalsAgainst,
+            goalDifference: stats.goalsFor - stats.goalsAgainst,
+            points: stats.points,
+            currentPosition: currentPosition
+        };
+    });
+    
+    // Trier
+    finalRanking.sort((a, b) => {
+        if (a.points !== b.points) return b.points - a.points;
+        if (a.goalDifference !== b.goalDifference) return b.goalDifference - a.goalDifference;
+        return b.goalsFor - a.goalsFor;
+    });
+    
+    // Ajouter les positions finales
+    finalRanking.forEach((team, index) => {
+        team.finalPosition = index + 1;
+        team.positionChange = team.currentPosition - team.finalPosition;
+    });
+    
+    // Config
+    const config = getSeasonConfig();
+    const totalTeams = finalRanking.length;
+    const relegationPosition = totalTeams - config.relegationPlaces;
+    
+    // Générer le HTML
+    let html = `
+        <table class="final-ranking-table">
+            <thead>
+                <tr>
+                    <th>Pos.</th>
+                    <th>Équipe</th>
+                    <th>MJ</th>
+                    <th>V</th>
+                    <th>N</th>
+                    <th>D</th>
+                    <th>BP</th>
+                    <th>BC</th>
+                    <th>Diff</th>
+                    <th>Pts</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    finalRanking.forEach((team, index) => {
+        const position = index + 1;
+        
+        // Classe de ligne
+        let rowClass = '';
+        let zoneBadge = '';
+        
+        if (position <= config.championPlaces) {
+            rowClass = 'champion-row';
+            zoneBadge = '<span class="zone-badge champion">🏆</span>';
+        } else if (position <= config.europeanPlaces) {
+            rowClass = 'europe-row';
+            zoneBadge = '<span class="zone-badge europe">⭐</span>';
+        } else if (position > relegationPosition) {
+            rowClass = 'relegation-row';
+            zoneBadge = '<span class="zone-badge relegation">⬇️</span>';
+        }
+        
+        // Changement de position
+        let changeIcon = '';
+        let changeClass = 'same';
+        if (team.positionChange > 0) {
+            changeIcon = `▲${team.positionChange}`;
+            changeClass = 'up';
+        } else if (team.positionChange < 0) {
+            changeIcon = `▼${Math.abs(team.positionChange)}`;
+            changeClass = 'down';
+        } else {
+            changeIcon = '=';
+        }
+        
+        html += `
+            <tr class="${rowClass}">
+                <td class="position">
+                    ${position}
+                    <span class="position-change ${changeClass}">${changeIcon}</span>
+                </td>
+                <td>
+                    <div class="team-name">
+                        ${team.shortName}
+                        ${zoneBadge}
+                    </div>
+                </td>
+                <td>${team.played}</td>
+                <td>${team.won}</td>
+                <td>${team.drawn}</td>
+                <td>${team.lost}</td>
+                <td>${team.goalsFor}</td>
+                <td>${team.goalsAgainst}</td>
+                <td>${team.goalDifference > 0 ? '+' : ''}${team.goalDifference}</td>
+                <td><strong>${team.points}</strong></td>
+            </tr>
+        `;
+    });
+    
+    html += `
+            </tbody>
+        </table>
+    `;
+    
+    // Statistiques récapitulatives
+    const champion = finalRanking[0];
+    const relegated = finalRanking.slice(-config.relegationPlaces);
+    const biggestClimber = finalRanking.reduce((max, t) => t.positionChange > max.positionChange ? t : max, finalRanking[0]);
+    const biggestFaller = finalRanking.reduce((min, t) => t.positionChange < min.positionChange ? t : min, finalRanking[0]);
+    
+    html += `
+        <div class="final-stats">
+            <div class="final-stat-card">
+                <div class="stat-icon">🏆</div>
+                <div class="stat-value">${champion.shortName}</div>
+                <div class="stat-label">Champion (${champion.points} pts)</div>
+            </div>
+            <div class="final-stat-card">
+                <div class="stat-icon">📈</div>
+                <div class="stat-value">${biggestClimber.shortName}</div>
+                <div class="stat-label">+${biggestClimber.positionChange} places</div>
+            </div>
+            <div class="final-stat-card">
+                <div class="stat-icon">📉</div>
+                <div class="stat-value">${biggestFaller.shortName}</div>
+                <div class="stat-label">${biggestFaller.positionChange} places</div>
+            </div>
+            <div class="final-stat-card">
+                <div class="stat-icon">⬇️</div>
+                <div class="stat-value">${relegated.map(t => t.shortName).join(', ')}</div>
+                <div class="stat-label">Relégués</div>
+            </div>
+        </div>
+    `;
+    
+    container.innerHTML = html;
+    section.style.display = 'block';
 }
