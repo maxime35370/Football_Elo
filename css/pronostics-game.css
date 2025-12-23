@@ -789,3 +789,8 @@
     padding-bottom: 0.5rem;
     border-bottom: 1px dashed #e9ecef;
 }
+
+.match-time.locked {
+    color: #e74c3c;
+    background: rgba(231, 76, 60, 0.1);
+}

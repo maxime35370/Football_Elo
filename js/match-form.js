@@ -362,10 +362,12 @@ function setupFormListeners() {
 
 // Mettre la date d'aujourd'hui par défaut (seulement en mode création)
 function setTodayDate() {
-    const dateInput = document.getElementById('matchDate');
-    if (dateInput && !editingMatchId) {
-        const today = new Date().toISOString().split('T')[0];
-        dateInput.value = today;
+    const dateTimeInput = document.getElementById('matchDateTime');
+    if (dateTimeInput && !editingMatchId) {
+        // Format: YYYY-MM-DDTHH:MM
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        dateTimeInput.value = now.toISOString().slice(0, 16);
     }
 }
 
@@ -1018,19 +1020,20 @@ function handleFormSubmit(event) {
 function validateMatch() {
     const homeTeam = document.getElementById('homeTeam').value;
     const awayTeam = document.getElementById('awayTeam').value;
-    const matchDate = document.getElementById('matchDate').value;
+    const matchDateTime = document.getElementById('matchDateTime').value;  // ← Changé
+    const matchDay = document.getElementById('matchDay').value;
     
     if (!homeTeam || !awayTeam) {
         showError('Veuillez sélectionner les deux équipes');
         return false;
     }
     
-    if (!matchDate) {
-        showError('Veuillez saisir la date du match');
+    if (!matchDateTime) {  // ← Changé
+        showError('Veuillez saisir la date et heure du match');
         return false;
     }
 
-    const maxMatchDays = (teamsData.length * 2) - 2; // Formule : 2n-2
+    const maxMatchDays = (teamsData.length * 2) - 2;
     if (!matchDay || matchDay < 1 || matchDay > maxMatchDays) {
         showError(`Veuillez saisir une journée valide (1 à ${maxMatchDays})`);
         return false;
@@ -1072,37 +1075,26 @@ function collectMatchData() {
         });
     });
     
-
-    const match = {
-        id: matchId,
-        season: selectedSeason,
-        matchDay: parseInt(matchDay),
-        homeTeamId: parseInt(homeTeamId),
-        awayTeamId: parseInt(awayTeamId),
-        finalScore: {
-            home: parseInt(homeScore),
-            away: parseInt(awayScore)
-        },
-        
-        // Nouveaux champs pour la date/heure
-        scheduledAt: matchDateTime,           // Date/heure prévue du match
-        playedAt: new Date().toISOString(),   // Date/heure d'enregistrement
-    };
-
-    // Récupérer la date/heure programmée du match (si renseignée)
-    const matchDateTimeInput = document.getElementById('matchDateTime');
-    const scheduledAt = matchDateTimeInput && matchDateTimeInput.value 
-        ? new Date(matchDateTimeInput.value).toISOString() 
-        : null;
-
     // Trier les buts par minute
     goalsData.sort((a, b) => {
         if (a.minute !== b.minute) return a.minute - b.minute;
         return a.extraTime - b.extraTime;
     });
     
+    // Récupérer la date/heure du match
+    const matchDateTimeInput = document.getElementById('matchDateTime');
+    const matchDateTimeValue = matchDateTimeInput ? matchDateTimeInput.value : null;
+    const scheduledAt = matchDateTimeValue 
+        ? new Date(matchDateTimeValue).toISOString() 
+        : null;
+    
+    // Extraire juste la date (YYYY-MM-DD) pour compatibilité avec l'ancien champ
+    const dateOnly = matchDateTimeValue 
+        ? matchDateTimeValue.split('T')[0] 
+        : new Date().toISOString().split('T')[0];
+    
     return {
-        date: document.getElementById('matchDate').value,
+        date: dateOnly,
         matchDay: parseInt(document.getElementById('matchDay').value),
         homeTeamId: homeTeamId,
         awayTeamId: awayTeamId,
@@ -1112,8 +1104,8 @@ function collectMatchData() {
             away: parseInt(document.getElementById('currentAwayScore').textContent)
         },
         halftimeScore: document.getElementById('halftimeScore').textContent,
-        scheduledAt: scheduledAt,                    // ← Date/heure prévue du match
-        playedAt: new Date().toISOString()           // ← Date/heure d'enregistrement
+        scheduledAt: scheduledAt,
+        playedAt: new Date().toISOString()
     };
 }
 

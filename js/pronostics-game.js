@@ -417,37 +417,81 @@ function initMatchDaySelector() {
     const select = document.getElementById('pronoMatchDay');
     select.innerHTML = '';
     
-    // Trouver les journées disponibles
-    const lastPlayedMatchDay = Math.max(0, ...allMatches.map(m => m.matchDay || 0));
-    const maxFutureMatchDay = futureMatches.length > 0 
-        ? Math.max(...futureMatches.map(m => m.matchDay || 0))
-        : lastPlayedMatchDay;
+    // Compter les matchs joués par journée
+    const playedByDay = {};
+    allMatches.forEach(m => {
+        const day = m.matchDay || 0;
+        playedByDay[day] = (playedByDay[day] || 0) + 1;
+    });
     
-    // Journées futures (à pronostiquer)
-    for (let day = lastPlayedMatchDay + 1; day <= maxFutureMatchDay; day++) {
-        const hasMatches = futureMatches.some(m => m.matchDay === day);
-        if (hasMatches) {
-            const option = document.createElement('option');
-            option.value = day;
-            option.textContent = `Journée ${day} (à venir)`;
-            select.appendChild(option);
+    // Compter les matchs prévus par journée (futurs)
+    const totalByDay = {};
+    futureMatches.forEach(m => {
+        const day = m.matchDay || 0;
+        totalByDay[day] = (totalByDay[day] || 0) + 1;
+    });
+    
+    // Ajouter aussi les matchs joués au total
+    allMatches.forEach(m => {
+        const day = m.matchDay || 0;
+        totalByDay[day] = (totalByDay[day] || 0) + 1;
+    });
+    
+    // Nombre de matchs par journée (selon nombre d'équipes)
+    const matchesPerDay = allTeams.length / 2;
+    
+    // Trouver toutes les journées
+    const allDays = new Set([
+        ...Object.keys(playedByDay).map(Number),
+        ...Object.keys(totalByDay).map(Number)
+    ]);
+    const sortedDays = [...allDays].sort((a, b) => a - b);
+    
+    // Trouver la journée "en cours" (partiellement jouée ou prochaine à venir)
+    let currentMatchDay = null;
+    
+    for (const day of sortedDays) {
+        const played = playedByDay[day] || 0;
+        const total = totalByDay[day] || matchesPerDay;
+        
+        // Si la journée n'est pas complète, c'est la journée en cours
+        if (played < total && played < matchesPerDay) {
+            currentMatchDay = day;
+            break;
         }
     }
     
-    // Journées passées (voir résultats)
-    for (let day = lastPlayedMatchDay; day >= 1; day--) {
+    // Si toutes les journées sont complètes, prendre la prochaine
+    if (!currentMatchDay) {
+        const lastPlayed = Math.max(0, ...Object.keys(playedByDay).map(Number));
+        currentMatchDay = lastPlayed + 1;
+    }
+    
+    // Construire les options
+    const maxDay = Math.max(...sortedDays, currentMatchDay);
+    
+    for (let day = 1; day <= maxDay; day++) {
+        const played = playedByDay[day] || 0;
+        
+        let label;
+        if (played === 0) {
+            label = `Journée ${day} (à venir)`;
+        } else if (played >= matchesPerDay) {
+            label = `Journée ${day} (terminée)`;
+        } else {
+            label = `Journée ${day} (${played}/${matchesPerDay} joués)`;
+        }
+        
         const option = document.createElement('option');
         option.value = day;
-        option.textContent = `Journée ${day} (terminée)`;
+        option.textContent = label;
         select.appendChild(option);
     }
     
-    // Sélectionner la prochaine journée par défaut
-    if (select.options.length > 0) {
-        select.selectedIndex = 0;
-        selectedMatchDay = parseInt(select.value);
-        displayPredictionsForm();
-    }
+    // Sélectionner la journée en cours par défaut
+    select.value = currentMatchDay;
+    selectedMatchDay = currentMatchDay;
+    displayPredictionsForm();
 }
 
 async function displayPredictionsForm() {
@@ -463,72 +507,72 @@ async function displayPredictionsForm() {
     // Déterminer si la journée est passée ou future
     const lastPlayedMatchDay = Math.max(0, ...allMatches.map(m => m.matchDay || 0));
     const isPastMatchDay = selectedMatchDay <= lastPlayedMatchDay;
-
-    // Vérifier si la journée a une deadline définie
-    const matchesThisDayFuture = futureMatches.filter(m => m.matchDay === selectedMatchDay);
-    let isLocked = isPastMatchDay;
-    let deadlineText = 'Journée terminée';
-
-    if (!isPastMatchDay && matchesThisDayFuture.length > 0) {
-        // Chercher la deadline (si définie) ou utiliser la date du premier match
-        const firstMatch = matchesThisDayFuture[0];
-        
-        if (firstMatch.deadline) {
-            const deadline = new Date(firstMatch.deadline);
-            const now = new Date();
-            
-            if (now >= deadline) {
-                isLocked = true;
-                deadlineText = 'Deadline passée';
-            } else {
-                // Calculer le temps restant
-                const diff = deadline - now;
-                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                
-                if (days > 0) {
-                    deadlineText = `${days}j ${hours}h restants`;
-                } else if (hours > 0) {
-                    deadlineText = `${hours}h ${minutes}min restants`;
-                } else {
-                    deadlineText = `${minutes} min restantes`;
-                }
-            }
-        } else {
-            deadlineText = 'Pronostics ouverts';
-        }
-    }
-
-    // Mettre à jour l'affichage deadline
-    if (isLocked) {
-        deadlineEl.className = 'deadline-info locked';
-        deadlineEl.innerHTML = `<span class="deadline-icon">🔒</span><span class="deadline-text">${deadlineText}</span>`;
-    } else {
-        deadlineEl.className = 'deadline-info open';
-        deadlineEl.innerHTML = `<span class="deadline-icon">✅</span><span class="deadline-text">${deadlineText}</span>`;
-    }
     
-    // Mettre à jour le deadline
-    if (isLocked) {
-        deadlineEl.className = 'deadline-info locked';
-        deadlineEl.innerHTML = '<span class="deadline-icon">🔒</span><span class="deadline-text">Journée terminée</span>';
-    } else {
-        deadlineEl.className = 'deadline-info open';
-        deadlineEl.innerHTML = '<span class="deadline-icon">✅</span><span class="deadline-text">Pronostics ouverts</span>';
-    }
-    
-    // Récupérer les matchs de cette journée
-    let matchesThisDay;
-    if (isPastMatchDay) {
-        matchesThisDay = allMatches.filter(m => m.matchDay === selectedMatchDay);
-    } else {
-        matchesThisDay = futureMatches.filter(m => m.matchDay === selectedMatchDay);
-    }
+    // Récupérer les matchs de cette journée (joués + à venir)
+    const playedMatches = allMatches.filter(m => m.matchDay === selectedMatchDay);
+    const upcomingMatches = futureMatches.filter(m => m.matchDay === selectedMatchDay);
+
+    // Combiner les deux, en évitant les doublons
+    const playedKeys = new Set(playedMatches.map(m => `${m.homeTeamId}-${m.awayTeamId}`));
+    const uniqueUpcoming = upcomingMatches.filter(m => !playedKeys.has(`${m.homeTeamId}-${m.awayTeamId}`));
+
+    let matchesThisDay = [...playedMatches, ...uniqueUpcoming];
+
+    // Trier par date si disponible
+    matchesThisDay.sort((a, b) => {
+        const dateA = a.scheduledAt ? new Date(a.scheduledAt) : new Date(0);
+        const dateB = b.scheduledAt ? new Date(b.scheduledAt) : new Date(0);
+        return dateA - dateB;
+    });
     
     if (matchesThisDay.length === 0) {
         container.innerHTML = '<p style="text-align:center;color:#7f8c8d;">Aucun match pour cette journée</p>';
         return;
+    }
+    
+    // Calculer combien de matchs sont encore ouverts
+    const now = new Date();
+    let openMatches = 0;
+    let nextDeadline = null;
+    
+    matchesThisDay.forEach(match => {
+        if (match.scheduledAt) {
+            const matchTime = new Date(match.scheduledAt);
+            if (now < matchTime) {
+                openMatches++;
+                if (!nextDeadline || matchTime < nextDeadline) {
+                    nextDeadline = matchTime;
+                }
+            }
+        } else if (!isPastMatchDay) {
+            openMatches++; // Pas de date = ouvert si journée future
+        }
+    });
+    
+    // Mettre à jour le badge deadline
+    if (isPastMatchDay || openMatches === 0) {
+        deadlineEl.className = 'deadline-info locked';
+        deadlineEl.innerHTML = '<span class="deadline-icon">🔒</span><span class="deadline-text">Tous les matchs commencés</span>';
+    } else if (nextDeadline) {
+        const diff = nextDeadline - now;
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        
+        let timeText;
+        if (hours > 24) {
+            const days = Math.floor(hours / 24);
+            timeText = `${days}j ${hours % 24}h`;
+        } else if (hours > 0) {
+            timeText = `${hours}h ${minutes}min`;
+        } else {
+            timeText = `${minutes} min`;
+        }
+        
+        deadlineEl.className = 'deadline-info open';
+        deadlineEl.innerHTML = `<span class="deadline-icon">⏰</span><span class="deadline-text">Prochain match dans ${timeText} (${openMatches} ouvert${openMatches > 1 ? 's' : ''})</span>`;
+    } else {
+        deadlineEl.className = 'deadline-info open';
+        deadlineEl.innerHTML = `<span class="deadline-icon">✅</span><span class="deadline-text">${openMatches} match${openMatches > 1 ? 's' : ''} ouvert${openMatches > 1 ? 's' : ''}</span>`;
     }
     
     // Récupérer les pronostics existants du joueur
@@ -545,7 +589,7 @@ async function displayPredictionsForm() {
     if (existingPredictions) {
         statusEl.className = 'predictions-status saved';
         statusEl.textContent = `✅ Pronostics sauvegardés le ${new Date(existingPredictions.submittedAt).toLocaleString('fr-FR')}`;
-    } else if (!isLocked) {
+    } else if (openMatches > 0) {
         statusEl.className = 'predictions-status unsaved';
         statusEl.textContent = '⚠️ Pronostics non sauvegardés';
     } else {
@@ -564,27 +608,34 @@ async function displayPredictionsForm() {
         
         const homeScore = prediction ? prediction.homeScore : '';
         const awayScore = prediction ? prediction.awayScore : '';
-        const matchTime = match.scheduledAt 
-        ? new Date(match.scheduledAt).toLocaleString('fr-FR', { 
-            weekday: 'short', 
-            day: 'numeric', 
-            month: 'short', 
-            hour: '2-digit', 
-            minute: '2-digit' 
-        })
-        : null;
-
+        
+        // Vérifier si CE match est bloqué (date passée)
+        let isMatchLocked = isPastMatchDay;
+        let matchTimeText = '';
+        
+        if (match.scheduledAt) {
+            const matchTime = new Date(match.scheduledAt);
+            isMatchLocked = now >= matchTime;
+            matchTimeText = matchTime.toLocaleString('fr-FR', { 
+                weekday: 'short', 
+                day: 'numeric', 
+                month: 'short', 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+        }
+        
         // Résultat réel si match terminé
         let resultHtml = '';
-        if (isPastMatchDay && match.finalScore) {
+        if (match.finalScore) {
             const result = calculatePredictionResult(
-            prediction?.homeScore, 
-            prediction?.awayScore, 
-            match.finalScore.home, 
-            match.finalScore.away,
-            prediction?.savedAt,
-            match  // ← On passe tout l'objet match
-        );
+                prediction?.homeScore, 
+                prediction?.awayScore, 
+                match.finalScore.home, 
+                match.finalScore.away,
+                prediction?.savedAt,
+                match
+            );
             
             resultHtml = `
                 <div class="actual-result ${result.class}">
@@ -594,17 +645,12 @@ async function displayPredictionsForm() {
                 </div>
             `;
         }
-        html += `
-            <div class="prediction-match ...">
-                ${matchTime ? `<div class="match-time">🕐 ${matchTime}</div>` : ''}
-                <!-- ... reste du HTML -->
-            </div>
-        `;
         
         html += `
-            <div class="prediction-match ${isLocked ? 'locked' : ''} ${resultHtml ? 'has-result' : ''}" 
+            <div class="prediction-match ${isMatchLocked ? 'locked' : ''} ${resultHtml ? 'has-result' : ''}" 
                  data-home="${match.homeTeamId}" 
                  data-away="${match.awayTeamId}">
+                ${matchTimeText ? `<div class="match-time ${isMatchLocked ? 'locked' : ''}">${isMatchLocked ? '🔒' : '🕐'} ${matchTimeText}</div>` : ''}
                 <div class="prediction-team home">
                     <span class="team-name">${homeTeam?.shortName || '?'}</span>
                     <span class="team-badge">🏠 Domicile</span>
@@ -612,13 +658,13 @@ async function displayPredictionsForm() {
                 <div class="prediction-score">
                     <input type="number" min="0" max="20" class="home-score" 
                            value="${homeScore}" 
-                           ${isLocked ? 'disabled' : ''}
+                           ${isMatchLocked ? 'disabled' : ''}
                            data-home="${match.homeTeamId}" 
                            data-away="${match.awayTeamId}">
                     <span class="separator">-</span>
                     <input type="number" min="0" max="20" class="away-score" 
                            value="${awayScore}" 
-                           ${isLocked ? 'disabled' : ''}
+                           ${isMatchLocked ? 'disabled' : ''}
                            data-home="${match.homeTeamId}" 
                            data-away="${match.awayTeamId}">
                 </div>
@@ -633,9 +679,10 @@ async function displayPredictionsForm() {
     
     container.innerHTML = html;
     
-    // Masquer les boutons si verrouillé
-    document.getElementById('savePredictionsBtn').style.display = isLocked ? 'none' : 'inline-flex';
-    document.getElementById('clearPredictionsBtn').style.display = isLocked ? 'none' : 'inline-flex';
+    // Afficher/masquer les boutons selon s'il y a des matchs ouverts
+    const hasOpenMatches = openMatches > 0;
+    document.getElementById('savePredictionsBtn').style.display = hasOpenMatches ? 'inline-flex' : 'none';
+    document.getElementById('clearPredictionsBtn').style.display = hasOpenMatches ? 'inline-flex' : 'none';
     
     // Afficher le résumé si journée passée
     if (isPastMatchDay && existingPredictions) {
@@ -771,7 +818,9 @@ function displayPredictionsSummary(predictionsData, matches) {
         if (match && match.finalScore) {
             const result = calculatePredictionResult(
                 pred.homeScore, pred.awayScore,
-                match.finalScore.home, match.finalScore.away
+                match.finalScore.home, match.finalScore.away,
+                pred.savedAt,
+                match
             );
             
             totalPoints += result.points;
@@ -928,13 +977,15 @@ async function loadHistory() {
                 const homeTeam = allTeams.find(t => t.id == pred.homeTeamId);
                 const awayTeam = allTeams.find(t => t.id == pred.awayTeamId);
                 
-                let result = { points: 0, class: 'wrong', label: '-' };
+                let result = { points: 0, class: 'wrong', label: '-' };  // ← Déclaration avec let
                 let realScore = '-';
-                
+
                 if (match && match.finalScore) {
-                    result = calculatePredictionResult(
+                    result = calculatePredictionResult(  // ← Retirer "const"
                         pred.homeScore, pred.awayScore,
-                        match.finalScore.home, match.finalScore.away
+                        match.finalScore.home, match.finalScore.away,
+                        pred.savedAt,
+                        match
                     );
                     totalPoints += result.points;
                     realScore = `${match.finalScore.home}-${match.finalScore.away}`;
