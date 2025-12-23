@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Pronostics Multijoueur - Football Elo</title>
+        <link rel="stylesheet" href="../css/style.css">
+        <link rel="stylesheet" href="../css/pronostics-game.css">
+    </head>
+    <body>
+        <header>
+            <h1>⚽ Football Elo</h1>
+            <p>Pronostics Multijoueur</p>
+        </header>
+
+        <nav>
+            <div class="nav-container">
+                <a href="../index.html" class="nav-btn">🏠 Accueil</a>
+                <a href="../pages/add-match.html" class="nav-btn">➕ Ajouter un match</a>
+                <a href="../pages/matches.html" class="nav-btn">📋 Historique</a>
+                <a href="../pages/results-table.html" class="nav-btn">📊 Tableau</a>
+                <a href="../pages/rankings.html" class="nav-btn">🏆 Classements</a>
+                <a href="../pages/statistics.html" class="nav-btn">📈 Stats</a>            
+                <a href="../pages/calendar.html" class="nav-btn">📅 Calendrier</a>
+                <a href="../pages/pronostics-game.html" class="nav-btn active">🎮 Pronos</a>
+                <a href="../pages/archives.html" class="nav-btn">📚 Archives</a>
+                <a href="../pages/admin/teams-manager.html" class="nav-btn">⚙️ Admin</a>
+            </div>
+        </nav>
+
+        <main>
+            <div class="prono-container">
+                
+                <!-- Section Connexion (visible si non connecté) -->
+                <section id="authSection" class="auth-section">
+                    <div class="auth-card">
+                        <div class="auth-tabs">
+                            <button class="auth-tab active" data-tab="login">🔑 Connexion</button>
+                            <button class="auth-tab" data-tab="register">📝 Inscription</button>
+                        </div>
+                        
+                        <!-- Formulaire Connexion -->
+                        <div id="loginForm" class="auth-form active">
+                            <h3>Connexion</h3>
+                            <div class="form-group">
+                                <label for="loginPseudo">Pseudo</label>
+                                <input type="text" id="loginPseudo" placeholder="Ton pseudo" maxlength="20">
+                            </div>
+                            <div class="form-group">
+                                <label for="loginPin">Code PIN (4 chiffres)</label>
+                                <input type="password" id="loginPin" placeholder="••••" maxlength="4" inputmode="numeric">
+                            </div>
+                            <button id="loginBtn" class="btn btn-primary">Se connecter</button>
+                            <p id="loginError" class="error-message"></p>
+                        </div>
+                        
+                        <!-- Formulaire Inscription -->
+                        <div id="registerForm" class="auth-form">
+                            <h3>Créer un compte</h3>
+                            <div class="form-group">
+                                <label for="registerPseudo">Choisis un pseudo</label>
+                                <input type="text" id="registerPseudo" placeholder="Ton pseudo" maxlength="20">
+                            </div>
+                            <div class="form-group">
+                                <label for="registerPin">Code PIN (4 chiffres)</label>
+                                <input type="password" id="registerPin" placeholder="••••" maxlength="4" inputmode="numeric">
+                            </div>
+                            <div class="form-group">
+                                <label for="registerPinConfirm">Confirme le code PIN</label>
+                                <input type="password" id="registerPinConfirm" placeholder="••••" maxlength="4" inputmode="numeric">
+                            </div>
+                            <button id="registerBtn" class="btn btn-primary">Créer mon compte</button>
+                            <p id="registerError" class="error-message"></p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section Jeu (visible si connecté) -->
+                <section id="gameSection" class="game-section" style="display: none;">
+                    
+                    <!-- Header joueur -->
+                    <div class="player-header">
+                        <div class="player-info">
+                            <span class="player-avatar">👤</span>
+                            <div class="player-details">
+                                <span class="player-name" id="playerName">-</span>
+                                <span class="player-stats" id="playerStats">- pts</span>
+                            </div>
+                        </div>
+                        <div class="player-rank" id="playerRank">-</div>
+                        <button id="logoutBtn" class="btn btn-small btn-secondary">Déconnexion</button>
+                    </div>
+
+                    <!-- Onglets du jeu -->
+                    <div class="game-tabs">
+                        <button class="game-tab active" data-tab="predictions">🎯 Pronostiquer</button>
+                        <button class="game-tab" data-tab="leaderboard">🏆 Classement</button>
+                        <button class="game-tab" data-tab="history">📜 Historique</button>
+                        <button class="game-tab" data-tab="rules">📖 Règles</button>
+                    </div>
+
+                    <!-- Onglet Pronostics -->
+                    <div id="predictionsTab" class="game-tab-content active">
+                        <div class="predictions-header">
+                            <div class="matchday-selector">
+                                <label for="pronoMatchDay">Journée :</label>
+                                <select id="pronoMatchDay"></select>
+                            </div>
+                            <div class="deadline-info" id="deadlineInfo">
+                                <span class="deadline-icon">⏰</span>
+                                <span class="deadline-text">-</span>
+                            </div>
+                        </div>
+                        
+                        <div class="predictions-status" id="predictionsStatus"></div>
+                        
+                        <div class="predictions-list" id="predictionsList">
+                            <!-- Matchs générés dynamiquement -->
+                        </div>
+                        
+                        <div class="predictions-actions">
+                            <button id="savePredictionsBtn" class="btn btn-primary btn-large">💾 Sauvegarder mes pronostics</button>
+                            <button id="clearPredictionsBtn" class="btn btn-secondary">🗑️ Effacer</button>
+                        </div>
+                        
+                        <div class="predictions-summary" id="predictionsSummary">
+                            <!-- Résumé après calcul -->
+                        </div>
+                    </div>
+
+                    <!-- Onglet Classement -->
+                    <div id="leaderboardTab" class="game-tab-content">
+                        <div class="leaderboard-header">
+                            <h3>🏆 Classement des Pronostiqueurs</h3>
+                            <div class="leaderboard-filters">
+                                <select id="leaderboardSeason">
+                                    <option value="">Saison en cours</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="leaderboard-table-wrapper">
+                            <table class="leaderboard-table" id="leaderboardTable">
+                                <thead>
+                                    <tr>
+                                        <th>Pos</th>
+                                        <th>Joueur</th>
+                                        <th>Pts</th>
+                                        <th>Moy</th>
+                                        <th>🏆</th>
+                                        <th>🎯</th>
+                                        <th>✅</th>
+                                        <th>❌</th>
+                                        <th>%</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Onglet Historique -->
+                    <div id="historyTab" class="game-tab-content">
+                        <div class="history-header">
+                            <h3>📜 Mon Historique</h3>
+                        </div>
+                        <div class="history-list" id="historyList">
+                            <!-- Historique généré dynamiquement -->
+                        </div>
+                    </div>
+
+                    <!-- Onglet Règles -->
+                    <div id="rulesTab" class="game-tab-content">
+                        <div class="rules-content">
+                            <h3>📖 Règles du Jeu</h3>
+                            
+                            <div class="rule-section">
+                                <h4>🎯 Objectif</h4>
+                                <p>Prédire les scores des matchs de chaque journée et accumuler un maximum de points.</p>
+                            </div>
+                            
+                            <div class="rule-section">
+                                <h4>📊 Système de Points</h4>
+                                <table class="rules-table">
+                                    <tr>
+                                        <td>❌ Mauvais résultat</td>
+                                        <td><strong>0 pt</strong></td>
+                                        <td>L'équipe prédite n'a pas gagné</td>
+                                    </tr>
+                                    <tr>
+                                        <td>✅ Bon résultat</td>
+                                        <td><strong>3 pts</strong></td>
+                                        <td>Bonne équipe gagnante (écart ≥3 buts)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>✅ Bon + écart 2 buts</td>
+                                        <td><strong>4 pts</strong></td>
+                                        <td>Bon résultat + score proche</td>
+                                    </tr>
+                                    <tr>
+                                        <td>🎯 Score proche</td>
+                                        <td><strong>6 pts</strong></td>
+                                        <td>Bon résultat + 1 but d'écart total</td>
+                                    </tr>
+                                    <tr>
+                                        <td>🏆 Score exact</td>
+                                        <td><strong>9 pts</strong></td>
+                                        <td>Score parfaitement prédit !</td>
+                                    </tr>
+                                </table>
+                            </div>
+                            
+                            <div class="rule-section">
+                                <h4>📐 Calcul de l'écart</h4>
+                                <p><code>Écart = |buts_dom_prédit - buts_dom_réel| + |buts_ext_prédit - buts_ext_réel|</code></p>
+                                <p><strong>Exemple :</strong> Match réel 3-2, Pronostic 3-1 → Écart = |3-3| + |1-2| = 0 + 1 = <strong>1 but</strong> → 🎯 6 pts</p>
+                            </div>
+                            
+                            <div class="rule-section">
+                                <h4>⏰ Deadline</h4>
+                                <p>Les pronostics doivent être soumis <strong>avant le premier match</strong> de la journée. Une fois la journée commencée, les pronostics sont verrouillés.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 Football Elo - Pronostics Multijoueur</p>
+        </footer>
+
+        <!-- Firebase SDK -->
+        <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+        <!-- Scripts -->
+        <script src="../js/firebase-config.js"></script>
+        <script src="../js/firebase-service.js"></script>
+        <script src="../js/seasons.js"></script>
+        <script src="../js/teams-loader.js"></script>
+        <script src="../js/storage.js"></script>
+        <script src="../js/pronostics-game.js"></script>
+    </body>
+</html>

@@ -1,0 +1,791 @@
+/* ===============================
+   PRONOSTICS MULTIJOUEUR
+   =============================== */
+
+.prono-container {
+    max-width: 1000px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+/* ===============================
+   AUTHENTIFICATION
+   =============================== */
+
+.auth-section {
+    display: flex;
+    justify-content: center;
+    padding: 2rem 0;
+}
+
+.auth-card {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 400px;
+    overflow: hidden;
+}
+
+.auth-tabs {
+    display: flex;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.auth-tab {
+    flex: 1;
+    padding: 1rem;
+    border: none;
+    background: #f8f9fa;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #7f8c8d;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.auth-tab.active {
+    background: white;
+    color: #3498db;
+    border-bottom: 3px solid #3498db;
+    margin-bottom: -2px;
+}
+
+.auth-form {
+    display: none;
+    padding: 2rem;
+}
+
+.auth-form.active {
+    display: block;
+}
+
+.auth-form h3 {
+    text-align: center;
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+}
+
+.form-group {
+    margin-bottom: 1.25rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    font-size: 1rem;
+    transition: border-color 0.3s;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #3498db;
+}
+
+.auth-form .btn {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1.1rem;
+    margin-top: 0.5rem;
+}
+
+.error-message {
+    color: #e74c3c;
+    text-align: center;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    min-height: 1.2rem;
+}
+
+/* ===============================
+   SECTION JEU
+   =============================== */
+
+.game-section {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+/* Header Joueur */
+.player-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+}
+
+.player-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.player-avatar {
+    font-size: 2.5rem;
+    background: rgba(255,255,255,0.2);
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.player-name {
+    font-size: 1.3rem;
+    font-weight: bold;
+    display: block;
+}
+
+.player-stats {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.player-rank {
+    font-size: 2rem;
+    font-weight: bold;
+    background: rgba(255,255,255,0.2);
+    padding: 0.5rem 1.5rem;
+    border-radius: 30px;
+}
+
+.btn-small {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+}
+
+/* Onglets du jeu */
+.game-tabs {
+    display: flex;
+    border-bottom: 2px solid #e9ecef;
+    background: #f8f9fa;
+}
+
+.game-tab {
+    flex: 1;
+    padding: 1rem;
+    border: none;
+    background: transparent;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #7f8c8d;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.game-tab:hover {
+    color: #3498db;
+    background: rgba(52, 152, 219, 0.1);
+}
+
+.game-tab.active {
+    color: #3498db;
+    background: white;
+    border-bottom: 3px solid #3498db;
+    margin-bottom: -2px;
+}
+
+.game-tab-content {
+    display: none;
+    padding: 1.5rem;
+}
+
+.game-tab-content.active {
+    display: block;
+}
+
+/* ===============================
+   ONGLET PRONOSTICS
+   =============================== */
+
+.predictions-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.matchday-selector {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.matchday-selector label {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.matchday-selector select {
+    padding: 0.5rem 1rem;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.deadline-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+    border-radius: 25px;
+    font-weight: 600;
+    color: #856404;
+}
+
+.deadline-info.locked {
+    background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+    color: #721c24;
+}
+
+.deadline-info.open {
+    background: linear-gradient(135deg, #d4edda, #c3e6cb);
+    color: #155724;
+}
+
+.predictions-status {
+    text-align: center;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 10px;
+    font-weight: 500;
+}
+
+.predictions-status.saved {
+    background: #d4edda;
+    color: #155724;
+}
+
+.predictions-status.unsaved {
+    background: #fff3cd;
+    color: #856404;
+}
+
+/* Liste des pronostics */
+.predictions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.prediction-match {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 12px;
+    gap: 1rem;
+    transition: all 0.2s;
+}
+
+.prediction-match:hover {
+    background: #e9ecef;
+}
+
+.prediction-match.locked {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.prediction-match.has-result {
+    border-left: 4px solid #3498db;
+}
+
+.prediction-team {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.prediction-team.home {
+    text-align: right;
+}
+
+.prediction-team.away {
+    text-align: left;
+}
+
+.team-name {
+    font-weight: 700;
+    font-size: 1rem;
+    color: #2c3e50;
+}
+
+.team-badge {
+    font-size: 0.8rem;
+    color: #7f8c8d;
+}
+
+.prediction-score {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.prediction-score input {
+    width: 50px;
+    height: 50px;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    background: white;
+}
+
+.prediction-score input:focus {
+    outline: none;
+    border-color: #3498db;
+}
+
+.prediction-score .separator {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #7f8c8d;
+}
+
+/* Résultat réel affiché */
+.actual-result {
+    margin-top: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+.actual-result.exact {
+    background: linear-gradient(135deg, #9b59b6, #8e44ad);
+    color: white;
+}
+
+.actual-result.close {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+}
+
+.actual-result.correct {
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+    color: white;
+}
+
+.actual-result.wrong {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+}
+
+.points-badge {
+    font-weight: bold;
+    padding: 0.2rem 0.5rem;
+    background: rgba(255,255,255,0.3);
+    border-radius: 5px;
+    margin-left: 0.5rem;
+}
+
+/* Actions */
+.predictions-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    justify-content: center;
+}
+
+.btn-large {
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+}
+
+/* Résumé */
+.predictions-summary {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-radius: 15px;
+}
+
+.summary-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #2c3e50;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.summary-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 1rem;
+    text-align: center;
+}
+
+.summary-stat {
+    padding: 1rem;
+    background: white;
+    border-radius: 10px;
+}
+
+.summary-stat .value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #3498db;
+}
+
+.summary-stat .label {
+    font-size: 0.8rem;
+    color: #7f8c8d;
+}
+
+/* ===============================
+   ONGLET CLASSEMENT
+   =============================== */
+
+.leaderboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.leaderboard-header h3 {
+    margin: 0;
+    color: #2c3e50;
+}
+
+.leaderboard-table-wrapper {
+    overflow-x: auto;
+}
+
+.leaderboard-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.leaderboard-table th,
+.leaderboard-table td {
+    padding: 0.75rem 0.5rem;
+    text-align: center;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.leaderboard-table th {
+    background: linear-gradient(135deg, #2c3e50, #34495e);
+    color: white;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+}
+
+.leaderboard-table td:nth-child(2) {
+    text-align: left;
+    font-weight: 600;
+}
+
+.leaderboard-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.leaderboard-table .rank-1 {
+    background: linear-gradient(135deg, rgba(241, 196, 15, 0.2), rgba(243, 156, 18, 0.1));
+}
+
+.leaderboard-table .rank-2 {
+    background: linear-gradient(135deg, rgba(189, 195, 199, 0.3), rgba(149, 165, 166, 0.1));
+}
+
+.leaderboard-table .rank-3 {
+    background: linear-gradient(135deg, rgba(205, 127, 50, 0.2), rgba(176, 101, 36, 0.1));
+}
+
+.leaderboard-table .current-player {
+    background: linear-gradient(135deg, rgba(52, 152, 219, 0.2), rgba(41, 128, 185, 0.1));
+    font-weight: bold;
+}
+
+.rank-icon {
+    font-size: 1.2rem;
+}
+
+/* ===============================
+   ONGLET HISTORIQUE
+   =============================== */
+
+.history-header {
+    margin-bottom: 1.5rem;
+}
+
+.history-header h3 {
+    margin: 0;
+    color: #2c3e50;
+}
+
+.history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.history-card {
+    background: #f8f9fa;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.history-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+}
+
+.history-matchday {
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.history-points {
+    font-size: 1.3rem;
+    font-weight: bold;
+    background: rgba(255,255,255,0.2);
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+}
+
+.history-card-body {
+    padding: 1rem;
+}
+
+.history-match {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.history-match:last-child {
+    border-bottom: none;
+}
+
+.history-match-teams {
+    font-weight: 500;
+}
+
+.history-match-scores {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.history-prono {
+    color: #7f8c8d;
+}
+
+.history-real {
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.history-points-match {
+    padding: 0.2rem 0.5rem;
+    border-radius: 5px;
+    font-weight: bold;
+    font-size: 0.85rem;
+}
+
+.history-points-match.exact { background: #9b59b6; color: white; }
+.history-points-match.close { background: #3498db; color: white; }
+.history-points-match.correct { background: #27ae60; color: white; }
+.history-points-match.wrong { background: #e74c3c; color: white; }
+
+/* ===============================
+   ONGLET RÈGLES
+   =============================== */
+
+.rules-content {
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.rules-content h3 {
+    text-align: center;
+    color: #2c3e50;
+    margin-bottom: 2rem;
+}
+
+.rule-section {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 12px;
+}
+
+.rule-section h4 {
+    color: #3498db;
+    margin-bottom: 1rem;
+}
+
+.rule-section p {
+    color: #5a6c7d;
+    line-height: 1.6;
+}
+
+.rule-section code {
+    background: #e9ecef;
+    padding: 0.2rem 0.5rem;
+    border-radius: 5px;
+    font-family: monospace;
+}
+
+.rules-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0.5rem;
+}
+
+.rules-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.rules-table td:first-child {
+    font-weight: 500;
+}
+
+.rules-table td:nth-child(2) {
+    color: #3498db;
+    font-weight: bold;
+    text-align: center;
+}
+
+.rules-table td:nth-child(3) {
+    color: #7f8c8d;
+    font-size: 0.9rem;
+}
+
+/* ===============================
+   BOUTONS
+   =============================== */
+
+.btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+}
+
+.btn-secondary {
+    background: #e9ecef;
+    color: #5a6c7d;
+}
+
+.btn-secondary:hover {
+    background: #dee2e6;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* ===============================
+   RESPONSIVE
+   =============================== */
+
+@media (max-width: 768px) {
+    .player-header {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+    
+    .player-info {
+        flex-direction: column;
+    }
+    
+    .game-tabs {
+        flex-wrap: wrap;
+    }
+    
+    .game-tab {
+        flex: 1 1 45%;
+    }
+    
+    .prediction-match {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+        text-align: center;
+    }
+    
+    .prediction-team.home,
+    .prediction-team.away {
+        text-align: center;
+    }
+    
+    .prediction-score {
+        justify-content: center;
+    }
+    
+    .predictions-actions {
+        flex-direction: column;
+    }
+    
+    .leaderboard-table {
+        font-size: 0.85rem;
+    }
+}
+
+.actual-result.late {
+    background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+    color: white;
+}
+
+.history-points-match.late { 
+    background: #95a5a6; 
+    color: white; 
+}
+
+.match-time {
+    grid-column: 1 / -1;
+    text-align: center;
+    font-size: 0.8rem;
+    color: #7f8c8d;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px dashed #e9ecef;
+}

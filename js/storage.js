@@ -100,6 +100,30 @@ function updateMatch(matchId, newMatchData) {
     }
 }
 
+// ===============================
+// MATCHS FUTURS
+// ===============================
+
+function loadFutureMatches(season) {
+    try {
+        const key = `footballEloFutureMatches_${season}`;
+        const stored = localStorage.getItem(key);
+        return stored ? JSON.parse(stored) : [];
+    } catch (error) {
+        console.error('Erreur loadFutureMatches:', error);
+        return [];
+    }
+}
+
+function saveFutureMatches(season, matches) {
+    try {
+        const key = `footballEloFutureMatches_${season}`;
+        localStorage.setItem(key, JSON.stringify(matches));
+    } catch (error) {
+        console.error('Erreur saveFutureMatches:', error);
+    }
+}
+
 // Supprimer un match par ID (synchrone + Firebase en arrière-plan)
 function deleteMatch(matchId) {
     try {

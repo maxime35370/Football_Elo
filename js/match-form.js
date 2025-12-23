@@ -1072,6 +1072,29 @@ function collectMatchData() {
         });
     });
     
+
+    const match = {
+        id: matchId,
+        season: selectedSeason,
+        matchDay: parseInt(matchDay),
+        homeTeamId: parseInt(homeTeamId),
+        awayTeamId: parseInt(awayTeamId),
+        finalScore: {
+            home: parseInt(homeScore),
+            away: parseInt(awayScore)
+        },
+        
+        // Nouveaux champs pour la date/heure
+        scheduledAt: matchDateTime,           // Date/heure prévue du match
+        playedAt: new Date().toISOString(),   // Date/heure d'enregistrement
+    };
+
+    // Récupérer la date/heure programmée du match (si renseignée)
+    const matchDateTimeInput = document.getElementById('matchDateTime');
+    const scheduledAt = matchDateTimeInput && matchDateTimeInput.value 
+        ? new Date(matchDateTimeInput.value).toISOString() 
+        : null;
+
     // Trier les buts par minute
     goalsData.sort((a, b) => {
         if (a.minute !== b.minute) return a.minute - b.minute;
@@ -1088,7 +1111,9 @@ function collectMatchData() {
             home: parseInt(document.getElementById('currentHomeScore').textContent),
             away: parseInt(document.getElementById('currentAwayScore').textContent)
         },
-        halftimeScore: document.getElementById('halftimeScore').textContent
+        halftimeScore: document.getElementById('halftimeScore').textContent,
+        scheduledAt: scheduledAt,                    // ← Date/heure prévue du match
+        playedAt: new Date().toISOString()           // ← Date/heure d'enregistrement
     };
 }
 

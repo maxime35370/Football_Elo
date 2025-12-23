@@ -21,7 +21,8 @@
             <a href="../pages/results-table.html" class="nav-btn">📊 Tableau</a>
             <a href="../pages/rankings.html" class="nav-btn">🏆 Classements</a>
             <a href="../pages/statistics.html" class="nav-btn">📈 Stats</a>            
-            <a href="../pages/calendar.html" class="nav-btn">📅 Calendrier</a>
+            <a href="../pages/calendar.html" class="nav-btn">📅 Calendrier</a>           
+            <a href="../pages/pronostics-game.html" class="nav-btn">🎮 Pronos</a>
             <a href="../pages/archives.html" class="nav-btn">📚 Archives</a>
             <a href="../pages/admin/teams-manager.html" class="nav-btn">⚙️ Admin</a>
         </div>
@@ -48,6 +49,12 @@
                     <div class="form-group">
                         <label for="matchDate">Date du match :</label>
                         <input type="date" id="matchDate" name="matchDate" required>
+                    </div>
+                    <!-- Date et heure du match -->
+                    <div class="form-group">
+                        <label for="matchDateTime">📅 Date et heure du match (optionnel)</label>
+                        <input type="datetime-local" id="matchDateTime" class="form-control">
+                        <small class="form-hint">Laissez vide pour les matchs déjà joués</small>
                     </div>
                     <div class="form-group">
                         <label for="matchDay">Journée :</label>
