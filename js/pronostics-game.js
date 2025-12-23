@@ -536,6 +536,11 @@ async function displayPredictionsForm() {
     let nextDeadline = null;
     
     matchesThisDay.forEach(match => {
+        if (match.finalScore) {
+            // Match joué → fermé
+            return;
+        }
+        
         if (match.scheduledAt) {
             const matchTime = new Date(match.scheduledAt);
             if (now < matchTime) {
@@ -544,8 +549,9 @@ async function displayPredictionsForm() {
                     nextDeadline = matchTime;
                 }
             }
-        } else if (!isPastMatchDay) {
-            openMatches++; // Pas de date = ouvert si journée future
+        } else {
+            // Pas de date et pas joué → ouvert
+            openMatches++;
         }
     });
     
@@ -609,11 +615,15 @@ async function displayPredictionsForm() {
         const homeScore = prediction ? prediction.homeScore : '';
         const awayScore = prediction ? prediction.awayScore : '';
         
-        // Vérifier si CE match est bloqué (date passée)
-        let isMatchLocked = isPastMatchDay;
+        // Vérifier si CE match est bloqué
+        let isMatchLocked = false;
         let matchTimeText = '';
-        
-        if (match.scheduledAt) {
+
+        if (match.finalScore) {
+            // Match déjà joué → verrouillé
+            isMatchLocked = true;
+        } else if (match.scheduledAt) {
+            // Match avec date/heure prévue → vérifier si commencé
             const matchTime = new Date(match.scheduledAt);
             isMatchLocked = now >= matchTime;
             matchTimeText = matchTime.toLocaleString('fr-FR', { 
@@ -623,6 +633,9 @@ async function displayPredictionsForm() {
                 hour: '2-digit', 
                 minute: '2-digit' 
             });
+        } else {
+            // Match sans date précise et pas encore joué → ouvert
+            isMatchLocked = false;
         }
         
         // Résultat réel si match terminé

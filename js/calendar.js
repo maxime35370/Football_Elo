@@ -492,9 +492,19 @@ function displaySchedule() {
     
     // Combiner matchs joués et à venir
     const playedWithStatus = allMatches.map(m => ({ ...m, status: 'played' }));
-    const upcomingWithStatus = futureMatches.map(m => ({ ...m, status: 'upcoming' }));
+
+    // Créer un Set des clés des matchs déjà joués (même journée, mêmes équipes)
+    const playedKeys = new Set(
+        allMatches.map(m => `${m.homeTeamId}-${m.awayTeamId}-${m.matchDay}`)
+    );
+
+    // Filtrer les matchs à venir qui n'ont pas encore été joués
+    const upcomingWithStatus = futureMatches
+        .filter(m => !playedKeys.has(`${m.homeTeamId}-${m.awayTeamId}-${m.matchDay}`))
+        .map(m => ({ ...m, status: 'upcoming' }));
+
     let combinedMatches = [...playedWithStatus, ...upcomingWithStatus];
-    
+        
     // Appliquer les filtres
     if (matchdayFilter !== 'all') {
         combinedMatches = combinedMatches.filter(m => m.matchDay == matchdayFilter);
@@ -1745,6 +1755,11 @@ function renderCreatedMatches() {
         const homeTeam = allTeams.find(t => t.id === match.homeTeamId);
         const awayTeam = allTeams.find(t => t.id === match.awayTeamId);
         
+        // Valeur par défaut pour le datetime (si déjà défini)
+        const scheduledValue = match.scheduledAt 
+            ? new Date(match.scheduledAt).toISOString().slice(0, 16) 
+            : '';
+        
         return `
             <div class="created-match-item">
                 <span class="match-number">#${index + 1}</span>
@@ -1753,10 +1768,26 @@ function renderCreatedMatches() {
                     <span class="vs">vs</span>
                     <span class="away-team">✈️ ${awayTeam ? awayTeam.shortName : '?'}</span>
                 </div>
+                <div class="match-datetime">
+                    <input type="datetime-local" 
+                           class="match-scheduled-input"
+                           data-index="${index}"
+                           value="${scheduledValue}"
+                           onchange="updateMatchScheduledAt(${index}, this.value)"
+                           title="Date et heure du match">
+                </div>
                 <button class="delete-match" onclick="deleteManualMatch(${index})">🗑️</button>
             </div>
         `;
     }).join('');
+}
+
+function updateMatchScheduledAt(index, value) {
+    if (createdManualMatches[index]) {
+        createdManualMatches[index].scheduledAt = value 
+            ? new Date(value).toISOString() 
+            : null;
+    }
 }
 
 function deleteManualMatch(index) {
@@ -1772,6 +1803,23 @@ function updateMatchCounter() {
     
     if (counter) counter.textContent = createdManualMatches.length;
     if (max) max.textContent = Math.floor(allTeams.length / 2);
+}
+
+function applyBulkDatetime() {
+    const input = document.getElementById('bulkDatetime');
+    if (!input || !input.value) {
+        alert('Sélectionnez d\'abord une date/heure');
+        return;
+    }
+    
+    const scheduledAt = new Date(input.value).toISOString();
+    
+    createdManualMatches.forEach(match => {
+        match.scheduledAt = scheduledAt;
+    });
+    
+    renderCreatedMatches();
+    alert(`✅ Date appliquée à ${createdManualMatches.length} match(s)`);
 }
 
 function saveManualMatches() {
@@ -1791,7 +1839,8 @@ function saveManualMatches() {
             matchDay: manualMatchDay,
             homeTeamId: match.homeTeamId,
             awayTeamId: match.awayTeamId,
-            status: 'upcoming'
+            status: 'upcoming',
+            scheduledAt: match.scheduledAt || null
         });
     });
     
