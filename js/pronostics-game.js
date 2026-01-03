@@ -381,6 +381,7 @@ function initGameEvents() {
             // Charger les données de l'onglet
             if (tab.dataset.tab === 'leaderboard') loadLeaderboard();
             else if (tab.dataset.tab === 'history') loadHistory();
+            else if (tab.dataset.tab === 'ia') displayIAComparison();
         });
     });
     
@@ -921,7 +922,10 @@ async function loadLeaderboard() {
             else if (rank === 3) rankIcon = '🥉';
             
             html += `
-                <tr class="${rankClass}">
+                <tr class="${rankClass}" 
+                    onclick="showPlayerStatsModal('${player.id}', '${player.pseudo}')" 
+                    style="cursor:pointer;" 
+                    title="Cliquer pour voir les statistiques">
                     <td><span class="rank-icon">${rankIcon}</span></td>
                     <td>${player.pseudo}</td>
                     <td><strong>${stats.totalPoints || 0}</strong></td>
@@ -947,6 +951,11 @@ async function loadLeaderboard() {
                 }
                 document.getElementById('playerRank').textContent = rankText;
             }
+        }
+
+        // Afficher le graphique d'évolution
+        if (typeof renderEvolutionChart === 'function') {
+            renderEvolutionChart();
         }
         
     } catch (error) {

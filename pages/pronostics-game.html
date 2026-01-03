@@ -6,6 +6,10 @@
         <title>Pronostics Multijoueur - Football Elo</title>
         <link rel="stylesheet" href="../css/style.css">
         <link rel="stylesheet" href="../css/pronostics-game.css">
+        <link rel="stylesheet" href="../css/pronostics-stats.css">
+        <link rel="stylesheet" href="../css/pronostics-ia.css">
+        <link rel="stylesheet" href="../css/pronostics-badges.css">
+        <link rel="stylesheet" href="../css/pronostics-odds.css">
     </head>
     <body>
         <header>
@@ -97,6 +101,7 @@
                         <button class="game-tab" data-tab="leaderboard">🏆 Classement</button>
                         <button class="game-tab" data-tab="history">📜 Historique</button>
                         <button class="game-tab" data-tab="rules">📖 Règles</button>
+                        <button class="game-tab" data-tab="ia">🤖 IA vs Joueurs</button>
                     </div>
 
                     <!-- Onglet Pronostics -->
@@ -155,6 +160,8 @@
                                 </thead>
                                 <tbody></tbody>
                             </table>
+
+                            <div id="evolutionChartContainer"></div>
                         </div>
                     </div>
 
@@ -221,6 +228,12 @@
                             </div>
                         </div>
                     </div>
+                    <div id="iaTab" class="game-tab-content">
+                        <div id="iaComparisonContent">
+                            <p style="text-align:center;color:#7f8c8d;">Chargement...</p>
+                        </div>
+                    </div>
+
                 </section>
             </div>
         </main>
@@ -232,6 +245,7 @@
         <!-- Firebase SDK -->
         <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
         <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
         <!-- Scripts -->
         <script src="../js/firebase-config.js"></script>
@@ -240,5 +254,9 @@
         <script src="../js/teams-loader.js"></script>
         <script src="../js/storage.js"></script>
         <script src="../js/pronostics-game.js"></script>
+        <script src="../js/pronostics-stats.js"></script>
+        <script src="../js/pronostics-ia.js"></script>
+        <script src="../js/pronostics-badges.js"></script>
+        <script src="../js/pronostics-odds.js"></script>
     </body>
 </html>
