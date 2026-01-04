@@ -253,3 +253,79 @@
         gap: 0.5rem;
     }
 }
+
+/* ===============================
+   COTES DANS LE FORMULAIRE PRONO
+   =============================== */
+
+/* La carte de match doit wrapper correctement */
+.prediction-match {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* Les éléments principaux restent sur une ligne */
+.prediction-match .prediction-team,
+.prediction-match .prediction-score {
+    flex-shrink: 0;
+}
+
+.prediction-match .prediction-team.home {
+    flex: 1;
+    text-align: right;
+}
+
+.prediction-match .prediction-team.away {
+    flex: 1;
+    text-align: left;
+}
+
+.prediction-match .prediction-score {
+    flex: 0 0 auto;
+}
+
+/* Les cotes passent en dessous, pleine largeur */
+.prediction-match .match-odds-container {
+    flex: 0 0 100%;
+    order: 10;
+    margin-top: 0.5rem;
+    padding-top: 0.75rem;
+    border-top: 1px dashed #ecf0f1;
+}
+
+/* Réduire la taille des cotes pour le formulaire */
+.prediction-match .odds-display {
+    padding: 0.75rem;
+    margin-top: 0;
+}
+
+.prediction-match .odds-row {
+    gap: 0.5rem;
+}
+
+.prediction-match .odds-value {
+    font-size: 1rem;
+}
+
+.prediction-match .odds-label {
+    font-size: 0.7rem;
+}
+
+.prediction-match .odds-bar {
+    height: 3px;
+    margin-top: 0.35rem;
+}
+
+/* Le résultat aussi en dessous */
+.prediction-match .actual-result {
+    flex: 0 0 100%;
+    order: 11;
+}
+
+/* Match time en haut */
+.prediction-match .match-time {
+    flex: 0 0 100%;
+    order: -1;
+}

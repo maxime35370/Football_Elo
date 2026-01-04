@@ -278,3 +278,51 @@
         grid-template-columns: repeat(2, 1fr);
     }
 }
+
+/* Cartes cliquables */
+.summary-card.clickable {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+}
+
+.summary-card.clickable:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.summary-card.clickable.active {
+    border-color: #667eea;
+    background: linear-gradient(135deg, #667eea15, #764ba215);
+}
+
+.summary-card.clickable.current {
+    border-color: #3498db;
+}
+
+/* Total points du participant */
+.participant-total-points {
+    text-align: center;
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    font-size: 1.1rem;
+}
+
+.participant-total-points strong {
+    color: #667eea;
+}
+
+/* État en attente */
+.ia-match-card.pending {
+    background: linear-gradient(90deg, #f39c1210, transparent);
+    border-left-color: #f39c12;
+}
+
+/* Message vide */
+.participant-predictions-empty {
+    text-align: center;
+    padding: 2rem;
+    color: #7f8c8d;
+}

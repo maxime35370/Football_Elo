@@ -497,6 +497,11 @@ function initMatchDaySelector() {
 
 async function displayPredictionsForm() {
     const container = document.getElementById('predictionsList');
+
+    let teamsWithElo = [];
+    if (typeof EloSystem !== 'undefined') {
+        teamsWithElo = EloSystem.recalculateAllEloRatings(allTeams, allMatches);
+    }
     const statusEl = document.getElementById('predictionsStatus');
     const deadlineEl = document.getElementById('deadlineInfo');
     
@@ -648,14 +653,20 @@ async function displayPredictionsForm() {
                 match.finalScore.home, 
                 match.finalScore.away,
                 prediction?.savedAt,
-                match
+                match,
+                prediction?.odds
             );
             
+            let pointsDisplay = `${result.finalPoints} pts`;
+            if (result.oddsMultiplier !== 1) {
+                pointsDisplay = `${result.points} × ${result.oddsMultiplier} = ${result.finalPoints} pts`;
+            }
+
             resultHtml = `
                 <div class="actual-result ${result.class}">
                     Réel: ${match.finalScore.home}-${match.finalScore.away} | 
                     ${result.label}
-                    <span class="points-badge">${result.points} pts</span>
+                    <span class="points-badge">${pointsDisplay}</span>
                 </div>
             `;
         }
@@ -689,9 +700,47 @@ async function displayPredictionsForm() {
                 ${resultHtml}
             </div>
         `;
+        // Ajouter les cotes si le mode est activé
+        if (typeof isOddsModeEnabled === 'function' && isOddsModeEnabled() && !isMatchLocked) {
+            // On ajoute un placeholder qui sera rempli après
+            html = html.replace(
+                `data-away="${match.awayTeamId}">`,
+                `data-away="${match.awayTeamId}" data-needs-odds="true">`
+            );
+        }
     });
     
     container.innerHTML = html;
+
+    // Charger les cotes pour les matchs ouverts
+    if (typeof isOddsModeEnabled === 'function' && isOddsModeEnabled()) {
+        document.querySelectorAll('.prediction-match[data-needs-odds="true"]').forEach(async (matchEl) => {
+            const homeTeamId = parseInt(matchEl.dataset.home);
+            const awayTeamId = parseInt(matchEl.dataset.away);
+            
+            const match = matchesThisDay.find(m => 
+                m.homeTeamId == homeTeamId && m.awayTeamId == awayTeamId
+            );
+            
+            if (match && typeof getMatchOdds === 'function') {
+                const odds = await getMatchOdds(match, teamsWithElo);
+                const homeTeam = allTeams.find(t => t.id == homeTeamId);
+                const awayTeam = allTeams.find(t => t.id == awayTeamId);
+                
+                const oddsHtml = renderOddsDisplay(odds, homeTeam?.shortName || '?', awayTeam?.shortName || '?');
+                
+                const oddsDiv = document.createElement('div');
+                oddsDiv.className = 'match-odds-container';
+                oddsDiv.innerHTML = oddsHtml;
+                
+                // Insérer après prediction-score
+                const scoreDiv = matchEl.querySelector('.prediction-score');
+                if (scoreDiv) {
+                    scoreDiv.after(oddsDiv);
+                }
+            }
+        });
+    }
     
     // Afficher/masquer les boutons selon s'il y a des matchs ouverts
     const hasOpenMatches = openMatches > 0;
@@ -704,26 +753,29 @@ async function displayPredictionsForm() {
     } else {
         document.getElementById('predictionsSummary').innerHTML = '';
     }
+
+    // Ajouter les suggestions IA et le consensus
+    if (typeof enhanceMatchCardsWithConsensus === 'function') {
+        await enhanceMatchCardsWithConsensus();
+    }
 }
 
-function calculatePredictionResult(predHome, predAway, realHome, realAway, savedAt, match) {
+function calculatePredictionResult(predHome, predAway, realHome, realAway, savedAt, match, odds = null) {
     // Pas de pronostic
     if (predHome === undefined || predHome === null || predHome === '' ||
         predAway === undefined || predAway === null || predAway === '') {
-        return { points: 0, class: 'wrong', label: '❌ Non pronostiqué' };
+        return { points: 0, finalPoints: 0, class: 'wrong', label: '❌ Non pronostiqué', oddsMultiplier: 1 };
     }
     
     // Vérifier si le pronostic a été fait APRÈS le match
     if (savedAt && match) {
         const pronoDate = new Date(savedAt);
-        
-        // Utiliser scheduledAt (heure du match) si disponible, sinon playedAt (date d'enregistrement)
         const matchDate = match.scheduledAt 
             ? new Date(match.scheduledAt) 
             : (match.playedAt ? new Date(match.playedAt) : null);
         
         if (matchDate && pronoDate >= matchDate) {
-            return { points: 0, class: 'late', label: '⏰ Trop tard' };
+            return { points: 0, finalPoints: 0, class: 'late', label: '⏰ Trop tard', oddsMultiplier: 1 };
         }
     }
     
@@ -731,29 +783,72 @@ function calculatePredictionResult(predHome, predAway, realHome, realAway, saved
     predAway = parseInt(predAway);
     
     // Vérifier le résultat (1/N/2)
-    const predResult = predHome > predAway ? 'H' : (predHome < predAway ? 'A' : 'D');
-    const realResult = realHome > realAway ? 'H' : (realHome < realAway ? 'A' : 'D');
+    const predResult = predHome > predAway ? 'home' : (predHome < predAway ? 'away' : 'draw');
+    const realResult = realHome > realAway ? 'home' : (realHome < realAway ? 'away' : 'draw');
     
     if (predResult !== realResult) {
-        return { points: 0, class: 'wrong', label: '❌ Mauvais résultat' };
+        return { points: 0, finalPoints: 0, class: 'wrong', label: '❌ Mauvais résultat', oddsMultiplier: 1 };
     }
     
     // Bon résultat - calculer l'écart
     const ecart = Math.abs(predHome - realHome) + Math.abs(predAway - realAway);
     
+    let basePoints, resultClass, label;
+    
     if (ecart === 0) {
-        return { points: 9, class: 'exact', label: '🏆 Score exact !' };
+        basePoints = 9;
+        resultClass = 'exact';
+        label = '🏆 Score exact !';
     } else if (ecart === 1) {
-        return { points: 6, class: 'close', label: '🎯 Score proche' };
+        basePoints = 6;
+        resultClass = 'close';
+        label = '🎯 Score proche';
     } else if (ecart === 2) {
-        return { points: 4, class: 'correct', label: '✅ Bon + écart 2' };
+        basePoints = 4;
+        resultClass = 'correct';
+        label = '✅ Bon + écart 2';
     } else {
-        return { points: 3, class: 'correct', label: '✅ Bon résultat' };
+        basePoints = 3;
+        resultClass = 'correct';
+        label = '✅ Bon résultat';
     }
+    
+    // Appliquer le multiplicateur de cote si disponible
+    let oddsMultiplier = 1;
+    if (odds && odds[predResult]) {
+        // Normaliser le multiplicateur (cote / 2 pour équilibrer)
+        // Une cote de 2.0 = x1.0, cote de 4.0 = x2.0, cote de 1.5 = x0.75
+        oddsMultiplier = Math.round((odds[predResult] / 2) * 100) / 100;
+        // Limiter entre 0.5 et 3.0
+        oddsMultiplier = Math.max(0.5, Math.min(3.0, oddsMultiplier));
+    }
+    
+    const finalPoints = Math.round(basePoints * oddsMultiplier * 10) / 10;
+    
+    return { 
+        points: basePoints, 
+        finalPoints: finalPoints,
+        class: resultClass, 
+        label: label,
+        oddsMultiplier: oddsMultiplier
+    };
 }
 
 async function handleSavePredictions() {
     const now = new Date().toISOString();
+    
+    // Récupérer les équipes avec Elo pour calculer les cotes
+    let teamsWithElo = [];
+    if (typeof EloSystem !== 'undefined') {
+        teamsWithElo = EloSystem.recalculateAllEloRatings(allTeams, allMatches);
+    }
+    
+    // Récupérer les matchs de cette journée pour les cotes
+    const playedMatches = allMatches.filter(m => m.matchDay === selectedMatchDay);
+    const upcomingMatches = futureMatches.filter(m => m.matchDay === selectedMatchDay);
+    const playedKeys = new Set(playedMatches.map(m => `${m.homeTeamId}-${m.awayTeamId}`));
+    const uniqueUpcoming = upcomingMatches.filter(m => !playedKeys.has(`${m.homeTeamId}-${m.awayTeamId}`));
+    const matchesThisDay = [...playedMatches, ...uniqueUpcoming];
     
     // Récupérer les anciens pronostics
     const existingPredictions = await getPlayerPredictions(currentPlayer.id, currentSeason, selectedMatchDay);
@@ -768,7 +863,7 @@ async function handleSavePredictions() {
     
     const predictions = [];
     
-    document.querySelectorAll('.prediction-match').forEach(matchEl => {
+    for (const matchEl of document.querySelectorAll('.prediction-match')) {
         const homeTeamId = parseInt(matchEl.dataset.home);
         const awayTeamId = parseInt(matchEl.dataset.away);
         const homeScore = matchEl.querySelector('.home-score').value;
@@ -778,24 +873,54 @@ async function handleSavePredictions() {
             const key = `${homeTeamId}-${awayTeamId}`;
             const existing = existingMap[key];
             
-            let savedAt = now;
+            const predHomeScore = parseInt(homeScore);
+            const predAwayScore = parseInt(awayScore);
             
-            // Si le pronostic existait et n'a pas changé, garder l'ancienne date
+            // Déterminer le résultat prédit
+            let predictedResult;
+            if (predHomeScore > predAwayScore) predictedResult = 'home';
+            else if (predHomeScore < predAwayScore) predictedResult = 'away';
+            else predictedResult = 'draw';
+            
+            let savedAt = now;
+            let odds = null;
+            
+            // Si le pronostic existait et n'a pas changé, garder l'ancienne date et les anciennes cotes
             if (existing && 
-                existing.homeScore === parseInt(homeScore) && 
-                existing.awayScore === parseInt(awayScore)) {
+                existing.homeScore === predHomeScore && 
+                existing.awayScore === predAwayScore) {
                 savedAt = existing.savedAt || now;
+                odds = existing.odds || null;
+            }
+            
+            // Si pas de cotes (nouveau prono ou prono modifié), calculer les cotes actuelles
+            if (!odds) {
+                const match = matchesThisDay.find(m => 
+                    m.homeTeamId == homeTeamId && m.awayTeamId == awayTeamId
+                );
+                
+                if (match && typeof getMatchOdds === 'function') {
+                    const matchOdds = await getMatchOdds(match, teamsWithElo);
+                    odds = {
+                        home: matchOdds.home,
+                        draw: matchOdds.draw,
+                        away: matchOdds.away,
+                        distribution: matchOdds.distribution || null
+                    };
+                }
             }
             
             predictions.push({
                 homeTeamId,
                 awayTeamId,
-                homeScore: parseInt(homeScore),
-                awayScore: parseInt(awayScore),
-                savedAt: savedAt
+                homeScore: predHomeScore,
+                awayScore: predAwayScore,
+                savedAt: savedAt,
+                predictedResult: predictedResult,
+                odds: odds
             });
         }
-    });
+    }
     
     if (predictions.length === 0) {
         alert('Remplis au moins un pronostic !');
@@ -834,10 +959,11 @@ function displayPredictionsSummary(predictionsData, matches) {
                 pred.homeScore, pred.awayScore,
                 match.finalScore.home, match.finalScore.away,
                 pred.savedAt,
-                match
+                match,
+                pred.odds
             );
             
-            totalPoints += result.points;
+            totalPoints += result.finalPoints || result.points;
             
             if (result.points === 9) exact++;
             else if (result.points === 6) close++;
@@ -847,6 +973,9 @@ function displayPredictionsSummary(predictionsData, matches) {
         }
     });
     
+    // Arrondir pour l'affichage
+    const displayPoints = Math.round(totalPoints * 10) / 10;
+
     container.innerHTML = `
         <div class="summary-title">📊 Résumé de la journée ${selectedMatchDay}</div>
         <div class="summary-stats">
@@ -885,26 +1014,49 @@ async function loadLeaderboard() {
     try {
         const players = await getAllPlayers();
         
-        // Trier par points
-        players.sort((a, b) => (b.stats?.totalPoints || 0) - (a.stats?.totalPoints || 0));
+        // Recalculer les stats de chaque joueur dynamiquement
+        const playersWithStats = [];
         
-        if (players.length === 0) {
+        for (const player of players) {
+            // Utiliser calculatePlayerDetailedStats si disponible
+            if (typeof calculatePlayerDetailedStats === 'function') {
+                const stats = await calculatePlayerDetailedStats(player.id);
+                playersWithStats.push({
+                    ...player,
+                    calculatedStats: stats
+                });
+            } else {
+                playersWithStats.push({
+                    ...player,
+                    calculatedStats: player.stats || {}
+                });
+            }
+        }
+        
+        // Trier par points calculés
+        playersWithStats.sort((a, b) => 
+            (b.calculatedStats?.totalPoints || 0) - (a.calculatedStats?.totalPoints || 0)
+        );
+        
+        if (playersWithStats.length === 0) {
             tbody.innerHTML = '<tr><td colspan="9">Aucun joueur inscrit</td></tr>';
             return;
         }
         
         let html = '';
         
-        players.forEach((player, index) => {
+        playersWithStats.forEach((player, index) => {
             const rank = index + 1;
-            const stats = player.stats || {};
+            const stats = player.calculatedStats || {};
+            
             const totalMatches = (stats.exactScores || 0) + (stats.closeScores || 0) + 
                                  (stats.goodScores || 0) + (stats.correctResults || 0) + (stats.wrongResults || 0);
             const successRate = totalMatches > 0 
                 ? Math.round(((stats.exactScores || 0) + (stats.closeScores || 0) + (stats.goodScores || 0) + (stats.correctResults || 0)) / totalMatches * 100)
                 : 0;
-            const avg = (stats.journeys || 0) > 0 
-                ? ((stats.totalPoints || 0) / stats.journeys).toFixed(1)
+            const journeys = stats.journeysPlayed?.length || stats.journeys || 0;
+            const avg = journeys > 0 
+                ? ((stats.totalPoints || 0) / journeys).toFixed(1)
                 : '0.0';
             
             let rankClass = '';
@@ -921,6 +1073,9 @@ async function loadLeaderboard() {
             else if (rank === 2) rankIcon = '🥈';
             else if (rank === 3) rankIcon = '🥉';
             
+            // Arrondir les points pour l'affichage
+            const displayPoints = Math.round((stats.totalPoints || 0) * 10) / 10;
+            
             html += `
                 <tr class="${rankClass}" 
                     onclick="showPlayerStatsModal('${player.id}', '${player.pseudo}')" 
@@ -928,7 +1083,7 @@ async function loadLeaderboard() {
                     title="Cliquer pour voir les statistiques">
                     <td><span class="rank-icon">${rankIcon}</span></td>
                     <td>${player.pseudo}</td>
-                    <td><strong>${stats.totalPoints || 0}</strong></td>
+                    <td><strong>${displayPoints}</strong></td>
                     <td>${avg}</td>
                     <td>${stats.exactScores || 0}</td>
                     <td>${stats.closeScores || 0}</td>
@@ -943,19 +1098,30 @@ async function loadLeaderboard() {
         
         // Mettre à jour le rang du joueur actuel
         if (currentPlayer) {
-            const playerRank = players.findIndex(p => p.id === currentPlayer.id) + 1;
+            const playerRank = playersWithStats.findIndex(p => p.id === currentPlayer.id) + 1;
             if (playerRank > 0) {
                 let rankText = `${playerRank}${playerRank === 1 ? 'er' : 'e'}`;
                 if (playerRank <= 3) {
                     rankText = ['🥇', '🥈', '🥉'][playerRank - 1];
                 }
                 document.getElementById('playerRank').textContent = rankText;
+                
+                // Mettre à jour aussi le header
+                const playerStats = playersWithStats[playerRank - 1]?.calculatedStats || {};
+                const journeys = playerStats.journeysPlayed?.length || 0;
+                document.getElementById('playerStats').textContent = 
+                    `${Math.round((playerStats.totalPoints || 0) * 10) / 10} pts - ${journeys} journée(s)`;
             }
         }
 
         // Afficher le graphique d'évolution
         if (typeof renderEvolutionChart === 'function') {
             renderEvolutionChart();
+        }
+
+        // Afficher le classement par journée
+        if (typeof renderMatchDayRankingWidget === 'function') {
+            renderMatchDayRankingWidget();
         }
         
     } catch (error) {
@@ -1007,9 +1173,10 @@ async function loadHistory() {
                         pred.homeScore, pred.awayScore,
                         match.finalScore.home, match.finalScore.away,
                         pred.savedAt,
-                        match
+                        match,
+                        pred.odds
                     );
-                    totalPoints += result.points;
+                    totalPoints += result.finalPoints;
                     realScore = `${match.finalScore.home}-${match.finalScore.away}`;
                 }
                 
@@ -1019,7 +1186,7 @@ async function loadHistory() {
                         <div class="history-match-scores">
                             <span class="history-prono">${pred.homeScore}-${pred.awayScore}</span>
                             <span class="history-real">${realScore}</span>
-                            <span class="history-points-match ${result.class}">${result.points}</span>
+                            <span class="history-points-match ${result.class}">${result.finalPoints || result.points}</span>
                         </div>
                     </div>
                 `;

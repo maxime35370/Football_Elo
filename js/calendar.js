@@ -1756,9 +1756,23 @@ function renderCreatedMatches() {
         const awayTeam = allTeams.find(t => t.id === match.awayTeamId);
         
         // Valeur par défaut pour le datetime (si déjà défini)
-        const scheduledValue = match.scheduledAt 
-            ? new Date(match.scheduledAt).toISOString().slice(0, 16) 
-            : '';
+        // Si c'est déjà au format datetime-local (YYYY-MM-DDTHH:MM), l'utiliser directement
+        // Sinon, convertir depuis ISO
+        let scheduledValue = '';
+        if (match.scheduledAt) {
+            if (match.scheduledAt.includes('T') && match.scheduledAt.length === 16) {
+                // Format datetime-local direct
+                scheduledValue = match.scheduledAt;
+            } else {
+                // Format ISO, convertir en local
+                const date = new Date(match.scheduledAt);
+                scheduledValue = date.getFullYear() + '-' +
+                    String(date.getMonth() + 1).padStart(2, '0') + '-' +
+                    String(date.getDate()).padStart(2, '0') + 'T' +
+                    String(date.getHours()).padStart(2, '0') + ':' +
+                    String(date.getMinutes()).padStart(2, '0');
+            }
+        }
         
         return `
             <div class="created-match-item">
@@ -1784,9 +1798,8 @@ function renderCreatedMatches() {
 
 function updateMatchScheduledAt(index, value) {
     if (createdManualMatches[index]) {
-        createdManualMatches[index].scheduledAt = value 
-            ? new Date(value).toISOString() 
-            : null;
+        // Garder la date/heure locale telle quelle (sans conversion UTC)
+        createdManualMatches[index].scheduledAt = value || null;
     }
 }
 
@@ -1812,7 +1825,8 @@ function applyBulkDatetime() {
         return;
     }
     
-    const scheduledAt = new Date(input.value).toISOString();
+    // Garder la date/heure locale telle quelle (sans conversion UTC)
+    const scheduledAt = input.value;
     
     createdManualMatches.forEach(match => {
         match.scheduledAt = scheduledAt;

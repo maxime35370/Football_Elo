@@ -82,11 +82,12 @@ async function calculatePlayerDetailedStats(playerId) {
                     pred.homeScore, pred.awayScore,
                     match.finalScore.home, match.finalScore.away,
                     pred.savedAt,
-                    match
+                    match,
+                    pred.odds
                 );
                 
-                dayPoints += result.points;
-                stats.totalPoints += result.points;
+                dayPoints += result.finalPoints;
+                stats.totalPoints += result.finalPoints;
                 
                 // Compter par type
                 if (result.points === 9) stats.exactScores++;
@@ -611,10 +612,11 @@ async function getMatchDayLeaderboard(matchDay) {
                         p.homeScore, p.awayScore,
                         match.finalScore.home, match.finalScore.away,
                         p.savedAt,
-                        match
+                        match,
+                        p.odds
                     );
                     
-                    dayPoints += result.points;
+                    dayPoints += result.finalPoints || result.points;
                     if (result.points === 9) exactScores++;
                     else if (result.points > 0) correctResults++;
                 }

@@ -1,0 +1,363 @@
+/* pronostics-consensus.css - Styles pour le consensus et suggestions IA */
+
+/* ===============================
+   CONTAINER ENHANCEMENTS
+   =============================== */
+
+.match-enhancements {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px dashed #ecf0f1;
+    width: 100%;
+    flex: 0 0 100%;
+}
+
+/* ===============================
+   CONSENSUS DISPLAY - VERSION COMPACTE
+   =============================== */
+
+.consensus-display {
+    background: linear-gradient(135deg, #f8f9fa, #fff);
+    border-radius: 8px;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid #ecf0f1;
+    flex: 1;
+    min-width: 250px;
+}
+
+.consensus-header {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.5rem;
+}
+
+.consensus-icon {
+    font-size: 1rem;
+}
+
+.consensus-title {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 0.8rem;
+}
+
+/* Distribution Bar - Compact */
+.consensus-distribution {
+    margin-bottom: 0.5rem;
+}
+
+.consensus-bar {
+    display: flex;
+    height: 22px;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #ecf0f1;
+}
+
+.consensus-segment {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #fff;
+    transition: width 0.3s ease;
+    min-width: 0;
+}
+
+.consensus-segment.home {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+}
+
+.consensus-segment.draw {
+    background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+}
+
+.consensus-segment.away {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+}
+
+.consensus-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.2rem;
+    font-size: 0.65rem;
+    color: #7f8c8d;
+}
+
+.consensus-labels .home {
+    color: #3498db;
+}
+
+.consensus-labels .draw {
+    color: #7f8c8d;
+}
+
+.consensus-labels .away {
+    color: #e74c3c;
+}
+
+/* Popular Scores - Inline */
+.consensus-scores {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.4rem;
+}
+
+.scores-title {
+    font-size: 0.7rem;
+    color: #7f8c8d;
+}
+
+.score-badge {
+    background: #ecf0f1;
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+.score-badge.top {
+    background: #667eea;
+    color: #fff;
+}
+
+/* Average Score - Compact */
+.consensus-avg {
+    text-align: center;
+    font-size: 0.75rem;
+    color: #7f8c8d;
+}
+
+.consensus-avg strong {
+    color: #2c3e50;
+}
+
+/* Empty State */
+.consensus-empty {
+    text-align: center;
+    padding: 0.75rem;
+    color: #7f8c8d;
+    font-size: 0.85rem;
+}
+
+/* ===============================
+   LAYOUT POUR MATCHS VERROUILLÉS
+   =============================== */
+
+.prediction-match.locked .match-enhancements {
+    flex-direction: row;
+    justify-content: center;
+}
+
+.prediction-match.locked .consensus-display {
+    max-width: 400px;
+}
+
+.prediction-match.locked .ia-suggestion {
+    display: none;
+}
+
+/* ===============================
+   SUGGESTION IA - VERSION COMPACTE
+   =============================== */
+
+.ia-suggestion {
+    background: linear-gradient(135deg, #667eea10, #764ba210);
+    border: 1px solid #667eea40;
+    border-radius: 8px;
+    padding: 0.6rem 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    flex: 1;
+    min-width: 250px;
+}
+
+.ia-suggestion-header {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin: 0;
+}
+
+.ia-suggestion-header .ia-icon {
+    font-size: 1rem;
+}
+
+.ia-suggestion-header .ia-title {
+    font-weight: 600;
+    color: #667eea;
+    font-size: 0.8rem;
+}
+
+.ia-suggestion-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+}
+
+.ia-score {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.ia-score .score {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #2c3e50;
+    background: #fff;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.ia-score .result {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.4rem;
+    border-radius: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.ia-score .result.home {
+    background: #3498db20;
+    color: #2980b9;
+}
+
+.ia-score .result.draw {
+    background: #7f8c8d20;
+    color: #7f8c8d;
+}
+
+.ia-score .result.away {
+    background: #e74c3c20;
+    color: #c0392b;
+}
+
+/* Probabilities - Version compacte inline */
+.ia-probabilities {
+    display: flex;
+    gap: 0.4rem;
+    font-size: 0.7rem;
+}
+
+.ia-probabilities .prob-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.2rem 0.4rem;
+    background: #fff;
+    border-radius: 4px;
+}
+
+.ia-probabilities .prob-label {
+    font-size: 0.6rem;
+    color: #7f8c8d;
+}
+
+.ia-probabilities .prob-value {
+    font-weight: 600;
+    font-size: 0.75rem;
+}
+
+.ia-probabilities .prob-item.home .prob-value {
+    color: #3498db;
+}
+
+.ia-probabilities .prob-item.draw .prob-value {
+    color: #7f8c8d;
+}
+
+.ia-probabilities .prob-item.away .prob-value {
+    color: #e74c3c;
+}
+
+/* Use Suggestion Button - Compact */
+.btn-use-suggestion {
+    padding: 0.4rem 0.75rem;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.btn-use-suggestion:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+}
+
+.btn-use-suggestion.applied {
+    background: #27ae60;
+}
+
+/* ===============================
+   TOGGLE BUTTON
+   =============================== */
+
+#toggleSuggestionsBtn {
+    background: #667eea20;
+    color: #667eea;
+    border: 1px solid #667eea;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#toggleSuggestionsBtn:hover {
+    background: #667eea;
+    color: #fff;
+}
+
+/* ===============================
+   RESPONSIVE
+   =============================== */
+
+@media (max-width: 600px) {
+    .match-enhancements {
+        flex-direction: column;
+    }
+    
+    .ia-suggestion,
+    .consensus-display {
+        min-width: 100%;
+    }
+    
+    .ia-suggestion {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .ia-suggestion-content {
+        width: 100%;
+        justify-content: space-between;
+        flex-wrap: wrap;
+    }
+    
+    .btn-use-suggestion {
+        width: 100%;
+        text-align: center;
+    }
+    
+    .prediction-match.locked .consensus-display {
+        max-width: 100%;
+    }
+}

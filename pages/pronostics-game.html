@@ -10,6 +10,10 @@
         <link rel="stylesheet" href="../css/pronostics-ia.css">
         <link rel="stylesheet" href="../css/pronostics-badges.css">
         <link rel="stylesheet" href="../css/pronostics-odds.css">
+        <link rel="stylesheet" href="../css/pronostics-matchday-ranking.css">
+        <link rel="stylesheet" href="../css/pronostics-consensus.css">
+        <link rel="stylesheet" href="../css/pronostics-grid.css">
+
     </head>
     <body>
         <header>
@@ -111,6 +115,8 @@
                                 <label for="pronoMatchDay">Journée :</label>
                                 <select id="pronoMatchDay"></select>
                             </div>
+                            <button id="oddsModeBtn" onclick="toggleOddsMode()">📊 Cotes OFF</button>
+                            <button id="toggleSuggestionsBtn" onclick="toggleIASuggestions()">🤖 Masquer suggestions</button>
                             <div class="deadline-info" id="deadlineInfo">
                                 <span class="deadline-icon">⏰</span>
                                 <span class="deadline-text">-</span>
@@ -224,7 +230,7 @@
                             
                             <div class="rule-section">
                                 <h4>⏰ Deadline</h4>
-                                <p>Les pronostics doivent être soumis <strong>avant le premier match</strong> de la journée. Une fois la journée commencée, les pronostics sont verrouillés.</p>
+                                <p>Les pronostics doivent être soumis <strong>avant le coup d'envoi de chaque match</strong>. Tu peux pronostiquer les matchs individuellement jusqu'à leur début, même si d'autres matchs de la journée ont déjà commencé.</p>
                             </div>
                         </div>
                     </div>
@@ -253,10 +259,13 @@
         <script src="../js/seasons.js"></script>
         <script src="../js/teams-loader.js"></script>
         <script src="../js/storage.js"></script>
+        <script src="../js/elo.js"></script>
         <script src="../js/pronostics-game.js"></script>
         <script src="../js/pronostics-stats.js"></script>
         <script src="../js/pronostics-ia.js"></script>
         <script src="../js/pronostics-badges.js"></script>
         <script src="../js/pronostics-odds.js"></script>
+        <script src="../js/pronostics-matchday-ranking.js"></script>
+        <script src="../js/pronostics-consensus.js"></script>
     </body>
 </html>

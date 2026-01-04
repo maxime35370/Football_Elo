@@ -1,0 +1,453 @@
+/* pronostics-matchday-ranking.css - Styles pour le classement par journée */
+
+/* ===============================
+   WIDGET CLASSEMENT PAR JOURNÉE
+   =============================== */
+
+.matchday-ranking-widget {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.matchday-ranking-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.matchday-ranking-header h4 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 1.2rem;
+}
+
+.matchday-select {
+    padding: 0.5rem 1rem;
+    border: 2px solid #667eea;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    color: #2c3e50;
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.matchday-select:hover {
+    background: #667eea10;
+}
+
+.matchday-select:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
+
+/* ===============================
+   PODIUM
+   =============================== */
+
+.matchday-podium {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.podium-card {
+    background: linear-gradient(135deg, #f8f9fa, #fff);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    text-align: center;
+    min-width: 120px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+}
+
+.podium-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.podium-card.rank-1 {
+    background: linear-gradient(135deg, #ffecd2, #fcb69f);
+    border-color: #f9a825;
+    order: 2;
+}
+
+.podium-card.rank-2 {
+    background: linear-gradient(135deg, #e8e8e8, #c0c0c0);
+    border-color: #9e9e9e;
+    order: 1;
+}
+
+.podium-card.rank-3 {
+    background: linear-gradient(135deg, #ffe0b2, #ffcc80);
+    border-color: #ff8f00;
+    order: 3;
+}
+
+.podium-card.current-player {
+    box-shadow: 0 0 0 3px #3498db;
+}
+
+.podium-medal {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.podium-name {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 0.25rem;
+}
+
+.podium-points {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #667eea;
+}
+
+.podium-stats {
+    margin-top: 0.5rem;
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+}
+
+.podium-stats .exact {
+    color: #f39c12;
+}
+
+.podium-stats .close {
+    color: #27ae60;
+}
+
+/* ===============================
+   BADGE IA
+   =============================== */
+
+.ia-ranking-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    background: linear-gradient(135deg, #667eea15, #764ba215);
+    border: 2px solid #667eea;
+    border-radius: 50px;
+    padding: 0.75rem 1.5rem;
+    margin: 1rem auto;
+    max-width: 300px;
+}
+
+.ia-ranking-badge .ia-icon {
+    font-size: 1.5rem;
+}
+
+.ia-ranking-badge .ia-name {
+    font-weight: 600;
+    color: #667eea;
+}
+
+.ia-ranking-badge .ia-rank {
+    background: #667eea;
+    color: #fff;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.ia-ranking-badge .ia-points {
+    font-weight: 700;
+    color: #2c3e50;
+}
+
+/* ===============================
+   LISTE CLASSEMENT
+   =============================== */
+
+.matchday-ranking-list {
+    margin-top: 1rem;
+}
+
+.matchday-ranking-list table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.matchday-ranking-list th,
+.matchday-ranking-list td {
+    padding: 0.75rem;
+    text-align: center;
+    border-bottom: 1px solid #ecf0f1;
+}
+
+.matchday-ranking-list th {
+    background: #f8f9fa;
+    color: #7f8c8d;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.matchday-ranking-list tr:hover {
+    background: #f8f9fa;
+}
+
+.matchday-ranking-list tr.current-player {
+    background: #3498db15;
+}
+
+.matchday-ranking-list tr.current-player:hover {
+    background: #3498db25;
+}
+
+/* ===============================
+   STATS SUMMARY
+   =============================== */
+
+.matchday-stats-summary {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #ecf0f1;
+}
+
+.matchday-stats-summary .stat-item {
+    text-align: center;
+}
+
+.matchday-stats-summary .stat-value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #667eea;
+}
+
+.matchday-stats-summary .stat-label {
+    font-size: 0.8rem;
+    color: #7f8c8d;
+}
+
+/* ===============================
+   MODAL DÉTAIL
+   =============================== */
+
+.matchday-detail-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.matchday-detail-modal .modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.matchday-detail-modal .modal-content {
+    position: relative;
+    background: #fff;
+    border-radius: 16px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.matchday-detail-modal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+}
+
+.matchday-detail-modal .modal-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.matchday-detail-modal .btn-close {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: #fff;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: background 0.2s;
+}
+
+.matchday-detail-modal .btn-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.matchday-detail-modal .modal-body {
+    padding: 1.5rem;
+    max-height: calc(80vh - 80px);
+    overflow-y: auto;
+}
+
+/* Player Summary */
+.player-summary {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #ecf0f1;
+}
+
+.player-summary .summary-item {
+    text-align: center;
+}
+
+.player-summary .value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #667eea;
+}
+
+.player-summary .label {
+    font-size: 0.8rem;
+    color: #7f8c8d;
+}
+
+/* Matches Detail */
+.matches-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.match-detail-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    border-radius: 8px;
+    background: #f8f9fa;
+    gap: 0.5rem;
+}
+
+.match-detail-row.exact {
+    background: linear-gradient(90deg, #f39c1220, transparent);
+    border-left: 3px solid #f39c12;
+}
+
+.match-detail-row.close {
+    background: linear-gradient(90deg, #27ae6020, transparent);
+    border-left: 3px solid #27ae60;
+}
+
+.match-detail-row.correct {
+    background: linear-gradient(90deg, #3498db20, transparent);
+    border-left: 3px solid #3498db;
+}
+
+.match-detail-row.wrong {
+    background: linear-gradient(90deg, #e74c3c20, transparent);
+    border-left: 3px solid #e74c3c;
+}
+
+.match-detail-row .match-teams {
+    font-weight: 600;
+    color: #2c3e50;
+    flex: 1;
+    min-width: 120px;
+}
+
+.match-detail-row .match-prediction,
+.match-detail-row .match-actual {
+    font-size: 0.85rem;
+    color: #7f8c8d;
+}
+
+.match-detail-row .match-points {
+    font-weight: 700;
+    color: #667eea;
+}
+
+/* ===============================
+   RESPONSIVE
+   =============================== */
+
+@media (max-width: 600px) {
+    .matchday-podium {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .podium-card {
+        order: unset !important;
+        width: 100%;
+        max-width: 200px;
+    }
+    
+    .podium-card.rank-1 {
+        order: 1 !important;
+    }
+    
+    .podium-card.rank-2 {
+        order: 2 !important;
+    }
+    
+    .podium-card.rank-3 {
+        order: 3 !important;
+    }
+    
+    .matchday-ranking-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .matchday-stats-summary {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .match-detail-row {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+
+/* ===============================
+   LOADING & NO DATA
+   =============================== */
+
+.matchday-ranking-widget .loading {
+    text-align: center;
+    padding: 2rem;
+    color: #7f8c8d;
+}
+
+.matchday-ranking-widget .no-data {
+    text-align: center;
+    padding: 2rem;
+    color: #7f8c8d;
+}

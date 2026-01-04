@@ -1,0 +1,53 @@
+/* pronostics-grid.css - Affichage des matchs en grille */
+
+/* ===============================
+   ÉLARGIR LE CONTENEUR PRINCIPAL
+   =============================== */
+
+.prono-container {
+    max-width: 1400px !important;
+    width: 95% !important;
+}
+
+/* ===============================
+   GRILLE DE MATCHS
+   =============================== */
+
+.predictions-list {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 1rem !important;
+}
+
+/* S'assurer que les cartes ne débordent pas */
+.prediction-match {
+    overflow: hidden;
+    margin-bottom: 0 !important;
+}
+
+/* ===============================
+   RESPONSIVE
+   =============================== */
+
+/* Mobile - 1 colonne */
+@media (max-width: 900px) {
+    .prono-container {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    
+    .predictions-list {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* Grand écran - 3 colonnes */
+@media (min-width: 1500px) {
+    .prono-container {
+        max-width: 1800px !important;
+    }
+    
+    .predictions-list {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+}
