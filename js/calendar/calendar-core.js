@@ -82,18 +82,40 @@ async function loadSeasons() {
 async function loadSeasonData() {
     if (!currentSeason) return;
     
-    // Charger les matchs
+    // Charger les matchs joués
     allMatches = await getStoredMatchesAsync();
     allMatches = allMatches.filter(m => m.season === currentSeason);
     
     // Charger les matchs à venir (stockés séparément)
     futureMatches = await getFutureMatches(currentSeason);
     
+    // ========================================
+    // NETTOYAGE AUTOMATIQUE : Enlever de futureMatches les matchs déjà joués
+    // ========================================
+    const playedKeys = new Set();
+    allMatches.forEach(m => {
+        playedKeys.add(`${m.homeTeamId}-${m.awayTeamId}`);
+    });
+    
+    const originalCount = futureMatches.length;
+    futureMatches = futureMatches.filter(m => {
+        const key = `${m.homeTeamId}-${m.awayTeamId}`;
+        return !playedKeys.has(key);
+    });
+    
+    // Si des matchs ont été nettoyés, sauvegarder
+    if (futureMatches.length !== originalCount) {
+        console.log(`🧹 Nettoyage automatique: ${originalCount - futureMatches.length} match(s) retiré(s) de futureMatches`);
+        await saveFutureMatches(currentSeason, futureMatches);
+    }
+    // ========================================
+    
     // Charger les équipes de la saison
     allTeams = getTeamsBySeason(currentSeason);
     
-    console.log('All Teams:', allTeams);
+    console.log('All Teams:', allTeams.length);
     console.log('All Matches:', allMatches.length);
+    console.log('Future Matches:', futureMatches.length);
     
     // Calculer les Elo
     teamsWithElo = [];

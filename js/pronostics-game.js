@@ -382,6 +382,9 @@ function initGameEvents() {
             if (tab.dataset.tab === 'leaderboard') loadLeaderboard();
             else if (tab.dataset.tab === 'history') loadHistory();
             else if (tab.dataset.tab === 'ia') displayIAComparison();
+            else if (tab.dataset.tab === 'duels') renderDuelsTab();
+            else if (tab.dataset.tab === 'heatmap') renderHeatmapTab();
+            else if (tab.dataset.tab === 'profile') renderProfileTab();
         });
     });
     
@@ -600,7 +603,9 @@ async function displayPredictionsForm() {
     // Mettre à jour le statut
     if (existingPredictions) {
         statusEl.className = 'predictions-status saved';
-        statusEl.textContent = `✅ Pronostics sauvegardés le ${new Date(existingPredictions.submittedAt).toLocaleString('fr-FR')}`;
+        const savedDate = existingPredictions.submittedAt ? new Date(existingPredictions.submittedAt) : null;
+        const dateText = savedDate && !isNaN(savedDate) ? savedDate.toLocaleString('fr-FR') : 'date inconnue';
+        statusEl.textContent = `✅ Pronostics sauvegardés le ${dateText}`;
     } else if (openMatches > 0) {
         statusEl.className = 'predictions-status unsaved';
         statusEl.textContent = '⚠️ Pronostics non sauvegardés';
@@ -698,6 +703,7 @@ async function displayPredictionsForm() {
                     <span class="team-badge">✈️ Extérieur</span>
                 </div>
                 ${resultHtml}
+                ${!isMatchLocked ? `<div class="joker-slot" data-home="${match.homeTeamId}" data-away="${match.awayTeamId}"></div>` : ''}
             </div>
         `;
         // Ajouter les cotes si le mode est activé
@@ -710,7 +716,23 @@ async function displayPredictionsForm() {
         }
     });
     
+    // IMPORTANT: D'abord injecter le HTML dans le DOM
     container.innerHTML = html;
+
+    // ENSUITE ajouter les boutons joker (après que le DOM existe)
+    if (currentPlayer && currentSeason && typeof getPlayerJokers === 'function') {
+        const jokers = await getPlayerJokers(currentPlayer.id, currentSeason);
+        document.querySelectorAll('.joker-slot').forEach(slot => {
+            const homeId = parseInt(slot.dataset.home);
+            const awayId = parseInt(slot.dataset.away);
+            const match = matchesThisDay.find(m => m.homeTeamId == homeId && m.awayTeamId == awayId);
+            const isLocked = match?.finalScore || (match?.scheduledAt && new Date() >= new Date(match.scheduledAt));
+            
+            if (typeof renderJokerButton === 'function') {
+                slot.innerHTML = renderJokerButton(slot, jokers, selectedMatchDay, homeId, awayId, isLocked);
+            }
+        });
+    }
 
     // Charger les cotes pour les matchs ouverts
     if (typeof isOddsModeEnabled === 'function' && isOddsModeEnabled()) {
@@ -760,11 +782,11 @@ async function displayPredictionsForm() {
     }
 }
 
-function calculatePredictionResult(predHome, predAway, realHome, realAway, savedAt, match, odds = null) {
+function calculatePredictionResult(predHome, predAway, realHome, realAway, savedAt, match, odds = null, joker = false) {
     // Pas de pronostic
     if (predHome === undefined || predHome === null || predHome === '' ||
         predAway === undefined || predAway === null || predAway === '') {
-        return { points: 0, finalPoints: 0, class: 'wrong', label: '❌ Non pronostiqué', oddsMultiplier: 1 };
+        return { points: 0, finalPoints: 0, class: 'wrong', label: '❌ Non pronostiqué', oddsMultiplier: 1, jokerUsed: false };
     }
     
     // Vérifier si le pronostic a été fait APRÈS le match
@@ -775,7 +797,7 @@ function calculatePredictionResult(predHome, predAway, realHome, realAway, saved
             : (match.playedAt ? new Date(match.playedAt) : null);
         
         if (matchDate && pronoDate >= matchDate) {
-            return { points: 0, finalPoints: 0, class: 'late', label: '⏰ Trop tard', oddsMultiplier: 1 };
+            return { points: 0, finalPoints: 0, class: 'late', label: '⏰ Trop tard', oddsMultiplier: 1, jokerUsed: false };
         }
     }
     
@@ -787,7 +809,7 @@ function calculatePredictionResult(predHome, predAway, realHome, realAway, saved
     const realResult = realHome > realAway ? 'home' : (realHome < realAway ? 'away' : 'draw');
     
     if (predResult !== realResult) {
-        return { points: 0, finalPoints: 0, class: 'wrong', label: '❌ Mauvais résultat', oddsMultiplier: 1 };
+        return { points: 0, finalPoints: 0, class: 'wrong', label: '❌ Mauvais résultat', oddsMultiplier: 1, jokerUsed: joker };
     }
     
     // Bon résultat - calculer l'écart
@@ -823,14 +845,20 @@ function calculatePredictionResult(predHome, predAway, realHome, realAway, saved
         oddsMultiplier = Math.max(0.5, Math.min(3.0, oddsMultiplier));
     }
     
-    const finalPoints = Math.round(basePoints * oddsMultiplier * 10) / 10;
+    let finalPoints = Math.round(basePoints * oddsMultiplier * 10) / 10;
+    
+    // Appliquer le multiplicateur joker si actif
+    if (joker && typeof JOKER_CONFIG !== 'undefined') {
+        finalPoints = finalPoints * JOKER_CONFIG.multiplier;
+    }
     
     return { 
         points: basePoints, 
         finalPoints: finalPoints,
         class: resultClass, 
         label: label,
-        oddsMultiplier: oddsMultiplier
+        oddsMultiplier: oddsMultiplier,
+        jokerUsed: joker
     };
 }
 
@@ -859,6 +887,12 @@ async function handleSavePredictions() {
             const key = `${p.homeTeamId}-${p.awayTeamId}`;
             existingMap[key] = p;
         });
+    }
+    
+    // Récupérer les jokers pour savoir si un joker est sur un match
+    let jokers = { used: [] };
+    if (currentPlayer && currentSeason && typeof getPlayerJokers === 'function') {
+        jokers = await getPlayerJokers(currentPlayer.id, currentSeason);
     }
     
     const predictions = [];
@@ -910,6 +944,11 @@ async function handleSavePredictions() {
                 }
             }
             
+            // Vérifier si un joker est sur ce match
+            const hasJoker = typeof isJokerOnMatch === 'function' 
+                ? isJokerOnMatch(jokers, selectedMatchDay, homeTeamId, awayTeamId)
+                : false;
+            
             predictions.push({
                 homeTeamId,
                 awayTeamId,
@@ -917,7 +956,8 @@ async function handleSavePredictions() {
                 awayScore: predAwayScore,
                 savedAt: savedAt,
                 predictedResult: predictedResult,
-                odds: odds
+                odds: odds,
+                joker: hasJoker
             });
         }
     }
@@ -943,7 +983,7 @@ async function handleSavePredictions() {
     }
 }
 
-function displayPredictionsSummary(predictionsData, matches) {
+async function displayPredictionsSummary(predictionsData, matches) {
     const container = document.getElementById('predictionsSummary');
     
     let totalPoints = 0;
@@ -960,7 +1000,8 @@ function displayPredictionsSummary(predictionsData, matches) {
                 match.finalScore.home, match.finalScore.away,
                 pred.savedAt,
                 match,
-                pred.odds
+                pred.odds,
+                pred.joker || false
             );
             
             totalPoints += result.finalPoints || result.points;
@@ -980,7 +1021,7 @@ function displayPredictionsSummary(predictionsData, matches) {
         <div class="summary-title">📊 Résumé de la journée ${selectedMatchDay}</div>
         <div class="summary-stats">
             <div class="summary-stat">
-                <span class="value">${totalPoints}</span>
+                <span class="value">${displayPoints}</span>
                 <span class="label">Points</span>
             </div>
             <div class="summary-stat">
@@ -1001,6 +1042,13 @@ function displayPredictionsSummary(predictionsData, matches) {
             </div>
         </div>
     `;
+    if (currentPlayer && typeof calculateIAComparison === 'function') {
+        const iaComparison = await calculateIAComparison(currentPlayer.id, selectedMatchDay);
+        if (iaComparison) {
+            const summaryDiv = document.getElementById('predictionsSummary');
+            summaryDiv.innerHTML += renderIAComparisonSummary(iaComparison);
+        }
+    }
 }
 
 // ===============================
@@ -1076,13 +1124,18 @@ async function loadLeaderboard() {
             // Arrondir les points pour l'affichage
             const displayPoints = Math.round((stats.totalPoints || 0) * 10) / 10;
             
+            // Badge de niveau si disponible
+            const levelBadge = typeof renderPlayerLevelBadge === 'function' 
+                ? renderPlayerLevelBadge(stats.totalPoints || 0, 'small') 
+                : '';
+            
             html += `
                 <tr class="${rankClass}" 
                     onclick="showPlayerStatsModal('${player.id}', '${player.pseudo}')" 
                     style="cursor:pointer;" 
                     title="Cliquer pour voir les statistiques">
                     <td><span class="rank-icon">${rankIcon}</span></td>
-                    <td>${player.pseudo}</td>
+                    <td>${levelBadge} ${player.pseudo}</td>
                     <td><strong>${displayPoints}</strong></td>
                     <td>${avg}</td>
                     <td>${stats.exactScores || 0}</td>
@@ -1165,28 +1218,31 @@ async function loadHistory() {
                 const homeTeam = allTeams.find(t => t.id == pred.homeTeamId);
                 const awayTeam = allTeams.find(t => t.id == pred.awayTeamId);
                 
-                let result = { points: 0, class: 'wrong', label: '-' };  // ← Déclaration avec let
+                let result = { points: 0, finalPoints: 0, class: 'wrong', label: '-' };
                 let realScore = '-';
 
                 if (match && match.finalScore) {
-                    result = calculatePredictionResult(  // ← Retirer "const"
+                    result = calculatePredictionResult(
                         pred.homeScore, pred.awayScore,
                         match.finalScore.home, match.finalScore.away,
                         pred.savedAt,
                         match,
-                        pred.odds
+                        pred.odds,
+                        pred.joker || false
                     );
                     totalPoints += result.finalPoints;
                     realScore = `${match.finalScore.home}-${match.finalScore.away}`;
                 }
                 
+                const jokerBadge = pred.joker ? '<span class="joker-badge">🃏</span>' : '';
+                
                 matchesHtml += `
                     <div class="history-match">
-                        <span class="history-match-teams">${homeTeam?.shortName || '?'} - ${awayTeam?.shortName || '?'}</span>
+                        <span class="history-match-teams">${jokerBadge}${homeTeam?.shortName || '?'} - ${awayTeam?.shortName || '?'}</span>
                         <div class="history-match-scores">
                             <span class="history-prono">${pred.homeScore}-${pred.awayScore}</span>
                             <span class="history-real">${realScore}</span>
-                            <span class="history-points-match ${result.class}">${result.finalPoints || result.points}</span>
+                            <span class="history-points-match ${result.class}">${Math.round((result.finalPoints || result.points) * 10) / 10}</span>
                         </div>
                     </div>
                 `;
@@ -1196,7 +1252,7 @@ async function loadHistory() {
                 <div class="history-card">
                     <div class="history-card-header">
                         <span class="history-matchday">Journée ${entry.matchDay}</span>
-                        <span class="history-points">${totalPoints} pts</span>
+                        <span class="history-points">${Math.round(totalPoints * 10) / 10} pts</span>
                     </div>
                     <div class="history-card-body">
                         ${matchesHtml}
@@ -1210,5 +1266,101 @@ async function loadHistory() {
     } catch (error) {
         console.error('Erreur loadHistory:', error);
         container.innerHTML = '<p style="text-align:center;color:#e74c3c;">Erreur de chargement</p>';
+    }
+}
+
+// ===============================
+// ONGLET PROFIL
+// ===============================
+
+async function renderProfileTab() {
+    const container = document.getElementById('profileContent');
+    if (!container || !currentPlayer) return;
+    
+    container.innerHTML = '<div class="loading">Chargement...</div>';
+    
+    try {
+        const stats = await calculatePlayerDetailedStats(currentPlayer.id);
+        
+        let html = '';
+        
+        // Niveau et progression
+        if (typeof addGamificationToStatsModal === 'function') {
+            html += `
+                <div class="profile-section">
+                    <h4>🎮 Niveau & Progression</h4>
+                    ${addGamificationToStatsModal(stats)}
+                </div>
+            `;
+        }
+        
+        // Missions hebdo
+        if (typeof renderWeeklyMissions === 'function') {
+            html += await renderWeeklyMissions(currentPlayer.id);
+        }
+        
+        // Sélecteur d'avatar
+        if (typeof renderAvatarSelector === 'function') {
+            html += await renderAvatarSelector(currentPlayer.id, stats);
+        }
+        
+        // Équipe favorite
+        if (typeof renderFavoriteTeamStats === 'function') {
+            html += `
+                <div class="profile-section">
+                    <h4>💙 Équipe Favorite</h4>
+                    ${await renderFavoriteTeamStats(currentPlayer.id)}
+                </div>
+            `;
+        }
+        
+        // Jokers restants
+        if (typeof getPlayerJokers === 'function' && typeof JOKER_CONFIG !== 'undefined') {
+            const jokers = await getPlayerJokers(currentPlayer.id, currentSeason);
+            html += `
+                <div class="profile-section">
+                    <h4>🃏 Jokers</h4>
+                    <div class="jokers-info">
+                        <div class="jokers-remaining">
+                            <span class="jokers-count">${jokers.remaining}</span>
+                            <span class="jokers-label">/ ${JOKER_CONFIG.maxPerSeason} restants</span>
+                        </div>
+                        <p class="jokers-desc">
+                            Utilisez un joker sur un match pour <strong>doubler</strong> vos points !
+                            Sélectionnable dans l'onglet Pronostiquer.
+                        </p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Si aucune fonctionnalité gamification n'est disponible
+        if (!html) {
+            html = `
+                <div class="profile-section">
+                    <h4>📊 Mes statistiques</h4>
+                    <div class="stats-overview">
+                        <div class="stats-card">
+                            <div class="stats-value">${Math.round(stats.totalPoints * 10) / 10}</div>
+                            <div class="stats-label">Points totaux</div>
+                        </div>
+                        <div class="stats-card">
+                            <div class="stats-value">${stats.journeysPlayed?.length || 0}</div>
+                            <div class="stats-label">Journées jouées</div>
+                        </div>
+                        <div class="stats-card">
+                            <div class="stats-value">${stats.exactScores || 0}</div>
+                            <div class="stats-label">Scores exacts</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        container.innerHTML = html;
+        
+    } catch (error) {
+        console.error('Erreur renderProfileTab:', error);
+        container.innerHTML = '<p style="color:#e74c3c;">Erreur de chargement</p>';
     }
 }

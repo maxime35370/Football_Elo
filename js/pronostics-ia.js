@@ -333,7 +333,7 @@ async function calculateIAResults(matchDay) {
         const result = calculatePredictionResult(
             pred.homeScore, pred.awayScore,
             match.finalScore.home, match.finalScore.away,
-            pred.generatedAt,
+            null,
             match
         );
         
@@ -530,7 +530,7 @@ async function displayIAComparison() {
                 <tr class="${rowClass}">
                     <td><span class="rank-icon">${rankIcon}</span></td>
                     <td>${player.pseudo}</td>
-                    <td><strong>${stats.totalPoints}</strong></td>
+                    <td><strong>${Math.round(stats.totalPoints * 10) / 10}</strong></td>
                     <td>${stats.exactScores + (stats.closeScores || 0)}</td>
                     <td>${(stats.goodScores || 0) + stats.correctResults}</td>
                     <td>${stats.wrongResults}</td>
@@ -730,7 +730,7 @@ async function showParticipantPredictions(participantId, matchDay) {
                 result = calculatePredictionResult(
                     pred.homeScore, pred.awayScore,
                     match.finalScore.home, match.finalScore.away,
-                    pred.savedAt || pred.generatedAt,
+                    participantId === 'ia' ? null : (pred.savedAt || pred.generatedAt),
                     match,
                     pred.odds
                 );

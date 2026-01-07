@@ -8,8 +8,24 @@ function displayDifficulty() {
     const container = document.getElementById('difficultyContent');
     if (!container) return;
     
-    if (futureMatches.length === 0) {
-        container.innerHTML = '<p style="text-align:center;color:#7f8c8d;padding:2rem;">Générez d\'abord le calendrier pour voir la difficulté</p>';
+    // CORRIGÉ : Filtrer futureMatches pour exclure les matchs déjà joués
+    // On compare EXACTEMENT homeTeamId-awayTeamId (pas les deux sens car aller ≠ retour)
+    const playedConfrontations = new Set();
+    allMatches.forEach(m => {
+        // Clé unique : homeTeamId-awayTeamId (sens unique, pas inversé)
+        playedConfrontations.add(`${m.homeTeamId}-${m.awayTeamId}`);
+    });
+    
+    const realFutureMatches = futureMatches.filter(m => {
+        const key = `${m.homeTeamId}-${m.awayTeamId}`;
+        return !playedConfrontations.has(key);
+    });
+    
+    console.log(`Matchs à venir: ${futureMatches.length} total, ${realFutureMatches.length} restants après filtrage`);
+    console.log(`Matchs joués: ${allMatches.length}`);
+    
+    if (realFutureMatches.length === 0) {
+        container.innerHTML = '<p style="text-align:center;color:#7f8c8d;padding:2rem;">Tous les matchs ont été joués ou générez d\'abord le calendrier pour voir la difficulté</p>';
         return;
     }
     
@@ -34,9 +50,9 @@ function displayDifficulty() {
     
     console.log('Elo Map:', eloMap);
     
-    // Calculer la difficulté pour chaque équipe
+    // Calculer la difficulté pour chaque équipe (utiliser realFutureMatches)
     const difficultyData = allTeams.map(team => {
-        const upcomingMatches = futureMatches.filter(m => 
+        const upcomingMatches = realFutureMatches.filter(m => 
             m.homeTeamId == team.id || m.awayTeamId == team.id
         );
         
@@ -52,7 +68,8 @@ function displayDifficulty() {
             const opponent = allTeams.find(t => t.id == opponentId);
             opponentDetails.push({
                 name: opponent ? opponent.shortName : '?',
-                elo: opponentElo
+                elo: opponentElo,
+                isHome: match.homeTeamId == team.id
             });
         });
         
@@ -68,8 +85,14 @@ function displayDifficulty() {
         };
     }).filter(d => d.matchesRemaining > 0);
     
-    // Trier par difficulté décroissante
+    // Trier par difficulté décroissante (calendrier le plus difficile en premier)
     difficultyData.sort((a, b) => b.difficulty - a.difficulty);
+    
+    // Message si aucune équipe n'a de matchs restants
+    if (difficultyData.length === 0) {
+        container.innerHTML = '<p style="text-align:center;color:#7f8c8d;padding:2rem;">Tous les matchs ont été joués !</p>';
+        return;
+    }
     
     // Trouver min/max pour normaliser
     const minDiff = Math.min(...difficultyData.map(d => d.difficulty));
@@ -83,10 +106,11 @@ function displayDifficulty() {
         if (percentage > 66) diffClass = 'hard';
         else if (percentage > 33) diffClass = 'medium';
         
+        // Tooltip avec le détail des adversaires
         const opponentsTooltip = data.opponents
             .sort((a, b) => b.elo - a.elo)
             .slice(0, 5)
-            .map(o => `${o.name}: ${o.elo}`)
+            .map(o => `${o.name}: ${o.elo}${o.isHome ? '' : ' (ext)'}`)
             .join(', ');
         
         return `
@@ -101,7 +125,7 @@ function displayDifficulty() {
                         ${data.avgOpponentElo}
                     </div>
                 </div>
-                <div class="difficulty-matches">${data.matchesRemaining} matchs</div>
+                <div class="difficulty-matches">${data.matchesRemaining} match${data.matchesRemaining > 1 ? 's' : ''}</div>
             </div>
         `;
     }).join('');

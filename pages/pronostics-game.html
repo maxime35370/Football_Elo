@@ -13,6 +13,8 @@
         <link rel="stylesheet" href="../css/pronostics-matchday-ranking.css">
         <link rel="stylesheet" href="../css/pronostics-consensus.css">
         <link rel="stylesheet" href="../css/pronostics-grid.css">
+        <link rel="stylesheet" href="../css/pronostics-analysis.css">
+        <link rel="stylesheet" href="../css/pronostics-gamification.css">
 
     </head>
     <body>
@@ -106,6 +108,9 @@
                         <button class="game-tab" data-tab="history">📜 Historique</button>
                         <button class="game-tab" data-tab="rules">📖 Règles</button>
                         <button class="game-tab" data-tab="ia">🤖 IA vs Joueurs</button>
+                        <button class="game-tab" data-tab="duels">⚔️ Duels</button>
+                        <button class="game-tab" data-tab="heatmap">🔥 Heatmap</button>
+                        <button class="game-tab" data-tab="profile">🎭 Profil</button>
                     </div>
 
                     <!-- Onglet Pronostics -->
@@ -239,7 +244,39 @@
                             <p style="text-align:center;color:#7f8c8d;">Chargement...</p>
                         </div>
                     </div>
+                    <!-- Onglet Duels (Head-to-Head) -->
+                    <div id="duelsTab" class="game-tab-content">
+                        <div class="duels-container">
+                            <h3>⚔️ Duels entre Joueurs</h3>
+                            <p style="text-align:center;color:#7f8c8d;margin-bottom:1.5rem;">
+                                Comparez vos performances avec un autre joueur sur les journées en commun.
+                            </p>
+                            <div id="duelsContent">
+                                <!-- Généré dynamiquement -->
+                            </div>
+                        </div>
+                    </div>
 
+                    <!-- Onglet Heatmap -->
+                    <div id="heatmapTab" class="game-tab-content">
+                        <div class="heatmap-container">
+                            <h3>🔥 Heatmap de Performance</h3>
+                            <p style="text-align:center;color:#7f8c8d;margin-bottom:1.5rem;">
+                                Visualisez vos performances par journée d'un coup d'œil.
+                            </p>
+                            <div id="heatmapContent">
+                                <!-- Généré dynamiquement -->
+                            </div>
+                        </div>
+                    </div>
+                    <div id="profileTab" class="game-tab-content">
+                        <div class="profile-container">
+                            <h3>🎭 Mon Profil</h3>
+                            <div id="profileContent">
+                                <div class="loading">Chargement...</div>
+                            </div>
+                        </div>
+                    </div>
                 </section>
             </div>
         </main>
@@ -267,5 +304,8 @@
         <script src="../js/pronostics-odds.js"></script>
         <script src="../js/pronostics-matchday-ranking.js"></script>
         <script src="../js/pronostics-consensus.js"></script>
+        <script src="../js/pronostics-analysis.js"></script>
+        <script src="../js/pronostics-gamification.js"></script>
+        <script src="../js/pronostics-gameplay.js"></script>
     </body>
 </html>

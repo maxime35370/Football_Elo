@@ -1,0 +1,697 @@
+/* pronostics-gamification.css - Styles pour Niveaux, Streaks, Missions, Joker, Avatar */
+
+/* ===============================
+   SYSTÈME DE NIVEAUX
+   =============================== */
+
+.level-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.8rem;
+    background: linear-gradient(135deg, var(--level-color), var(--level-color)cc);
+    border-radius: 20px;
+    color: white;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    box-shadow: 0 2px 8px var(--level-color)40;
+}
+
+.level-badge-small {
+    padding: 0.2rem 0.5rem;
+    font-size: 0.8rem;
+}
+
+.level-badge .level-icon {
+    font-size: 1.1em;
+}
+
+.level-badge-large {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem 2rem;
+    background: linear-gradient(135deg, var(--level-color), var(--level-color)cc);
+    border-radius: 15px;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 15px var(--level-color)40;
+}
+
+.level-badge-large .level-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.level-badge-large .level-name {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+/* Progression de niveau */
+.level-progress-container {
+    margin-top: 1rem;
+    width: 100%;
+}
+
+.level-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.level-current {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.level-next {
+    color: #7f8c8d;
+}
+
+.level-progress-bar {
+    height: 10px;
+    background: #e9ecef;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.level-progress-fill {
+    height: 100%;
+    border-radius: 5px;
+    transition: width 0.5s ease;
+}
+
+.level-progress-text {
+    text-align: center;
+    font-size: 0.85rem;
+    color: #7f8c8d;
+    margin-top: 0.5rem;
+}
+
+.level-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 15px;
+    margin-bottom: 1rem;
+}
+
+/* ===============================
+   STREAK REWARDS
+   =============================== */
+
+.streak-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+    border-radius: 25px;
+    color: white;
+    font-weight: 600;
+    box-shadow: 0 3px 10px rgba(238, 90, 90, 0.4);
+    animation: pulse-streak 2s infinite;
+}
+
+@keyframes pulse-streak {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+}
+
+.streak-icon {
+    font-size: 1.2rem;
+}
+
+.streak-text {
+    font-size: 0.9rem;
+}
+
+.streak-count {
+    font-size: 0.8rem;
+    opacity: 0.9;
+}
+
+.streak-bonus {
+    background: rgba(255,255,255,0.2);
+    padding: 0.2rem 0.5rem;
+    border-radius: 10px;
+    font-size: 0.8rem;
+}
+
+.streak-badge-large {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+    border-radius: 15px;
+    color: white;
+}
+
+.streak-flames {
+    font-size: 2rem;
+}
+
+.streak-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.streak-info strong {
+    font-size: 1.1rem;
+}
+
+.streak-info span {
+    font-size: 0.85rem;
+    opacity: 0.9;
+}
+
+.streak-display {
+    margin-top: 1rem;
+}
+
+/* ===============================
+   MISSIONS HEBDO
+   =============================== */
+
+.weekly-missions {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.missions-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.missions-header h4 {
+    margin: 0;
+    color: #2c3e50;
+}
+
+.missions-summary {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.9rem;
+}
+
+.missions-count {
+    font-weight: bold;
+    color: #3498db;
+}
+
+.missions-reward {
+    color: #27ae60;
+    font-weight: 600;
+}
+
+.missions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.mission-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 12px;
+    border: 2px solid transparent;
+    transition: all 0.3s;
+}
+
+.mission-card:hover {
+    background: #e9ecef;
+}
+
+.mission-card.completed {
+    background: linear-gradient(135deg, #d4edda, #c3e6cb);
+    border-color: #27ae60;
+}
+
+.mission-icon {
+    font-size: 1.8rem;
+    min-width: 50px;
+    text-align: center;
+}
+
+.mission-info {
+    flex: 1;
+}
+
+.mission-name {
+    font-weight: bold;
+    color: #2c3e50;
+    margin-bottom: 0.25rem;
+}
+
+.mission-desc {
+    font-size: 0.85rem;
+    color: #7f8c8d;
+    margin-bottom: 0.5rem;
+}
+
+.mission-progress-bar {
+    height: 6px;
+    background: #ddd;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.mission-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3498db, #2980b9);
+    border-radius: 3px;
+    transition: width 0.3s;
+}
+
+.mission-card.completed .mission-progress-fill {
+    background: linear-gradient(90deg, #27ae60, #2ecc71);
+}
+
+.mission-progress-text {
+    font-size: 0.75rem;
+    color: #7f8c8d;
+    margin-top: 0.25rem;
+}
+
+.mission-reward {
+    font-weight: bold;
+    color: #f39c12;
+    font-size: 1.1rem;
+    min-width: 50px;
+    text-align: center;
+}
+
+.mission-card.completed .mission-reward {
+    color: #27ae60;
+    font-size: 1.5rem;
+}
+
+/* ===============================
+   WIDGET GAMIFICATION
+   =============================== */
+
+.gamification-widget {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 1rem;
+    background: rgba(255,255,255,0.9);
+    border-radius: 25px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.widget-level, .widget-streak, .widget-missions {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.widget-streak {
+    color: #e74c3c;
+}
+
+.widget-missions {
+    color: #3498db;
+}
+
+/* Section gamification dans modal */
+.gamification-section {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-radius: 15px;
+    padding: 1.5rem;
+}
+
+/* ===============================
+   SYSTÈME DE JOKER
+   =============================== */
+
+.joker-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.4rem 0.8rem;
+    border: 2px solid #9b59b6;
+    background: white;
+    color: #9b59b6;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.joker-btn:hover {
+    background: #9b59b6;
+    color: white;
+}
+
+.joker-btn.active {
+    background: linear-gradient(135deg, #9b59b6, #8e44ad);
+    color: white;
+    border-color: #8e44ad;
+    box-shadow: 0 2px 10px rgba(155, 89, 182, 0.4);
+    animation: joker-glow 1.5s infinite;
+}
+
+@keyframes joker-glow {
+    0%, 100% { box-shadow: 0 2px 10px rgba(155, 89, 182, 0.4); }
+    50% { box-shadow: 0 2px 20px rgba(155, 89, 182, 0.7); }
+}
+
+.joker-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.joker-counter {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.4rem 0.8rem;
+    background: linear-gradient(135deg, #9b59b6, #8e44ad);
+    color: white;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-right: 0.5rem;
+}
+
+/* Joker dans la carte de match */
+.prediction-match .joker-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+}
+
+.prediction-match {
+    position: relative;
+}
+
+/* ===============================
+   ÉQUIPE FAVORITE
+   =============================== */
+
+.favorite-team-selector {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e9ecef;
+}
+
+.favorite-team-selector label {
+    display: block;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.favorite-team-selector select {
+    width: 100%;
+    padding: 0.5rem 1rem;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+.favorite-team-card {
+    background: linear-gradient(135deg, #3498db20, #2980b920);
+    border: 2px solid #3498db;
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.favorite-team-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.favorite-team-icon {
+    font-size: 1.5rem;
+}
+
+.favorite-team-name {
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.favorite-team-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.favorite-team-stats .stat {
+    text-align: center;
+    padding: 0.75rem;
+    background: white;
+    border-radius: 10px;
+}
+
+.favorite-team-stats .value {
+    display: block;
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: #3498db;
+}
+
+.favorite-team-stats .label {
+    font-size: 0.75rem;
+    color: #7f8c8d;
+}
+
+.favorite-team-empty {
+    text-align: center;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 15px;
+    color: #7f8c8d;
+}
+
+/* ===============================
+   AVATAR
+   =============================== */
+
+.avatar-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.avatar-modal-content {
+    background: white;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.avatar-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border-radius: 20px 20px 0 0;
+}
+
+.avatar-modal-header h3 {
+    margin: 0;
+}
+
+.avatar-modal-body {
+    padding: 1.5rem;
+}
+
+.avatar-selector h4 {
+    margin: 0 0 1rem 0;
+    color: #2c3e50;
+}
+
+.avatar-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+}
+
+.avatar-option {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+    overflow: hidden;
+}
+
+.avatar-option:hover {
+    background: #e9ecef;
+}
+
+.avatar-option.selected {
+    border-color: #3498db;
+    background: linear-gradient(135deg, #3498db20, #2980b920);
+}
+
+.avatar-option.locked {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.avatar-icon {
+    font-size: 2rem;
+    margin-bottom: 0.25rem;
+}
+
+.avatar-name {
+    font-size: 0.7rem;
+    color: #7f8c8d;
+    text-align: center;
+}
+
+.avatar-lock {
+    position: absolute;
+    top: 0.25rem;
+    right: 0.25rem;
+    font-size: 0.8rem;
+}
+
+.avatar-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: #3498db;
+    border-radius: 0 0 10px 10px;
+}
+
+/* Avatar dans le header */
+.player-avatar {
+    cursor: pointer;
+    transition: transform 0.3s;
+}
+
+.player-avatar:hover {
+    transform: scale(1.1);
+}
+
+/* ===============================
+   RESPONSIVE
+   =============================== */
+
+@media (max-width: 768px) {
+    .avatar-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .favorite-team-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .mission-card {
+        flex-wrap: wrap;
+    }
+    
+    .mission-reward {
+        width: 100%;
+        text-align: right;
+        margin-top: 0.5rem;
+    }
+    
+    .gamification-widget {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .avatar-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+    }
+    
+    .avatar-option {
+        padding: 0.5rem;
+    }
+    
+    .avatar-icon {
+        font-size: 1.5rem;
+    }
+}
+
+.profile-section {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.profile-section:last-child {
+    border-bottom: none;
+}
+
+.profile-section h4 {
+    margin: 0 0 1rem 0;
+    color: #2c3e50;
+}
+
+.jokers-info {
+    background: linear-gradient(135deg, #9b59b620, #8e44ad20);
+    border: 2px solid #9b59b6;
+    border-radius: 15px;
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.jokers-remaining {
+    margin-bottom: 1rem;
+}
+
+.jokers-count {
+    font-size: 3rem;
+    font-weight: bold;
+    color: #9b59b6;
+}
+
+.jokers-label {
+    font-size: 1.2rem;
+    color: #7f8c8d;
+}
+
+.jokers-desc {
+    color: #7f8c8d;
+    margin: 0;
+}
+
+.joker-slot {
+    margin-top: 0.5rem;
+    text-align: center;
+}

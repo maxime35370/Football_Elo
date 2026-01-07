@@ -1,0 +1,613 @@
+/* pronostics-analysis.css - Styles pour Duels, Analyse IA, Heatmap */
+
+/* ===============================
+   HEAD-TO-HEAD / DUELS
+   =============================== */
+
+.duels-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-radius: 15px;
+    margin-bottom: 1.5rem;
+}
+
+.duel-selector {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.duel-player {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.duel-player label {
+    font-weight: 600;
+    color: #7f8c8d;
+    font-size: 0.85rem;
+}
+
+.duel-player select {
+    padding: 0.75rem 1.5rem;
+    border: 2px solid #3498db;
+    border-radius: 25px;
+    font-size: 1rem;
+    font-weight: 600;
+    background: white;
+    min-width: 150px;
+    cursor: pointer;
+}
+
+.duel-vs {
+    font-size: 2rem;
+    color: #e74c3c;
+}
+
+/* Résumé du duel */
+.duel-summary {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 2rem;
+    padding: 2rem;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.duel-player-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 15px;
+    min-width: 150px;
+    transition: all 0.3s;
+}
+
+.duel-player-card.winner {
+    background: linear-gradient(135deg, #d4edda, #c3e6cb);
+    border: 3px solid #27ae60;
+    transform: scale(1.05);
+}
+
+.duel-player-card .player-avatar {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+}
+
+.duel-player-card .player-name {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.duel-player-card .player-total-points {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #3498db;
+    margin: 0.5rem 0;
+}
+
+.duel-player-card .player-wins {
+    font-size: 0.9rem;
+    color: #7f8c8d;
+}
+
+.duel-vs-result {
+    text-align: center;
+}
+
+.duel-vs-result .vs-score {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.duel-vs-result .vs-label {
+    font-size: 0.85rem;
+    color: #7f8c8d;
+}
+
+/* Détails par journée */
+.duel-details {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.duel-details h4 {
+    margin: 0 0 1rem 0;
+    color: #2c3e50;
+}
+
+.duel-matchdays {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.duel-matchday {
+    border-radius: 10px;
+    overflow: hidden;
+    border: 2px solid #e9ecef;
+}
+
+.duel-matchday.p1-win {
+    border-left: 4px solid #3498db;
+}
+
+.duel-matchday.p2-win {
+    border-right: 4px solid #e74c3c;
+}
+
+.duel-matchday.tie {
+    border-left: 4px solid #f1c40f;
+}
+
+.matchday-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: #f8f9fa;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.matchday-header:hover {
+    background: #e9ecef;
+}
+
+.matchday-label {
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.matchday-score {
+    font-weight: 600;
+}
+
+.matchday-score .winner {
+    color: #27ae60;
+    font-weight: bold;
+}
+
+.matchday-toggle {
+    color: #7f8c8d;
+    transition: transform 0.3s;
+}
+
+.matchday-details {
+    padding: 0.75rem 1rem;
+    background: white;
+    border-top: 1px solid #e9ecef;
+}
+
+.match-detail {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px dashed #e9ecef;
+    font-size: 0.9rem;
+}
+
+.match-detail:last-child {
+    border-bottom: none;
+}
+
+.match-info {
+    color: #2c3e50;
+}
+
+.match-preds {
+    color: #7f8c8d;
+}
+
+.match-preds .winner {
+    color: #27ae60;
+    font-weight: bold;
+}
+
+/* ===============================
+   ANALYSE POST-MATCH (IA)
+   =============================== */
+
+.ia-comparison-summary {
+    margin-top: 1.5rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #667eea20, #764ba220);
+    border-radius: 15px;
+    border: 2px solid #667eea;
+}
+
+.comparison-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.comparison-icon {
+    font-size: 1.5rem;
+}
+
+.comparison-title {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.comparison-stats {
+    display: flex;
+    justify-content: space-around;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.comparison-stat {
+    text-align: center;
+    padding: 0.75rem 1rem;
+    background: white;
+    border-radius: 10px;
+    min-width: 100px;
+}
+
+.comparison-stat .stat-label {
+    display: block;
+    font-size: 0.8rem;
+    color: #7f8c8d;
+    margin-bottom: 0.25rem;
+}
+
+.comparison-stat .stat-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.comparison-stat.positive .stat-value {
+    color: #e74c3c;
+}
+
+.comparison-stat.negative .stat-value {
+    color: #27ae60;
+}
+
+.comparison-message {
+    text-align: center;
+    padding: 0.75rem;
+    border-radius: 10px;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.comparison-message.positive {
+    background: linear-gradient(135deg, #fff3cd, #ffeeba);
+    color: #856404;
+}
+
+.comparison-message.negative {
+    background: linear-gradient(135deg, #d4edda, #c3e6cb);
+    color: #155724;
+}
+
+.comparison-message.neutral {
+    background: linear-gradient(135deg, #e2e3e5, #d6d8db);
+    color: #383d41;
+}
+
+.comparison-details {
+    margin-top: 1rem;
+}
+
+.comparison-details summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: #3498db;
+    padding: 0.5rem;
+}
+
+.comparison-matches {
+    margin-top: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.comparison-match {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    background: white;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.comparison-match.ia-better {
+    border-left: 3px solid #e74c3c;
+}
+
+.comparison-match.player-better {
+    border-left: 3px solid #27ae60;
+}
+
+.comparison-match .match-name {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.comparison-match .match-pred {
+    color: #7f8c8d;
+}
+
+/* ===============================
+   HEATMAP TEMPORELLE
+   =============================== */
+
+.heatmap-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.heatmap-header h4 {
+    margin: 0;
+    color: #2c3e50;
+}
+
+.heatmap-legend {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+}
+
+.legend-item {
+    color: #7f8c8d;
+}
+
+.legend-item.bad {
+    color: #e74c3c;
+}
+
+.legend-item.good {
+    color: #27ae60;
+}
+
+.legend-gradient {
+    width: 100px;
+    height: 15px;
+    background: linear-gradient(90deg, rgb(220, 80, 80), rgb(80, 180, 80));
+    border-radius: 8px;
+}
+
+.heatmap-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.heatmap-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem;
+    border-radius: 10px;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    min-height: 80px;
+}
+
+.heatmap-cell:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.cell-day {
+    font-size: 0.85rem;
+    font-weight: bold;
+    opacity: 0.9;
+}
+
+.cell-points {
+    font-size: 1.3rem;
+    font-weight: bold;
+}
+
+.cell-rate {
+    font-size: 0.75rem;
+    opacity: 0.8;
+}
+
+.heatmap-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.heatmap-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+}
+
+.heatmap-stat .stat-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.heatmap-stat .stat-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.heatmap-stat .stat-label {
+    font-size: 0.8rem;
+    color: #7f8c8d;
+    text-align: center;
+}
+
+/* Comparaison dans heatmap */
+.heatmap-compare {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 2px solid #e9ecef;
+}
+
+.heatmap-compare h4 {
+    margin: 0 0 1rem 0;
+    color: #2c3e50;
+}
+
+.compare-selector {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.compare-selector select {
+    padding: 0.5rem 1rem;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    min-width: 180px;
+}
+
+/* Résultat de comparaison */
+.comparison-result {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.comparison-score {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    font-size: 1.2rem;
+}
+
+.score-player {
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.score-vs {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #3498db;
+    padding: 0.5rem 1rem;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.comparison-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.comparison-bar-row {
+    display: grid;
+    grid-template-columns: 50px 1fr;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.bar-day {
+    font-weight: bold;
+    color: #7f8c8d;
+    text-align: right;
+}
+
+.bar-container {
+    display: flex;
+    height: 28px;
+    background: #f8f9fa;
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+.bar-left, .bar-right {
+    display: flex;
+    align-items: center;
+    padding: 0 0.5rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: white;
+    transition: width 0.5s ease;
+}
+
+.bar-left {
+    background: linear-gradient(90deg, #3498db, #2980b9);
+    justify-content: flex-end;
+    border-radius: 14px 0 0 14px;
+}
+
+.bar-right {
+    background: linear-gradient(90deg, #e74c3c, #c0392b);
+    justify-content: flex-start;
+    border-radius: 0 14px 14px 0;
+}
+
+.bar-left.winner, .bar-right.winner {
+    box-shadow: 0 0 0 2px #f1c40f;
+}
+
+/* ===============================
+   RESPONSIVE
+   =============================== */
+
+@media (max-width: 768px) {
+    .duel-summary {
+        flex-direction: column;
+    }
+    
+    .duel-vs-result {
+        order: -1;
+    }
+    
+    .heatmap-grid {
+        grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    }
+    
+    .comparison-bar-row {
+        grid-template-columns: 40px 1fr;
+    }
+}

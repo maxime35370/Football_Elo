@@ -61,12 +61,15 @@ async function calculatePlayerDetailedStats(playerId) {
         
         for (const entry of history) {
             const matchDay = entry.matchDay;
-            stats.journeysPlayed.push(matchDay);
             
-            // Récupérer les matchs réels de cette journée
-            const matchesThisDay = allMatches.filter(m => m.matchDay === matchDay);
+            // Récupérer les matchs réels de cette journée QUI ONT UN RÉSULTAT
+            const matchesThisDay = allMatches.filter(m => m.matchDay === matchDay && m.finalScore);
+            
+            // Ne pas compter cette journée si aucun match n'a de résultat
+            if (matchesThisDay.length === 0) continue;
             
             let dayPoints = 0;
+            let hasPlayedMatch = false; // Au moins un prono correspond à un match joué
             
             for (const pred of entry.predictions) {
                 const match = matchesThisDay.find(m => 
@@ -75,6 +78,7 @@ async function calculatePlayerDetailedStats(playerId) {
                 
                 if (!match || !match.finalScore) continue;
                 
+                hasPlayedMatch = true;
                 stats.totalPredictions++;
                 
                 // Calculer le résultat
@@ -153,10 +157,13 @@ async function calculatePlayerDetailedStats(playerId) {
                 }
             }
             
-            // Points par journée
-            stats.pointsByMatchDay[matchDay] = dayPoints;
-            cumulativeTotal += dayPoints;
-            stats.cumulativePoints[matchDay] = cumulativeTotal;
+            // Ajouter la journée SEULEMENT si au moins un match a été joué
+            if (hasPlayedMatch) {
+                stats.journeysPlayed.push(matchDay);
+                stats.pointsByMatchDay[matchDay] = Math.round(dayPoints * 10) / 10;
+                cumulativeTotal += dayPoints;
+                stats.cumulativePoints[matchDay] = Math.round(cumulativeTotal * 10) / 10;
+            }
         }
         
         // Finaliser les séries
@@ -243,7 +250,7 @@ async function showPlayerStatsModal(playerId, playerPseudo) {
     let html = `
         <div class="stats-overview">
             <div class="stats-card highlight">
-                <div class="stats-value">${stats.totalPoints}</div>
+                <div class="stats-value">${Math.round(stats.totalPoints * 10) / 10}</div>
                 <div class="stats-label">Points totaux</div>
             </div>
             <div class="stats-card">
@@ -512,7 +519,7 @@ async function renderEvolutionChart() {
                     tooltip: {
                         callbacks: {
                             label: function(context) {
-                                return `${context.dataset.label}: ${context.parsed.y} pts`;
+                                return `${context.dataset.label}: ${Math.round(context.parsed.y * 10) / 10} pts`;
                             }
                         }
                     }
@@ -593,7 +600,12 @@ function filterEvolutionChart(filter) {
 async function getMatchDayLeaderboard(matchDay) {
     try {
         const predictions = await getAllPredictionsForMatchDay(currentSeason, matchDay);
-        const matchesThisDay = allMatches.filter(m => m.matchDay === matchDay);
+        const matchesThisDay = allMatches.filter(m => m.matchDay === matchDay && m.finalScore);
+        
+        // Si aucun match joué, retourner vide
+        if (matchesThisDay.length === 0) {
+            return [];
+        }
         
         const leaderboard = [];
         
@@ -625,7 +637,7 @@ async function getMatchDayLeaderboard(matchDay) {
             leaderboard.push({
                 playerId: pred.playerId,
                 pseudo: pred.pseudo,
-                points: dayPoints,
+                points: Math.round(dayPoints * 10) / 10,
                 exactScores: exactScores,
                 correctResults: correctResults
             });
