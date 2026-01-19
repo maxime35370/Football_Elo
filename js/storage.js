@@ -124,6 +124,41 @@ function saveFutureMatches(season, matches) {
     }
 }
 
+// Version async avec Firebase
+async function loadFutureMatchesAsync(season) {
+    try {
+        if (typeof firebaseService !== 'undefined' && navigator.onLine) {
+            const firebaseMatches = await firebaseService.getFutureMatches(season);
+            if (firebaseMatches && firebaseMatches.length > 0) {
+                // Synchroniser en local
+                const key = `footballEloFutureMatches_${season}`;
+                localStorage.setItem(key, JSON.stringify(firebaseMatches));
+                return firebaseMatches;
+            }
+        }
+        return loadFutureMatches(season);
+    } catch (error) {
+        console.error('Erreur loadFutureMatchesAsync:', error);
+        return loadFutureMatches(season);
+    }
+}
+
+function saveFutureMatches(season, matches) {
+    try {
+        const key = `footballEloFutureMatches_${season}`;
+        localStorage.setItem(key, JSON.stringify(matches));
+        
+        // Sauvegarder sur Firebase en arrière-plan
+        if (typeof firebaseService !== 'undefined') {
+            firebaseService.saveFutureMatches(season, matches).then(success => {
+                if (success) console.log('Matchs futurs synchronisés sur Firebase');
+            });
+        }
+    } catch (error) {
+        console.error('Erreur saveFutureMatches:', error);
+    }
+}
+
 // Supprimer un match par ID (synchrone + Firebase en arrière-plan)
 function deleteMatch(matchId) {
     try {

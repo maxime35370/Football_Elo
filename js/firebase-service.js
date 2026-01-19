@@ -206,6 +206,37 @@ class FirebaseService {
             return null;
         }
     }
+
+    // === GESTION DES MATCHS FUTURS ===
+
+    async saveFutureMatches(season, matches) {
+        try {
+            await this.db.collection('futureMatches').doc(season).set({
+                season: season,
+                matches: matches,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            console.log('✅ Matchs futurs sauvegardés sur Firebase:', season);
+            return true;
+        } catch (error) {
+            console.error('❌ Erreur Firebase saveFutureMatches:', error);
+            return false;
+        }
+    }
+
+    async getFutureMatches(season) {
+        try {
+            const doc = await this.db.collection('futureMatches').doc(season).get();
+            if (doc.exists) {
+                console.log('📥 Matchs futurs récupérés depuis Firebase');
+                return doc.data().matches || [];
+            }
+            return [];
+        } catch (error) {
+            console.error('❌ Erreur getFutureMatches:', error);
+            return [];
+        }
+    }
 }
 
 // Instance globale
