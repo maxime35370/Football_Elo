@@ -150,6 +150,50 @@ class FirebaseService {
         }
     }
 
+    // === GESTION DES MATCHS FUTURS (CALENDRIER PRONOSTICS) ===
+    
+    async saveFutureMatches(season, matches) {
+        try {
+            await this.db.collection('futureMatches').doc(season).set({
+                season: season,
+                matches: matches,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            console.log('✅ Matchs futurs sauvegardés sur Firebase pour', season);
+            return true;
+        } catch (error) {
+            console.error('❌ Erreur Firebase saveFutureMatches:', error);
+            return false;
+        }
+    }
+
+    async getFutureMatches(season) {
+        try {
+            const doc = await this.db.collection('futureMatches').doc(season).get();
+            if (doc.exists) {
+                const data = doc.data();
+                console.log('📥 Matchs futurs récupérés depuis Firebase pour', season);
+                return data.matches || [];
+            }
+            console.log('📭 Aucun match futur trouvé sur Firebase pour', season);
+            return [];
+        } catch (error) {
+            console.error('❌ Erreur getFutureMatches:', error);
+            return [];
+        }
+    }
+
+    async deleteFutureMatches(season) {
+        try {
+            await this.db.collection('futureMatches').doc(season).delete();
+            console.log('🗑️ Matchs futurs supprimés de Firebase pour', season);
+            return true;
+        } catch (error) {
+            console.error('❌ Erreur suppression matchs futurs:', error);
+            return false;
+        }
+    }
+
     // === SYNCHRONISATION ===
     
     async syncFromLocalToFirebase() {
@@ -204,37 +248,6 @@ class FirebaseService {
         } catch (error) {
             console.error('Erreur export:', error);
             return null;
-        }
-    }
-
-    // === GESTION DES MATCHS FUTURS ===
-
-    async saveFutureMatches(season, matches) {
-        try {
-            await this.db.collection('futureMatches').doc(season).set({
-                season: season,
-                matches: matches,
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            console.log('✅ Matchs futurs sauvegardés sur Firebase:', season);
-            return true;
-        } catch (error) {
-            console.error('❌ Erreur Firebase saveFutureMatches:', error);
-            return false;
-        }
-    }
-
-    async getFutureMatches(season) {
-        try {
-            const doc = await this.db.collection('futureMatches').doc(season).get();
-            if (doc.exists) {
-                console.log('📥 Matchs futurs récupérés depuis Firebase');
-                return doc.data().matches || [];
-            }
-            return [];
-        } catch (error) {
-            console.error('❌ Erreur getFutureMatches:', error);
-            return [];
         }
     }
 }
