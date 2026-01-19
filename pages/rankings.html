@@ -15,6 +15,7 @@
         </header>
 
         <nav>
+            <button class="burger-menu" onclick="toggleMenu()">☰</button>
             <div class="nav-container">
                 <a href="../index.html" class="nav-btn">🏠 Accueil</a>
                 <a href="../pages/add-match.html" class="nav-btn">➕ Ajouter un match</a>
@@ -270,5 +271,10 @@
         <script src="../js/elo.js"></script>
         <script src="../js/rankings.js"></script>
         <script src="../js/head-to-head.js"></script>
+    <script>
+    function toggleMenu() {
+        document.querySelector('.nav-container').classList.toggle('open');
+    }
+    </script>
     </body>
 </html>

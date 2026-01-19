@@ -294,3 +294,431 @@ footer {
         padding: 0.8rem;
     }
 }
+
+/* ============================================
+   RESPONSIVE MOBILE COMPLET
+   À ajouter à la fin de style.css
+   ============================================ */
+
+/* ============ TABLETTE (max 900px) ============ */
+@media (max-width: 900px) {
+    
+    /* Burger menu */
+    .burger-menu {
+        display: block;
+    }
+    
+    .nav-container {
+        display: none;
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 1rem;
+        max-width: 100%;
+    }
+    
+    .nav-container.open {
+        display: flex;
+    }
+    
+    .nav-btn {
+        width: 100%;
+        text-align: center;
+        padding: 0.8rem;
+        border-radius: 10px;
+    }
+    
+    /* Header */
+    header {
+        padding: 1rem 0;
+    }
+    
+    header h1 {
+        font-size: 1.8rem;
+    }
+    
+    header p {
+        font-size: 1rem;
+    }
+    
+    /* Main content */
+    main {
+        max-width: 100%;
+        margin: 1rem auto;
+        padding: 0 0.5rem;
+    }
+    
+    /* Welcome section */
+    .welcome-section {
+        padding: 1.5rem;
+        margin: 0.5rem;
+        border-radius: 10px;
+    }
+    
+    .welcome-section h2 {
+        font-size: 1.5rem;
+    }
+    
+    /* Features */
+    .features {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .feature-card {
+        padding: 1.5rem;
+    }
+}
+
+/* ============ MOBILE (max 600px) ============ */
+@media (max-width: 600px) {
+    
+    /* Body - Supprimer marges */
+    body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    /* Header compact */
+    header {
+        padding: 0.8rem 0;
+        margin: 0;
+    }
+    
+    header h1 {
+        font-size: 1.5rem;
+        margin-bottom: 0.2rem;
+    }
+    
+    header p {
+        font-size: 0.9rem;
+    }
+    
+    /* Navigation */
+    nav {
+        padding: 0.5rem 0;
+    }
+    
+    .burger-menu {
+        font-size: 1.8rem;
+        padding: 0.3rem 1rem;
+    }
+    
+    .nav-container {
+        padding: 0.5rem;
+        gap: 0.3rem;
+    }
+    
+    .nav-btn {
+        padding: 0.7rem;
+        font-size: 0.85rem;
+        border-radius: 8px;
+    }
+    
+    /* Main - PLEINE LARGEUR */
+    main {
+        max-width: 100%;
+        margin: 0.5rem 0;
+        padding: 0 0.3rem;
+    }
+    
+    /* Sections - Supprimer les bordures */
+    .welcome-section,
+    .section,
+    .card,
+    .container,
+    .content-section,
+    .ranking-section,
+    .stats-section,
+    .table-container {
+        margin: 0.3rem;
+        padding: 0.8rem;
+        border-radius: 8px;
+    }
+    
+    /* Tableaux - Pleine largeur */
+    table {
+        width: 100%;
+        font-size: 0.8rem;
+    }
+    
+    th, td {
+        padding: 0.4rem 0.3rem;
+    }
+    
+    /* Titres */
+    h2 {
+        font-size: 1.3rem;
+    }
+    
+    h3 {
+        font-size: 1.1rem;
+    }
+    
+    /* Boutons */
+    .btn {
+        padding: 0.6rem 1rem;
+        font-size: 0.85rem;
+    }
+    
+    /* Tabs / Onglets */
+    .tabs,
+    .tab-buttons,
+    .game-tabs {
+        flex-wrap: wrap;
+        gap: 0.3rem;
+    }
+    
+    .tab-btn,
+    .game-tab {
+        padding: 0.5rem 0.8rem;
+        font-size: 0.8rem;
+        flex: 1 1 auto;
+        min-width: 80px;
+        text-align: center;
+    }
+    
+    /* Footer */
+    footer {
+        padding: 1rem 0;
+        margin-top: 1rem;
+        font-size: 0.85rem;
+    }
+}
+
+/* ============ PETIT MOBILE (max 400px) ============ */
+@media (max-width: 400px) {
+    
+    header h1 {
+        font-size: 1.3rem;
+    }
+    
+    header p {
+        font-size: 0.8rem;
+    }
+    
+    main {
+        padding: 0 0.2rem;
+    }
+    
+    .welcome-section,
+    .section,
+    .card,
+    .container {
+        margin: 0.2rem;
+        padding: 0.6rem;
+        border-radius: 5px;
+    }
+    
+    table {
+        font-size: 0.75rem;
+    }
+    
+    th, td {
+        padding: 0.3rem 0.2rem;
+    }
+    
+    h2 {
+        font-size: 1.1rem;
+    }
+    
+    h3 {
+        font-size: 1rem;
+    }
+    
+    .nav-btn {
+        font-size: 0.8rem;
+        padding: 0.6rem;
+    }
+}
+
+/* ============ SPÉCIFIQUE RANKINGS / CLASSEMENT ============ */
+@media (max-width: 600px) {
+    
+    /* Container classement */
+    .ranking-container,
+    .rankings-container,
+    .leaderboard-container {
+        margin: 0;
+        padding: 0.5rem;
+        border-radius: 8px;
+    }
+    
+    /* Titre classement */
+    .ranking-container h2,
+    .rankings-container h2 {
+        font-size: 1.2rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    /* Tableau classement compact */
+    .ranking-table,
+    .rankings-table,
+    .leaderboard-table {
+        font-size: 0.78rem;
+    }
+    
+    .ranking-table th,
+    .ranking-table td,
+    .rankings-table th,
+    .rankings-table td {
+        padding: 0.4rem 0.25rem;
+    }
+    
+    /* Podium compact */
+    .podium {
+        gap: 0.5rem;
+        padding: 0.5rem;
+    }
+    
+    .podium-item {
+        padding: 0.5rem;
+        font-size: 0.85rem;
+    }
+}
+
+/* ============ SPÉCIFIQUE MATCHS / CALENDRIER ============ */
+@media (max-width: 600px) {
+    
+    /* Liste matchs */
+    .matches-list,
+    .calendar-list {
+        gap: 0.5rem;
+    }
+    
+    /* Carte match */
+    .match-card,
+    .match-item {
+        padding: 0.6rem;
+        margin: 0.2rem 0;
+        border-radius: 8px;
+    }
+    
+    /* Score */
+    .match-score,
+    .score {
+        font-size: 1.2rem;
+    }
+    
+    /* Équipes */
+    .team-name {
+        font-size: 0.85rem;
+    }
+    
+    /* Journée header */
+    .matchday-header,
+    .journey-header {
+        padding: 0.5rem;
+        font-size: 0.9rem;
+    }
+}
+
+/* ============ SPÉCIFIQUE PRONOSTICS ============ */
+@media (max-width: 600px) {
+    
+    /* Container pronostics */
+    .prono-container {
+        padding: 0.3rem;
+    }
+    
+    /* Auth card */
+    .auth-card {
+        margin: 0.5rem;
+        padding: 1rem;
+    }
+    
+    /* Player header */
+    .player-header {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        padding: 0.8rem;
+    }
+    
+    .player-name {
+        font-size: 1rem;
+    }
+    
+    /* Predictions list */
+    .predictions-list {
+        gap: 0.5rem;
+    }
+    
+    .prediction-match {
+        padding: 0.6rem;
+        border-radius: 8px;
+    }
+    
+    .prediction-score input {
+        width: 40px;
+        height: 40px;
+        font-size: 1.1rem;
+    }
+    
+    /* Leaderboard pronostics */
+    .leaderboard-table-wrapper {
+        overflow-x: auto;
+    }
+    
+    #leaderboardTable {
+        font-size: 0.75rem;
+        min-width: 100%;
+    }
+    
+    #leaderboardTable th,
+    #leaderboardTable td {
+        padding: 0.4rem 0.2rem;
+        white-space: nowrap;
+    }
+}
+
+/* ============ SPÉCIFIQUE STATS ============ */
+@media (max-width: 600px) {
+    
+    /* Stats grid */
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+    }
+    
+    .stat-card {
+        padding: 0.8rem;
+    }
+    
+    .stat-value {
+        font-size: 1.3rem;
+    }
+    
+    .stat-label {
+        font-size: 0.75rem;
+    }
+    
+    /* Charts */
+    .chart-container {
+        padding: 0.5rem;
+        height: 250px;
+    }
+}
+
+/* ============ UTILITAIRES MOBILE ============ */
+@media (max-width: 600px) {
+    
+    /* Cacher sur mobile */
+    .hide-mobile {
+        display: none !important;
+    }
+    
+    /* Scroll horizontal pour tableaux */
+    .table-scroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Flex wrap */
+    .flex-mobile {
+        flex-wrap: wrap;
+    }
+    
+    /* Full width */
+    .full-mobile {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+}
