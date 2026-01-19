@@ -2,16 +2,33 @@
 
 let allTeams = [];
 let allMatches = [];
-let selectedSeason = null; // ← AJOUTER
+let selectedSeason = null;
 
-// Initialisation de la page
-document.addEventListener('DOMContentLoaded', function() {
-    selectedSeason = getCurrentSeason(); // ← AJOUTER
-    populateSeasonSelector(); // ← AJOUTER
+// Initialisation de la page - ASYNC pour attendre Firebase
+document.addEventListener('DOMContentLoaded', async function() {
+    // Attendre la synchronisation Firebase
+    await waitForFirebaseSync();
+    
+    selectedSeason = getCurrentSeason();
+    populateSeasonSelector();
     loadData();
     generateResultsTable();
     calculateStats();
 });
+
+// Nouvelle fonction : attendre que Firebase soit synchronisé
+async function waitForFirebaseSync() {
+    // Si Firebase est disponible, attendre la synchro
+    if (typeof syncFromFirebase === 'function' && navigator.onLine) {
+        try {
+            console.log('⏳ Attente synchronisation Firebase...');
+            await syncFromFirebase();
+            console.log('✅ Synchronisation terminée');
+        } catch (error) {
+            console.log('⚠️ Sync échouée, utilisation des données locales');
+        }
+    }
+}
 
 // Remplir le sélecteur de saison
 function populateSeasonSelector() {
@@ -43,12 +60,11 @@ function populateSeasonSelector() {
     });
 }
 
-
 // Charger les données
 function loadData() {
     const season = selectedSeason || getCurrentSeason();
     allTeams = getTeamsBySeason(season);
-    allMatches = getMatchesBySeason(season); // ← MODIFIER pour filtrer par saison
+    allMatches = getMatchesBySeason(season);
     console.log('Données chargées:', allTeams.length, 'équipes,', allMatches.length, 'matchs');
 }
 
