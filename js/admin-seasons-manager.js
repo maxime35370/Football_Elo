@@ -1,7 +1,7 @@
-// admin-seasons-manager.js - Gestion des saisons dans l'admin
+// admin-seasons-manager.js - Gestion des saisons dans l'admin (version Firebase)
 
 // Afficher la liste des saisons
-function displaySeasonsList() {
+async function displaySeasonsList() {
     const seasons = getSeasonsOrderedByDate();
     const seasonsList = document.getElementById('seasonsListAdmin');
     
@@ -14,14 +14,14 @@ function displaySeasonsList() {
     
     seasonsList.innerHTML = '';
     
-    seasons.forEach(season => {
-        const seasonCard = createSeasonAdminCard(season);
+    for (const season of seasons) {
+        const seasonCard = await createSeasonAdminCard(season);
         seasonsList.appendChild(seasonCard);
-    });
+    }
 }
 
 // Créer une carte de saison pour l'admin
-function createSeasonAdminCard(season) {
+async function createSeasonAdminCard(season) {
     const card = document.createElement('div');
     card.className = 'season-admin-card';
     card.style.cssText = `
@@ -33,7 +33,21 @@ function createSeasonAdminCard(season) {
         transition: all 0.3s ease;
     `;
     
-    const teams = getTeamsBySeason(season.name);
+    // Compter les équipes depuis Firebase
+    let teamsCount = 0;
+    try {
+        const snapshot = await db.collection('teams').get();
+        snapshot.forEach(doc => {
+            const team = doc.data();
+            if (team.seasons && team.seasons.includes(season.name)) {
+                teamsCount++;
+            }
+        });
+    } catch (error) {
+        console.error('Erreur comptage équipes:', error);
+        teamsCount = season.teamIds ? season.teamIds.length : 0;
+    }
+    
     const matches = getMatchesBySeason(season.name);
     
     const startDate = new Date(season.startDate).toLocaleDateString('fr-FR');
@@ -62,7 +76,7 @@ function createSeasonAdminCard(season) {
         
         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
             <div style="text-align: center;">
-                <div style="font-size: 1.5rem; color: #3498db; font-weight: bold;">${teams.length}</div>
+                <div style="font-size: 1.5rem; color: #3498db; font-weight: bold;">${teamsCount}</div>
                 <div style="color: #7f8c8d; font-size: 0.85rem;">Équipes</div>
             </div>
             <div style="text-align: center;">
@@ -70,7 +84,7 @@ function createSeasonAdminCard(season) {
                 <div style="color: #7f8c8d; font-size: 0.85rem;">Matchs</div>
             </div>
             <div style="text-align: center;">
-                <div style="font-size: 1.5rem; color: #9b59b6; font-weight: bold;">${season.teamIds ? season.teamIds.length : 0}</div>
+                <div style="font-size: 1.5rem; color: #9b59b6; font-weight: bold;">${teamsCount}</div>
                 <div style="color: #7f8c8d; font-size: 0.85rem;">Participants</div>
             </div>
         </div>
@@ -143,8 +157,8 @@ function confirmDeleteSeason(seasonName) {
     }
 }
 
-// Afficher le dialog d'édition de saison
-function showEditSeasonDialog(seasonName) {
+// Afficher le dialog d'édition de saison (VERSION FIREBASE)
+async function showEditSeasonDialog(seasonName) {
     const seasons = getStoredSeasons();
     const season = seasons.find(s => s.name === seasonName);
     
@@ -153,10 +167,7 @@ function showEditSeasonDialog(seasonName) {
         return;
     }
     
-    const allTeams = getStoredTeams();
-    const seasonTeamIds = season.teamIds || [];
-    
-    // Créer l'overlay
+    // Créer l'overlay avec un message de chargement
     const overlay = document.createElement('div');
     overlay.id = 'editSeasonOverlay';
     overlay.style.cssText = `
@@ -187,27 +198,55 @@ function showEditSeasonDialog(seasonName) {
         box-shadow: 0 10px 40px rgba(0,0,0,0.3);
     `;
     
-    // Liste des équipes avec checkboxes
-    let teamsCheckboxes = '';
-    allTeams.forEach(team => {
-        const isChecked = seasonTeamIds.includes(team.id);
-        teamsCheckboxes += `
-            <label style="display: flex; align-items: center; padding: 0.8rem; background: ${isChecked ? '#e8f5e8' : '#f8f9fa'}; border: 2px solid ${isChecked ? '#27ae60' : '#e9ecef'}; border-radius: 8px; cursor: pointer; margin-bottom: 0.5rem;">
-                <input 
-                    type="checkbox" 
-                    name="teamSelect" 
-                    value="${team.id}"
-                    ${isChecked ? 'checked' : ''}
-                    style="margin-right: 0.8rem; width: 20px; height: 20px; cursor: pointer;"
-                    onchange="this.parentElement.style.background = this.checked ? '#e8f5e8' : '#f8f9fa'; this.parentElement.style.borderColor = this.checked ? '#27ae60' : '#e9ecef';"
-                >
-                <div style="flex: 1;">
-                    <strong>${team.shortName}</strong> - ${team.name}
-                </div>
-            </label>
-        `;
-    });
+    popup.innerHTML = `
+        <h2 style="color: #2c3e50; margin-bottom: 1.5rem; text-align: center;">
+            ✏️ Modifier la saison ${seasonName}
+        </h2>
+        <p style="text-align: center;">⏳ Chargement des équipes...</p>
+    `;
     
+    overlay.appendChild(popup);
+    document.body.appendChild(overlay);
+    
+    // Charger les équipes depuis Firebase
+    let teamsCheckboxes = '';
+    
+    try {
+        const snapshot = await db.collection('teams').get();
+        
+        if (snapshot.empty) {
+            teamsCheckboxes = '<p style="color: #e74c3c;">Aucune équipe trouvée dans Firebase</p>';
+        } else {
+            snapshot.forEach(doc => {
+                const team = doc.data();
+                const teamId = doc.id;
+                
+                // ✅ Vérifier si l'équipe a cette saison dans son champ "seasons"
+                const isChecked = team.seasons && team.seasons.includes(seasonName);
+                
+                teamsCheckboxes += `
+                    <label style="display: flex; align-items: center; padding: 0.8rem; background: ${isChecked ? '#e8f5e8' : '#f8f9fa'}; border: 2px solid ${isChecked ? '#27ae60' : '#e9ecef'}; border-radius: 8px; cursor: pointer; margin-bottom: 0.5rem;">
+                        <input 
+                            type="checkbox" 
+                            name="teamSelect" 
+                            value="${teamId}"
+                            ${isChecked ? 'checked' : ''}
+                            style="margin-right: 0.8rem; width: 20px; height: 20px; cursor: pointer;"
+                            onchange="this.parentElement.style.background = this.checked ? '#e8f5e8' : '#f8f9fa'; this.parentElement.style.borderColor = this.checked ? '#27ae60' : '#e9ecef';"
+                        >
+                        <div style="flex: 1;">
+                            <strong>${team.shortName || '?'}</strong> - ${team.name || 'Sans nom'}
+                        </div>
+                    </label>
+                `;
+            });
+        }
+    } catch (error) {
+        console.error('Erreur chargement équipes Firebase:', error);
+        teamsCheckboxes = `<p style="color: #e74c3c;">Erreur: ${error.message}</p>`;
+    }
+    
+    // Mettre à jour le contenu de la popup
     popup.innerHTML = `
         <h2 style="color: #2c3e50; margin-bottom: 1.5rem; text-align: center;">
             ✏️ Modifier la saison ${seasonName}
@@ -221,7 +260,7 @@ function showEditSeasonDialog(seasonName) {
                 type="text" 
                 id="editSeasonName" 
                 value="${seasonName}"
-                style="width: 100%; padding: 0.8rem; border: 2px solid #e9ecef; border-radius: 5px; font-size: 1rem;"
+                style="width: 100%; padding: 0.8rem; border: 2px solid #e9ecef; border-radius: 5px; font-size: 1rem; box-sizing: border-box;"
             >
         </div>
         
@@ -251,6 +290,7 @@ function showEditSeasonDialog(seasonName) {
                 ❌ Annuler
             </button>
             <button 
+                id="saveSeasonBtn"
                 onclick="saveSeasonEdition('${seasonName}')"
                 style="padding: 0.8rem 1.5rem; background: linear-gradient(45deg, #27ae60, #2ecc71); color: white; border: none; border-radius: 25px; cursor: pointer; font-weight: 600; font-size: 1rem;"
             >
@@ -258,9 +298,6 @@ function showEditSeasonDialog(seasonName) {
             </button>
         </div>
     `;
-    
-    overlay.appendChild(popup);
-    document.body.appendChild(overlay);
 }
 
 // Sélectionner toutes les équipes
@@ -283,11 +320,12 @@ function deselectAllTeams() {
     });
 }
 
-// Sauvegarder l'édition de saison
-function saveSeasonEdition(oldSeasonName) {
+// Sauvegarder l'édition de saison (VERSION FIREBASE)
+async function saveSeasonEdition(oldSeasonName) {
     const newSeasonName = document.getElementById('editSeasonName').value.trim();
-    const checkboxes = document.querySelectorAll('input[name="teamSelect"]:checked');
-    const selectedTeamIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+    const checkboxes = document.querySelectorAll('input[name="teamSelect"]');
+    const allTeamIds = Array.from(checkboxes).map(cb => cb.value);
+    const selectedTeamIds = Array.from(document.querySelectorAll('input[name="teamSelect"]:checked')).map(cb => cb.value);
     
     // Validation
     if (!newSeasonName) {
@@ -309,33 +347,87 @@ function saveSeasonEdition(oldSeasonName) {
         }
     }
     
-    // Mettre à jour
-    const updates = {
-        name: newSeasonName,
-        teamIds: selectedTeamIds
-    };
-    
-    // Si le nom change, il faut aussi mettre à jour les matchs
-    if (newSeasonName !== oldSeasonName) {
-        const matches = getStoredMatches();
-        matches.forEach(match => {
-            if (match.season === oldSeasonName) {
-                match.season = newSeasonName;
-            }
-        });
-        localStorage.setItem('footballEloMatches', JSON.stringify(matches));
+    // Afficher un indicateur de chargement
+    const saveBtn = document.getElementById('saveSeasonBtn');
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.textContent = '⏳ Enregistrement...';
     }
     
-    if (updateSeason(oldSeasonName, updates)) {
-        // Si c'était la saison active, mettre à jour
-        if (getCurrentSeason() === oldSeasonName) {
-            setCurrentSeason(newSeasonName);
+    try {
+        // ✅ METTRE À JOUR LES ÉQUIPES DANS FIREBASE
+        for (const teamId of allTeamIds) {
+            const teamRef = db.collection('teams').doc(teamId);
+            const teamDoc = await teamRef.get();
+            
+            if (teamDoc.exists) {
+                const teamData = teamDoc.data();
+                let seasons = teamData.seasons || [];
+                
+                // Retirer l'ancienne saison si le nom change
+                if (newSeasonName !== oldSeasonName) {
+                    seasons = seasons.filter(s => s !== oldSeasonName);
+                }
+                
+                if (selectedTeamIds.includes(teamId)) {
+                    // Ajouter la nouvelle saison si pas déjà présente
+                    if (!seasons.includes(newSeasonName)) {
+                        seasons.push(newSeasonName);
+                    }
+                } else {
+                    // Retirer la saison si l'équipe est décochée
+                    seasons = seasons.filter(s => s !== newSeasonName && s !== oldSeasonName);
+                }
+                
+                // Mettre à jour Firebase
+                await teamRef.update({ seasons: seasons });
+            }
         }
         
-        showMessage('Saison modifiée avec succès !', 'success');
-        document.body.removeChild(document.getElementById('editSeasonOverlay'));
-        displaySeasonsList();
-    } else {
-        showMessage('Erreur lors de la modification', 'error');
+        console.log(`✅ ${selectedTeamIds.length} équipes mises à jour dans Firebase`);
+        
+        // Mettre à jour localStorage aussi (pour compatibilité)
+        const updates = {
+            name: newSeasonName,
+            teamIds: selectedTeamIds.map(id => parseInt(id) || id)
+        };
+        
+        // Si le nom change, mettre à jour les matchs
+        if (newSeasonName !== oldSeasonName) {
+            const matches = getStoredMatches();
+            matches.forEach(match => {
+                if (match.season === oldSeasonName) {
+                    match.season = newSeasonName;
+                }
+            });
+            localStorage.setItem('footballEloMatches', JSON.stringify(matches));
+        }
+        
+        if (updateSeason(oldSeasonName, updates)) {
+            // Si c'était la saison active, mettre à jour
+            if (getCurrentSeason() === oldSeasonName) {
+                setCurrentSeason(newSeasonName);
+            }
+            
+            showMessage('Saison modifiée avec succès !', 'success');
+            document.body.removeChild(document.getElementById('editSeasonOverlay'));
+            displaySeasonsList();
+            
+            // Recharger les données admin
+            if (typeof loadAdminData === 'function') {
+                loadAdminData();
+            }
+        } else {
+            showMessage('Erreur lors de la modification locale', 'error');
+        }
+        
+    } catch (error) {
+        console.error('Erreur sauvegarde Firebase:', error);
+        showMessage('Erreur: ' + error.message, 'error');
+        
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.textContent = '💾 Enregistrer';
+        }
     }
 }

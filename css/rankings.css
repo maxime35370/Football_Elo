@@ -149,6 +149,23 @@
     color: white !important;
 }
 
+/* Numéros de position visibles sur fonds colorés */
+.ranking-table tr.champion .position,
+.ranking-table tr.european .position,
+.ranking-table tr.relegation .position {
+    color: white !important;
+}
+
+/* Aussi pour les noms d'équipes et points */
+.ranking-table tr.champion .team-name,
+.ranking-table tr.european .team-name,
+.ranking-table tr.relegation .team-name,
+.ranking-table tr.champion .points,
+.ranking-table tr.european .points,
+.ranking-table tr.relegation .points {
+    color: white !important;
+}
+
 /* Message aucun match */
 .no-matches .empty-state {
     text-align: center;
