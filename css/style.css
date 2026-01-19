@@ -46,19 +46,22 @@ nav {
     margin: 0 auto;
     display: flex;
     justify-content: center;
-    gap: 2rem;
+    gap: 1rem;
     padding: 0 1rem;
+    flex-wrap: wrap;
 }
 
 .nav-btn {
     color: white;
     text-decoration: none;
-    padding: 1rem 1.2rem;
-    min-width: 100px;
+    padding: 0.8rem 1rem;
+    min-width: 80px;
     white-space: nowrap;
     border-radius: 25px;
     transition: all 0.3s ease;
     background: rgba(255, 255, 255, 0.1);
+    text-align: center;
+    font-size: 0.9rem;
 }
 
 .nav-btn:hover {
@@ -180,5 +183,114 @@ footer {
     .features {
         grid-template-columns: 1fr;
         gap: 1.5rem;
+    }
+}
+
+/* Bouton burger - caché sur desktop */
+.burger-menu {
+    display: none;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 2rem;
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+    margin: 0 auto;
+}
+
+.burger-menu:hover {
+    opacity: 0.8;
+}
+
+/* Responsive - Mobile */
+@media (max-width: 900px) {
+    /* Afficher le burger */
+    .burger-menu {
+        display: block;
+    }
+    
+    /* Cacher le menu par défaut */
+    .nav-container {
+        display: none;
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 1rem;
+        max-width: 100%;
+    }
+    
+    /* Menu ouvert */
+    .nav-container.open {
+        display: flex;
+    }
+    
+    .nav-btn {
+        width: 100%;
+        text-align: center;
+        padding: 1rem;
+        border-radius: 10px;
+    }
+    
+    /* Header */
+    header h1 {
+        font-size: 1.8rem;
+    }
+    
+    header p {
+        font-size: 1rem;
+    }
+    
+    /* Welcome section */
+    .welcome-section {
+        padding: 1.5rem;
+        margin: 1rem;
+    }
+    
+    .welcome-section h2 {
+        font-size: 1.5rem;
+    }
+    
+    /* Features */
+    .features {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .feature-card {
+        padding: 1.5rem;
+    }
+}
+
+/* Très petit écran */
+@media (max-width: 400px) {
+    header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .nav-btn {
+        font-size: 0.85rem;
+        padding: 0.8rem;
+    }
+}
+/* Très petit écran */
+@media (max-width: 400px) {
+    header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .nav-btn {
+        font-size: 0.85rem;
+        padding: 0.8rem;
+    }
+}
+
+/* Très petit écran */
+@media (max-width: 400px) {
+    header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .nav-btn {
+        font-size: 0.85rem;
+        padding: 0.8rem;
     }
 }

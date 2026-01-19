@@ -13,6 +13,7 @@
         </header>
 
         <nav>
+            <button class="burger-menu" onclick="toggleMenu()">☰</button>
             <div class="nav-container">
                 <a href="index.html" class="nav-btn active">🏠 Accueil</a>
                 <a href="pages/add-match.html" class="nav-btn">➕ Ajouter un match</a>
@@ -68,7 +69,29 @@
         <!-- Vos scripts existants -->
         <script src="js/seasons.js"></script>
         <script src="js/storage.js"></script>
-        <!-- etc... -->
-        
+
+        <script>
+        function toggleMenu() {
+            const nav = document.querySelector('.nav-container');
+            nav.classList.toggle('open');
+        }
+
+        // Fermer le menu quand on clique sur un lien
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelector('.nav-container').classList.remove('open');
+            });
+        });
+
+        // Fermer le menu quand on clique ailleurs
+        document.addEventListener('click', (e) => {
+            const nav = document.querySelector('.nav-container');
+            const burger = document.querySelector('.burger-menu');
+            
+            if (!nav.contains(e.target) && !burger.contains(e.target)) {
+                nav.classList.remove('open');
+            }
+        });
+        </script>
     </body>
 </html>
