@@ -241,7 +241,7 @@
     firebase.auth().onAuthStateChanged((user) => {
         if (!user || user.email !== 'maxime.theard@gmail.com') {  // ⚠️ REMPLACE par ton vrai email
             alert('⛔ Accès réservé aux administrateurs');
-            window.location.href = '../admin-login.html';
+            window.location.href = '../index.html';
         }
     });
     </script>
