@@ -231,9 +231,20 @@
      <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
 
     <!-- Configuration Firebase -->
     <script src="../js/firebase-config.js"></script>
+    <script>
+    // Protection admin - vérifier la connexion
+    firebase.auth().onAuthStateChanged((user) => {
+        if (!user || user.email !== 'maxime.theard@gmail.com') {  // ⚠️ REMPLACE par ton vrai email
+            alert('⛔ Accès réservé aux administrateurs');
+            window.location.href = '../admin-login.html';
+        }
+    });
+    </script>
     <script src="../js/firebase-service.js"></script>
 
     <script src="../js/seasons.js"></script>
