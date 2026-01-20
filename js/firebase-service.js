@@ -62,6 +62,7 @@ class FirebaseService {
     }
 
     // === GESTION DES SAISONS ===
+    // Utilise la collection /seasons/list (selon les règles Firebase)
     
     async saveSeasons(seasons) {
         try {
@@ -71,7 +72,7 @@ class FirebaseService {
                 version: Date.now()
             };
             
-            await this.db.collection('data').doc('seasons').set(seasonsDoc);
+            await this.db.collection('seasons').doc('list').set(seasonsDoc);
             console.log('✅ Saisons sauvegardées sur Firebase');
             return true;
         } catch (error) {
@@ -82,7 +83,7 @@ class FirebaseService {
 
     async getSeasons() {
         try {
-            const doc = await this.db.collection('data').doc('seasons').get();
+            const doc = await this.db.collection('seasons').doc('list').get();
             if (doc.exists) {
                 const data = doc.data();
                 console.log('📥 Saisons récupérées depuis Firebase');
