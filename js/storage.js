@@ -1,8 +1,15 @@
 // storage.js - Stockage hybride Firebase + localStorage avec compatibilité sync/async
 
-const STORAGE_KEY = 'footballEloMatches';
-const TEAMS_STORAGE_KEY = 'footballEloTeams';
-const SEASONS_STORAGE_KEY = 'footballEloSeasons';
+// Constantes - vérifier si elles n'existent pas déjà (pour éviter les conflits)
+if (typeof STORAGE_KEY === 'undefined') {
+    var STORAGE_KEY = 'footballEloMatches';
+}
+if (typeof TEAMS_STORAGE_KEY === 'undefined') {
+    var TEAMS_STORAGE_KEY = 'footballEloTeams';
+}
+if (typeof SEASONS_STORAGE_KEY === 'undefined') {
+    var SEASONS_STORAGE_KEY = 'footballEloSeasons';
+}
 
 // === FONCTIONS SYNCHRONES (pour compatibilité avec l'ancien code) ===
 
@@ -302,18 +309,22 @@ function getDefaultTeams() {
 
 // === GESTION DES SAISONS ===
 
-// Récupérer les saisons stockées (synchrone)
-function getStoredSeasons() {
-    try {
-        const stored = localStorage.getItem(SEASONS_STORAGE_KEY);
-        return stored ? JSON.parse(stored) : [];
-    } catch (error) {
-        console.error('Erreur récupération saisons:', error);
-        return [];
+// Récupérer les saisons stockées (synchrone) - peut être définie ailleurs, donc on vérifie
+if (typeof getStoredSeasons !== 'function') {
+    function getStoredSeasons() {
+        try {
+            const stored = localStorage.getItem(SEASONS_STORAGE_KEY);
+            return stored ? JSON.parse(stored) : [];
+        } catch (error) {
+            console.error('Erreur récupération saisons:', error);
+            return [];
+        }
     }
 }
 
-// Sauvegarder les saisons (synchrone + Firebase en arrière-plan)
+// Sauvegarder les saisons (synchrone + Firebase en arrière-plan) - override pour ajouter Firebase
+const originalSaveSeasons = typeof saveSeasons === 'function' ? saveSeasons : null;
+
 function saveSeasons(seasons) {
     try {
         // Sauvegarder localement
