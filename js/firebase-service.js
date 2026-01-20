@@ -61,11 +61,45 @@ class FirebaseService {
         }
     }
 
+    // === GESTION DES SAISONS ===
+    
+    async saveSeasons(seasons) {
+        try {
+            const seasonsDoc = {
+                seasons: seasons,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                version: Date.now()
+            };
+            
+            await this.db.collection('data').doc('seasons').set(seasonsDoc);
+            console.log('✅ Saisons sauvegardées sur Firebase');
+            return true;
+        } catch (error) {
+            console.error('❌ Erreur Firebase saveSeasons:', error);
+            return false;
+        }
+    }
+
+    async getSeasons() {
+        try {
+            const doc = await this.db.collection('data').doc('seasons').get();
+            if (doc.exists) {
+                const data = doc.data();
+                console.log('📥 Saisons récupérées depuis Firebase');
+                return data.seasons || [];
+            }
+            console.log('📭 Aucune saison trouvée sur Firebase');
+            return [];
+        } catch (error) {
+            console.error('❌ Erreur récupération seasons:', error);
+            return [];
+        }
+    }
+
     // === GESTION DES MATCHS ===
     
     async saveMatch(match) {
         try {
-            // Assurer que l'ID est une string
             const matchId = match.id.toString();
             
             await this.db.collection('matches').doc(matchId).set({
@@ -105,7 +139,6 @@ class FirebaseService {
             
             snapshot.forEach(doc => {
                 const data = doc.data();
-                // Nettoyer les timestamps Firebase
                 if (data.updatedAt && data.updatedAt.toDate) {
                     data.updatedAt = data.updatedAt.toDate().toISOString();
                 }
@@ -206,6 +239,12 @@ class FirebaseService {
                 await this.saveTeams(localTeams);
             }
             
+            // Synchroniser les saisons
+            const localSeasons = JSON.parse(localStorage.getItem('footballEloSeasons') || '[]');
+            if (localSeasons.length > 0) {
+                await this.saveSeasons(localSeasons);
+            }
+            
             // Synchroniser les matchs
             const localMatches = JSON.parse(localStorage.getItem('footballEloMatches') || '[]');
             for (const match of localMatches) {
@@ -224,7 +263,6 @@ class FirebaseService {
     
     async getConnectionStatus() {
         try {
-            // Test simple de connexion
             await this.db.collection('_test').doc('ping').set({
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
@@ -238,10 +276,12 @@ class FirebaseService {
         try {
             const teams = await this.getTeams();
             const matches = await this.getMatches();
+            const seasons = await this.getSeasons();
             
             return {
                 teams: teams,
                 matches: matches,
+                seasons: seasons,
                 exportedAt: new Date().toISOString(),
                 source: 'firebase'
             };

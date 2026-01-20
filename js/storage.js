@@ -2,6 +2,7 @@
 
 const STORAGE_KEY = 'footballEloMatches';
 const TEAMS_STORAGE_KEY = 'footballEloTeams';
+const SEASONS_STORAGE_KEY = 'footballEloSeasons';
 
 // === FONCTIONS SYNCHRONES (pour compatibilité avec l'ancien code) ===
 
@@ -299,6 +300,43 @@ function getDefaultTeams() {
     ];
 }
 
+// === GESTION DES SAISONS ===
+
+// Récupérer les saisons stockées (synchrone)
+function getStoredSeasons() {
+    try {
+        const stored = localStorage.getItem(SEASONS_STORAGE_KEY);
+        return stored ? JSON.parse(stored) : [];
+    } catch (error) {
+        console.error('Erreur récupération saisons:', error);
+        return [];
+    }
+}
+
+// Sauvegarder les saisons (synchrone + Firebase en arrière-plan)
+function saveSeasons(seasons) {
+    try {
+        // Sauvegarder localement
+        localStorage.setItem(SEASONS_STORAGE_KEY, JSON.stringify(seasons));
+        
+        // Sauvegarder sur Firebase en arrière-plan
+        if (typeof firebaseService !== 'undefined') {
+            firebaseService.saveSeasons(seasons).then(success => {
+                if (success) {
+                    console.log('Saisons sauvegardées sur Firebase');
+                }
+            }).catch(error => {
+                console.log('Erreur Firebase saisons:', error);
+            });
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('Erreur sauvegarde saisons:', error);
+        return false;
+    }
+}
+
 // === STATISTIQUES ===
 
 // Obtenir les statistiques (synchrone)
@@ -380,6 +418,28 @@ async function getStoredTeamsAsync() {
     }
 }
 
+// Récupérer les saisons avec priorité Firebase
+async function getStoredSeasonsAsync() {
+    try {
+        // Essayer Firebase d'abord si disponible et en ligne
+        if (typeof firebaseService !== 'undefined' && navigator.onLine) {
+            const firebaseSeasons = await firebaseService.getSeasons();
+            if (firebaseSeasons && firebaseSeasons.length >= 0) {
+                // Synchroniser avec le localStorage
+                localStorage.setItem(SEASONS_STORAGE_KEY, JSON.stringify(firebaseSeasons));
+                return firebaseSeasons;
+            }
+        }
+        
+        // Fallback vers localStorage
+        return getStoredSeasons();
+        
+    } catch (error) {
+        console.error('Erreur récupération async saisons:', error);
+        return getStoredSeasons();
+    }
+}
+
 // === SYNCHRONISATION ===
 
 // Synchroniser les données locales vers Firebase
@@ -396,6 +456,12 @@ async function syncToFirebase() {
         const localTeams = getStoredTeams();
         if (localTeams.length > 0) {
             await firebaseService.saveTeams(localTeams);
+        }
+        
+        // Synchroniser les saisons
+        const localSeasons = getStoredSeasons();
+        if (localSeasons.length > 0) {
+            await firebaseService.saveSeasons(localSeasons);
         }
         
         // Synchroniser les matchs
@@ -424,15 +490,22 @@ async function syncFromFirebase() {
         
         console.log('Synchronisation depuis Firebase...');
         
+        // Récupérer et sauvegarder les saisons EN PREMIER (important !)
+        const firebaseSeasons = await firebaseService.getSeasons();
+        if (firebaseSeasons && firebaseSeasons.length > 0) {
+            localStorage.setItem(SEASONS_STORAGE_KEY, JSON.stringify(firebaseSeasons));
+            console.log(`📥 ${firebaseSeasons.length} saison(s) synchronisée(s)`);
+        }
+        
         // Récupérer et sauvegarder les équipes
         const firebaseTeams = await firebaseService.getTeams();
-        if (firebaseTeams.length > 0) {
+        if (firebaseTeams && firebaseTeams.length > 0) {
             localStorage.setItem(TEAMS_STORAGE_KEY, JSON.stringify(firebaseTeams));
         }
         
         // Récupérer et sauvegarder les matchs
         const firebaseMatches = await firebaseService.getMatches();
-        if (firebaseMatches.length > 0) {
+        if (firebaseMatches && firebaseMatches.length > 0) {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(firebaseMatches));
         }
         
@@ -441,7 +514,7 @@ async function syncFromFirebase() {
             const currentSeason = getCurrentSeason();
             if (currentSeason) {
                 const firebaseFutureMatches = await firebaseService.getFutureMatches(currentSeason);
-                if (firebaseFutureMatches.length > 0) {
+                if (firebaseFutureMatches && firebaseFutureMatches.length > 0) {
                     const key = `footballEloFutureMatches_${currentSeason}`;
                     localStorage.setItem(key, JSON.stringify(firebaseFutureMatches));
                     console.log(`📥 ${firebaseFutureMatches.length} matchs futurs synchronisés`);
