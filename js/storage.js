@@ -1,22 +1,15 @@
 // storage.js - Stockage hybride Firebase + localStorage avec compatibilité sync/async
 
-// Constantes - vérifier si elles n'existent pas déjà (pour éviter les conflits)
-if (typeof STORAGE_KEY === 'undefined') {
-    var STORAGE_KEY = 'footballEloMatches';
-}
-if (typeof TEAMS_STORAGE_KEY === 'undefined') {
-    var TEAMS_STORAGE_KEY = 'footballEloTeams';
-}
-if (typeof SEASONS_STORAGE_KEY === 'undefined') {
-    var SEASONS_STORAGE_KEY = 'footballEloSeasons';
-}
+// NOTE: Les constantes STORAGE_KEY, TEAMS_STORAGE_KEY, SEASONS_STORAGE_KEY 
+// sont définies dans d'autres fichiers (seasons.js, admin-teams.js)
+// On utilise directement les strings ici pour éviter les conflits
 
 // === FONCTIONS SYNCHRONES (pour compatibilité avec l'ancien code) ===
 
 // Récupérer les matchs de façon synchrone (localStorage uniquement)
 function getStoredMatches() {
     try {
-        const stored = localStorage.getItem(STORAGE_KEY);
+        const stored = localStorage.getItem('footballEloMatches');
         const matches = stored ? JSON.parse(stored) : [];
         
         // Assurer la compatibilité : ajouter matchDay = 1 si manquant
@@ -41,7 +34,7 @@ function saveMatch(matchData) {
         // Sauvegarder en local immédiatement
         const existingMatches = getStoredMatches();
         existingMatches.push(matchData);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(existingMatches));
+        localStorage.setItem('footballEloMatches', JSON.stringify(existingMatches));
         
         // Sauvegarder sur Firebase en arrière-plan (sans attendre)
         if (typeof firebaseService !== 'undefined') {
@@ -87,7 +80,7 @@ function updateMatch(matchId, newMatchData) {
         
         // Remplacer le match dans la liste locale
         matches[matchIndex] = updatedMatch;
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(matches));
+        localStorage.setItem('footballEloMatches', JSON.stringify(matches));
         
         // Mettre à jour sur Firebase en arrière-plan
         if (typeof firebaseService !== 'undefined') {
@@ -202,7 +195,7 @@ function deleteMatch(matchId) {
     try {
         const matches = getStoredMatches();
         const filteredMatches = matches.filter(match => match.id != matchId);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(filteredMatches));
+        localStorage.setItem('footballEloMatches', JSON.stringify(filteredMatches));
         
         // Supprimer sur Firebase en arrière-plan
         if (typeof firebaseService !== 'undefined') {
@@ -225,7 +218,7 @@ function deleteMatch(matchId) {
 // Effacer tous les matchs (synchrone + Firebase en arrière-plan)
 function clearAllMatches() {
     try {
-        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem('footballEloMatches');
         
         // Effacer sur Firebase en arrière-plan
         if (typeof firebaseService !== 'undefined') {
@@ -248,7 +241,7 @@ function clearAllMatches() {
 // Sauvegarder des matchs filtrés (utilisé après suppression)
 function saveFilteredMatches(matches) {
     try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(matches));
+        localStorage.setItem('footballEloMatches', JSON.stringify(matches));
         return true;
     } catch (error) {
         console.error('Erreur saveFilteredMatches:', error);
@@ -261,7 +254,7 @@ function saveFilteredMatches(matches) {
 // Récupérer les équipes stockées (synchrone)
 function getStoredTeams() {
     try {
-        const stored = localStorage.getItem(TEAMS_STORAGE_KEY);
+        const stored = localStorage.getItem('footballEloTeams');
         return stored ? JSON.parse(stored) : [];
     } catch (error) {
         console.error('Erreur lors de la récupération des équipes:', error);
@@ -273,7 +266,7 @@ function getStoredTeams() {
 function saveTeams(teams) {
     try {
         // Sauvegarder localement
-        localStorage.setItem(TEAMS_STORAGE_KEY, JSON.stringify(teams));
+        localStorage.setItem('footballEloTeams', JSON.stringify(teams));
         
         // Sauvegarder sur Firebase en arrière-plan
         if (typeof firebaseService !== 'undefined') {
@@ -305,47 +298,6 @@ function getDefaultTeams() {
         { id: 7, name: "OGC Nice", shortName: "OGCN", city: "Nice", eloRating: 1500 },
         { id: 8, name: "RC Strasbourg", shortName: "RCS", city: "Strasbourg", eloRating: 1500 }
     ];
-}
-
-// === GESTION DES SAISONS ===
-
-// Récupérer les saisons stockées (synchrone) - peut être définie ailleurs, donc on vérifie
-if (typeof getStoredSeasons !== 'function') {
-    function getStoredSeasons() {
-        try {
-            const stored = localStorage.getItem(SEASONS_STORAGE_KEY);
-            return stored ? JSON.parse(stored) : [];
-        } catch (error) {
-            console.error('Erreur récupération saisons:', error);
-            return [];
-        }
-    }
-}
-
-// Sauvegarder les saisons (synchrone + Firebase en arrière-plan) - override pour ajouter Firebase
-const originalSaveSeasons = typeof saveSeasons === 'function' ? saveSeasons : null;
-
-function saveSeasons(seasons) {
-    try {
-        // Sauvegarder localement
-        localStorage.setItem(SEASONS_STORAGE_KEY, JSON.stringify(seasons));
-        
-        // Sauvegarder sur Firebase en arrière-plan
-        if (typeof firebaseService !== 'undefined') {
-            firebaseService.saveSeasons(seasons).then(success => {
-                if (success) {
-                    console.log('Saisons sauvegardées sur Firebase');
-                }
-            }).catch(error => {
-                console.log('Erreur Firebase saisons:', error);
-            });
-        }
-        
-        return true;
-    } catch (error) {
-        console.error('Erreur sauvegarde saisons:', error);
-        return false;
-    }
 }
 
 // === STATISTIQUES ===
@@ -393,7 +345,7 @@ async function getStoredMatchesAsync() {
             const firebaseMatches = await firebaseService.getMatches();
             if (firebaseMatches && firebaseMatches.length >= 0) {
                 // Synchroniser avec le localStorage
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(firebaseMatches));
+                localStorage.setItem('footballEloMatches', JSON.stringify(firebaseMatches));
                 return firebaseMatches;
             }
         }
@@ -415,7 +367,7 @@ async function getStoredTeamsAsync() {
             const firebaseTeams = await firebaseService.getTeams();
             if (firebaseTeams && firebaseTeams.length >= 0) {
                 // Synchroniser avec le localStorage
-                localStorage.setItem(TEAMS_STORAGE_KEY, JSON.stringify(firebaseTeams));
+                localStorage.setItem('footballEloTeams', JSON.stringify(firebaseTeams));
                 return firebaseTeams;
             }
         }
@@ -437,17 +389,17 @@ async function getStoredSeasonsAsync() {
             const firebaseSeasons = await firebaseService.getSeasons();
             if (firebaseSeasons && firebaseSeasons.length >= 0) {
                 // Synchroniser avec le localStorage
-                localStorage.setItem(SEASONS_STORAGE_KEY, JSON.stringify(firebaseSeasons));
+                localStorage.setItem('footballEloSeasons', JSON.stringify(firebaseSeasons));
                 return firebaseSeasons;
             }
         }
         
         // Fallback vers localStorage
-        return getStoredSeasons();
+        return typeof getStoredSeasons === 'function' ? getStoredSeasons() : [];
         
     } catch (error) {
         console.error('Erreur récupération async saisons:', error);
-        return getStoredSeasons();
+        return typeof getStoredSeasons === 'function' ? getStoredSeasons() : [];
     }
 }
 
@@ -470,7 +422,7 @@ async function syncToFirebase() {
         }
         
         // Synchroniser les saisons
-        const localSeasons = getStoredSeasons();
+        const localSeasons = JSON.parse(localStorage.getItem('footballEloSeasons') || '[]');
         if (localSeasons.length > 0) {
             await firebaseService.saveSeasons(localSeasons);
         }
@@ -504,20 +456,20 @@ async function syncFromFirebase() {
         // Récupérer et sauvegarder les saisons EN PREMIER (important !)
         const firebaseSeasons = await firebaseService.getSeasons();
         if (firebaseSeasons && firebaseSeasons.length > 0) {
-            localStorage.setItem(SEASONS_STORAGE_KEY, JSON.stringify(firebaseSeasons));
+            localStorage.setItem('footballEloSeasons', JSON.stringify(firebaseSeasons));
             console.log(`📥 ${firebaseSeasons.length} saison(s) synchronisée(s)`);
         }
         
         // Récupérer et sauvegarder les équipes
         const firebaseTeams = await firebaseService.getTeams();
         if (firebaseTeams && firebaseTeams.length > 0) {
-            localStorage.setItem(TEAMS_STORAGE_KEY, JSON.stringify(firebaseTeams));
+            localStorage.setItem('footballEloTeams', JSON.stringify(firebaseTeams));
         }
         
         // Récupérer et sauvegarder les matchs
         const firebaseMatches = await firebaseService.getMatches();
         if (firebaseMatches && firebaseMatches.length > 0) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(firebaseMatches));
+            localStorage.setItem('footballEloMatches', JSON.stringify(firebaseMatches));
         }
         
         // Récupérer et sauvegarder les matchs futurs pour la saison en cours
