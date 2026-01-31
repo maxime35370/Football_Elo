@@ -565,7 +565,7 @@ async function displayPredictionsForm() {
     });
     
     // Mettre à jour le badge deadline
-    if (isPastMatchDay || openMatches === 0) {
+    if (openMatches === 0) {
         deadlineEl.className = 'deadline-info locked';
         deadlineEl.innerHTML = '<span class="deadline-icon">🔒</span><span class="deadline-text">Tous les matchs commencés</span>';
     } else if (nextDeadline) {
