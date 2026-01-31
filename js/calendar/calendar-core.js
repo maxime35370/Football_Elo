@@ -86,8 +86,10 @@ async function loadSeasonData() {
     allMatches = await getStoredMatchesAsync();
     allMatches = allMatches.filter(m => m.season === currentSeason);
     
-    // Charger les matchs à venir (stockés séparément)
-    futureMatches = await getFutureMatches(currentSeason);
+    // Charger les matchs à venir (utilise loadFutureMatchesAsync de storage.js qui synchronise avec Firebase)
+    futureMatches = await loadFutureMatchesAsync(currentSeason);
+    
+    console.log('Future Matches:', futureMatches.length);
     
     // ========================================
     // NETTOYAGE AUTOMATIQUE : Enlever de futureMatches les matchs déjà joués
@@ -194,25 +196,9 @@ function calculateEloManually() {
     return teams;
 }
 
-// Récupérer les matchs à venir
-async function getFutureMatches(season) {
-    try {
-        const stored = localStorage.getItem(`footballEloFutureMatches_${season}`);
-        return stored ? JSON.parse(stored) : [];
-    } catch (e) {
-        console.error('Erreur chargement matchs à venir:', e);
-        return [];
-    }
-}
-
-// Sauvegarder les matchs à venir
-async function saveFutureMatches(season, matches) {
-    try {
-        localStorage.setItem(`footballEloFutureMatches_${season}`, JSON.stringify(matches));
-    } catch (e) {
-        console.error('Erreur sauvegarde matchs à venir:', e);
-    }
-}
+// NOTE: Les fonctions getFutureMatches et saveFutureMatches sont définies dans storage.js
+// et synchronisent automatiquement avec Firebase.
+// Ne PAS les redéfinir ici !
 
 function updateCalendarStatus() {
     const status = document.getElementById('calendarStatus');
@@ -305,4 +291,70 @@ function getSeasonConfig() {
         europeanPlaces: 4,
         relegationPlaces: 3
     };
+}
+
+// ===============================
+// FILTRES
+// ===============================
+
+function setupFilters() {
+    const teamFilter = document.getElementById('teamFilter');
+    const matchDayFilter = document.getElementById('matchDayFilter');
+    
+    if (teamFilter) {
+        teamFilter.addEventListener('change', displayActiveTab);
+    }
+    
+    if (matchDayFilter) {
+        matchDayFilter.addEventListener('change', displayActiveTab);
+    }
+}
+
+function populateFilters() {
+    const teamFilter = document.getElementById('teamFilter');
+    const matchDayFilter = document.getElementById('matchDayFilter');
+    
+    // Filtre équipes
+    if (teamFilter) {
+        teamFilter.innerHTML = '<option value="">Toutes les équipes</option>';
+        allTeams.forEach(team => {
+            teamFilter.innerHTML += `<option value="${team.id}">${team.name}</option>`;
+        });
+    }
+    
+    // Filtre journées
+    if (matchDayFilter) {
+        const allMatchDays = new Set([
+            ...allMatches.map(m => m.matchDay),
+            ...futureMatches.map(m => m.matchDay)
+        ]);
+        
+        const sortedMatchDays = [...allMatchDays].filter(d => d).sort((a, b) => a - b);
+        
+        matchDayFilter.innerHTML = '<option value="">Toutes les journées</option>';
+        sortedMatchDays.forEach(day => {
+            matchDayFilter.innerHTML += `<option value="${day}">Journée ${day}</option>`;
+        });
+    }
+}
+
+function getFilteredMatches(matchList) {
+    const teamFilter = document.getElementById('teamFilter')?.value;
+    const matchDayFilter = document.getElementById('matchDayFilter')?.value;
+    
+    let filtered = [...matchList];
+    
+    if (teamFilter) {
+        const teamId = parseInt(teamFilter);
+        filtered = filtered.filter(m => 
+            m.homeTeamId === teamId || m.awayTeamId === teamId
+        );
+    }
+    
+    if (matchDayFilter) {
+        const matchDay = parseInt(matchDayFilter);
+        filtered = filtered.filter(m => m.matchDay === matchDay);
+    }
+    
+    return filtered;
 }
