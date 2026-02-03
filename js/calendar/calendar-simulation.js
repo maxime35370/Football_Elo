@@ -49,10 +49,12 @@ function displaySimulation() {
     }
     
     container.innerHTML = `
-        <div class="simulation-matches">${matchesHtml}</div>
-        <div class="simulation-ranking">
-            <h4>📊 Classement simulé</h4>
-            ${rankingHtml}
+        <div class="simulation-grid" style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
+            <div class="simulation-matches">${matchesHtml}</div>
+            <div class="simulation-ranking">
+                <h4>📊 Classement simulé</h4>
+                ${rankingHtml}
+            </div>
         </div>
         ${monteCarloHtml}
     `;
