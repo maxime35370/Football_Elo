@@ -584,17 +584,17 @@ function generateMonteCarloDisplay(results) {
             </h4>
             
             <div style="overflow-x: auto;">
-                <table class="monte-carlo-table" style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                <table class="monte-carlo-table" style="width: 100%; border-collapse: collapse; font-size: 0.85rem; table-layout: fixed;">
                     <thead>
                         <tr style="background: linear-gradient(135deg, #2c3e50, #34495e); color: white;">
-                            <th style="padding: 0.8rem; text-align: center;">Proj.</th>
-                            <th style="padding: 0.8rem; text-align: left;">Équipe</th>
-                            <th style="padding: 0.8rem; text-align: center;">Pts moy.</th>
-                            <th style="padding: 0.8rem; text-align: center;">Min-Max</th>
-                            <th style="padding: 0.8rem; text-align: center;" title="Champion">🏆</th>
-                            <th style="padding: 0.8rem; text-align: center;" title="Europe">⭐</th>
-                            <th style="padding: 0.8rem; text-align: center;" title="Relégation">⬇️</th>
-                            <th style="padding: 0.8rem; text-align: center;">Distribution</th>
+                            <th style="padding: 0.6rem 0.4rem; text-align: center; width: 45px;">Proj.</th>
+                            <th style="padding: 0.6rem 0.4rem; text-align: left; width: 60px;">Équipe</th>
+                            <th style="padding: 0.6rem 0.4rem; text-align: center; width: 45px;">Pts</th>
+                            <th style="padding: 0.6rem 0.4rem; text-align: center; width: 55px;">Min-Max</th>
+                            <th style="padding: 0.6rem 0.4rem; text-align: center; width: 40px;" title="Champion">🏆</th>
+                            <th style="padding: 0.6rem 0.4rem; text-align: center; width: 40px;" title="Europe">⭐</th>
+                            <th style="padding: 0.6rem 0.4rem; text-align: center; width: 40px;" title="Relégation">⬇️</th>
+                            <th style="padding: 0.6rem 0.4rem; text-align: left;">Distribution</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -618,20 +618,20 @@ function generateMonteCarloDisplay(results) {
         
         html += `
             <tr style="${rowStyle}">
-                <td style="padding: 0.6rem; text-align: center; font-weight: bold;">${team.avgPosition}</td>
-                <td style="padding: 0.6rem; font-weight: 600;">${team.shortName}</td>
-                <td style="padding: 0.6rem; text-align: center; font-weight: bold;">${team.avgPoints}</td>
-                <td style="padding: 0.6rem; text-align: center; color: #7f8c8d; font-size: 0.85rem;">${team.minPoints}-${team.maxPoints}</td>
-                <td style="padding: 0.6rem; text-align: center;">
-                    ${team.champProb > 0 ? `<span style="color: #f39c12; font-weight: bold;">${team.champProb}%</span>` : '-'}
+                <td style="padding: 0.4rem; text-align: center; font-weight: bold;">${team.avgPosition}</td>
+                <td style="padding: 0.4rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${team.shortName}</td>
+                <td style="padding: 0.4rem; text-align: center; font-weight: bold;">${team.avgPoints}</td>
+                <td style="padding: 0.4rem; text-align: center; color: #7f8c8d; font-size: 0.8rem;">${team.minPoints}-${team.maxPoints}</td>
+                <td style="padding: 0.4rem; text-align: center;">
+                    ${team.champProb > 0 ? `<span style="color: #f39c12; font-weight: bold; font-size: 0.8rem;">${team.champProb}%</span>` : '-'}
                 </td>
-                <td style="padding: 0.6rem; text-align: center;">
-                    ${team.euroProb > 0 ? `<span style="color: #3498db; font-weight: bold;">${team.euroProb}%</span>` : '-'}
+                <td style="padding: 0.4rem; text-align: center;">
+                    ${team.euroProb > 0 ? `<span style="color: #3498db; font-weight: bold; font-size: 0.8rem;">${team.euroProb}%</span>` : '-'}
                 </td>
-                <td style="padding: 0.6rem; text-align: center;">
-                    ${team.relegProb > 0 ? `<span style="color: #e74c3c; font-weight: bold;">${team.relegProb}%</span>` : '-'}
+                <td style="padding: 0.4rem; text-align: center;">
+                    ${team.relegProb > 0 ? `<span style="color: #e74c3c; font-weight: bold; font-size: 0.8rem;">${team.relegProb}%</span>` : '-'}
                 </td>
-                <td style="padding: 0.6rem;">${distributionBar}</td>
+                <td style="padding: 0.4rem;">${distributionBar}</td>
             </tr>
         `;
     });
@@ -641,11 +641,11 @@ function generateMonteCarloDisplay(results) {
                 </table>
             </div>
             
-            <div style="margin-top: 1rem; display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap; font-size: 0.85rem; color: #7f8c8d;">
-                <span><span style="display: inline-block; width: 12px; height: 12px; background: #f39c12; border-radius: 2px; margin-right: 4px;"></span> Champion</span>
-                <span><span style="display: inline-block; width: 12px; height: 12px; background: #3498db; border-radius: 2px; margin-right: 4px;"></span> Europe</span>
-                <span><span style="display: inline-block; width: 12px; height: 12px; background: #95a5a6; border-radius: 2px; margin-right: 4px;"></span> Milieu</span>
-                <span><span style="display: inline-block; width: 12px; height: 12px; background: #e74c3c; border-radius: 2px; margin-right: 4px;"></span> Relégation</span>
+            <div style="margin-top: 1rem; display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; font-size: 0.8rem; color: #7f8c8d;">
+                <span><span style="display: inline-block; width: 10px; height: 10px; background: #f39c12; border-radius: 2px; margin-right: 3px;"></span> Champion</span>
+                <span><span style="display: inline-block; width: 10px; height: 10px; background: #3498db; border-radius: 2px; margin-right: 3px;"></span> Europe</span>
+                <span><span style="display: inline-block; width: 10px; height: 10px; background: #95a5a6; border-radius: 2px; margin-right: 3px;"></span> Milieu</span>
+                <span><span style="display: inline-block; width: 10px; height: 10px; background: #e74c3c; border-radius: 2px; margin-right: 3px;"></span> Relégation</span>
             </div>
         </div>
     `;
@@ -654,12 +654,17 @@ function generateMonteCarloDisplay(results) {
 }
 
 function generatePositionDistributionBar(positionCounts, totalTeams, config) {
-    const barWidth = 150;
+    // Calculer le total pour normaliser
+    let total = 0;
+    for (let pos = 1; pos <= totalTeams; pos++) {
+        total += positionCounts[pos] || 0;
+    }
+    
     let bars = '';
     
     for (let pos = 1; pos <= totalTeams; pos++) {
         const count = positionCounts[pos] || 0;
-        const percent = count; // Déjà en % sur 100 simulations
+        const percent = total > 0 ? (count / total) * 100 : 0;
         
         if (percent === 0) continue;
         
@@ -674,12 +679,13 @@ function generatePositionDistributionBar(positionCounts, totalTeams, config) {
             color = '#95a5a6'; // Gris
         }
         
-        const width = Math.max(2, (percent / 100) * barWidth);
+        // Utiliser des pourcentages au lieu de pixels fixes
+        const width = Math.max(2, percent);
         
-        bars += `<div style="display: inline-block; width: ${width}px; height: 16px; background: ${color}; margin-right: 1px; border-radius: 2px;" title="Position ${pos}: ${percent}%"></div>`;
+        bars += `<div style="flex: ${width}; min-width: 2px; height: 14px; background: ${color}; margin-right: 1px; border-radius: 2px;" title="Position ${pos}: ${count}%"></div>`;
     }
     
-    return `<div style="display: flex; align-items: center; height: 16px;">${bars}</div>`;
+    return `<div style="display: flex; align-items: center; height: 14px; width: 100%; max-width: 200px;">${bars}</div>`;
 }
 
 // ===============================
