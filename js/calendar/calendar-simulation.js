@@ -1,4 +1,9 @@
-// calendar-simulation.js - Onglet Simulation manuelle
+// calendar-simulation.js - Onglet Simulation manuelle + Monte Carlo
+
+// ===============================
+// VARIABLES
+// ===============================
+let monteCarloResults = null; // Stocke les résultats de la simulation Monte Carlo
 
 // ===============================
 // ONGLET SIMULATION
@@ -37,12 +42,19 @@ function displaySimulation() {
     const simulatedRanking = calculateSimulatedRankingFromResults();
     let rankingHtml = generateSimulatedRankingTable(simulatedRanking);
     
+    // Ajouter la section Monte Carlo si disponible
+    let monteCarloHtml = '';
+    if (monteCarloResults) {
+        monteCarloHtml = generateMonteCarloDisplay(monteCarloResults);
+    }
+    
     container.innerHTML = `
         <div class="simulation-matches">${matchesHtml}</div>
         <div class="simulation-ranking">
             <h4>📊 Classement simulé</h4>
             ${rankingHtml}
         </div>
+        ${monteCarloHtml}
     `;
     
     // Ajouter les événements aux inputs
@@ -108,27 +120,26 @@ function calculateSimulatedRankingFromResults() {
     });
     
     // Appliquer les résultats simulés
-    Object.entries(simulatedResults).forEach(([matchKey, score]) => {
-        if (score.home === null || score.away === null) return;
+    Object.keys(simulatedResults).forEach(matchKey => {
+        const result = simulatedResults[matchKey];
+        if (result.home === null || result.away === null) return;
         
-        const parts = matchKey.split('-');
-        const homeId = parseInt(parts[0]);
-        const awayId = parseInt(parts[1]);
+        const [homeId, awayId, matchDay] = matchKey.split('-');
         
         if (!simStats[homeId] || !simStats[awayId]) return;
         
         simStats[homeId].played++;
         simStats[awayId].played++;
-        simStats[homeId].goalsFor += score.home;
-        simStats[homeId].goalsAgainst += score.away;
-        simStats[awayId].goalsFor += score.away;
-        simStats[awayId].goalsAgainst += score.home;
+        simStats[homeId].goalsFor += result.home;
+        simStats[homeId].goalsAgainst += result.away;
+        simStats[awayId].goalsFor += result.away;
+        simStats[awayId].goalsAgainst += result.home;
         
-        if (score.home > score.away) {
+        if (result.home > result.away) {
             simStats[homeId].won++;
             simStats[homeId].points += 3;
             simStats[awayId].lost++;
-        } else if (score.home < score.away) {
+        } else if (result.home < result.away) {
             simStats[awayId].won++;
             simStats[awayId].points += 3;
             simStats[homeId].lost++;
@@ -140,78 +151,36 @@ function calculateSimulatedRankingFromResults() {
         }
     });
     
-    // Créer le classement
-    const simRanking = allTeams.map(team => {
+    // Générer le classement
+    const ranking = allTeams.map(team => {
         const stats = simStats[team.id];
         return {
             id: team.id,
+            name: team.name,
             shortName: team.shortName,
-            played: stats.played,
-            won: stats.won,
-            drawn: stats.drawn,
-            lost: stats.lost,
-            goalsFor: stats.goalsFor,
-            goalsAgainst: stats.goalsAgainst,
-            goalDifference: stats.goalsFor - stats.goalsAgainst,
-            points: stats.points
+            ...stats,
+            goalDifference: stats.goalsFor - stats.goalsAgainst
         };
     });
     
     // Trier
-    simRanking.sort((a, b) => {
-        if (a.points !== b.points) return b.points - a.points;
-        if (a.goalDifference !== b.goalDifference) return b.goalDifference - a.goalDifference;
-        return b.goalsFor - a.goalsFor;
-    });
-    
-    return simRanking;
-}
-
-function calculateSimulatedRanking(simulatedStats) {
-    const ranking = allTeams.map(team => {
-        const stats = simulatedStats[team.id] || { points: 0, goalsFor: 0, goalsAgainst: 0, played: 0 };
-        return {
-            id: team.id,
-            shortName: team.shortName,
-            points: stats.points || 0,
-            goalDifference: (stats.goalsFor || 0) - (stats.goalsAgainst || 0),
-            goalsFor: stats.goalsFor || 0,
-            played: stats.played || 0,
-            rank: 0
-        };
-    });
-    
     ranking.sort((a, b) => {
-        if (a.points !== b.points) return b.points - a.points;
-        if (a.goalDifference !== b.goalDifference) return b.goalDifference - a.goalDifference;
+        if (b.points !== a.points) return b.points - a.points;
+        if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
         return b.goalsFor - a.goalsFor;
     });
-    
-    for (let i = 0; i < ranking.length; i++) {
-        ranking[i].rank = i + 1;
-    }
     
     return ranking;
 }
 
 function generateSimulatedRankingTable(ranking) {
-    const config = getSeasonConfig();
-    const totalTeams = ranking.length;
-    const relegationPosition = totalTeams - config.relegationPlaces;
+    if (ranking.length === 0) return '<p>Aucune équipe</p>';
     
-    let html = `
-        <table>
-            <thead>
-                <tr>
-                    <th>Pos</th>
-                    <th>Équipe</th>
-                    <th>Pts</th>
-                    <th>MJ</th>
-                    <th>Diff</th>
-                </tr>
-            </thead>
-            <tbody>
-    `;
+    const config = getSeasonConfig();
+    
+    let html = '<table class="ranking-table compact"><thead><tr>';
+    html += '<th>Pos</th><th>Équipe</th><th>Pts</th><th>MJ</th><th>Diff</th>';
+    html += '</tr></thead><tbody>';
     
     ranking.forEach((team, index) => {
         const position = index + 1;
@@ -221,8 +190,8 @@ function generateSimulatedRankingTable(ranking) {
             rowClass = 'champion';
         } else if (position <= config.europeanPlaces) {
             rowClass = 'european';
-        } else if (position > relegationPosition) {
-            rowClass = 'relegation';
+        } else if (position > ranking.length - config.relegationPlaces) {
+            rowClass = 'relegated';
         }
         
         html += `
@@ -252,11 +221,12 @@ function updateSimulatedRankingDisplay() {
 }
 
 // ===============================
-// BOUTONS DE SIMULATION
+// SIMULATION SIMPLE
 // ===============================
 
 function simulateRandom() {
     simulatedResults = {};
+    monteCarloResults = null;
     
     futureMatches.forEach(match => {
         const matchKey = `${match.homeTeamId}-${match.awayTeamId}-${match.matchDay}`;
@@ -271,6 +241,7 @@ function simulateRandom() {
 
 function simulateWithElo() {
     simulatedResults = {};
+    monteCarloResults = null;
     
     // Créer une copie des Elo pour la simulation
     const simElo = {};
@@ -383,5 +354,347 @@ function generateSimulatedScore(homeWinProb, drawProb, awayWinProb, homeElo, awa
 
 function resetSimulation() {
     simulatedResults = {};
+    monteCarloResults = null;
     displaySimulation();
+}
+
+// ===============================
+// SIMULATION MONTE CARLO (100x)
+// ===============================
+
+function simulateMonteCarloElo(numSimulations = 100) {
+    console.log(`🎲 Lancement de ${numSimulations} simulations Monte Carlo...`);
+    
+    const startTime = performance.now();
+    
+    // Structure pour stocker les positions de chaque équipe à chaque simulation
+    const positionCounts = {};
+    const pointsSum = {};
+    const pointsMin = {};
+    const pointsMax = {};
+    
+    allTeams.forEach(team => {
+        positionCounts[team.id] = {};
+        for (let pos = 1; pos <= allTeams.length; pos++) {
+            positionCounts[team.id][pos] = 0;
+        }
+        pointsSum[team.id] = 0;
+        pointsMin[team.id] = Infinity;
+        pointsMax[team.id] = -Infinity;
+    });
+    
+    // Récupérer le classement actuel (basé sur les matchs réels)
+    const currentRanking = generateRanking(null, currentSeason, null, false, 'all');
+    
+    // Lancer les simulations
+    for (let sim = 0; sim < numSimulations; sim++) {
+        // Copier les stats actuelles
+        const simStats = {};
+        allTeams.forEach(team => {
+            const teamData = currentRanking.find(t => t.id == team.id);
+            simStats[team.id] = {
+                points: teamData ? teamData.points : 0,
+                goalsFor: teamData ? teamData.goalsFor : 0,
+                goalsAgainst: teamData ? teamData.goalsAgainst : 0
+            };
+        });
+        
+        // Copier l'Elo actuel
+        const simElo = {};
+        teamsWithElo.forEach(t => {
+            simElo[t.id] = t.eloRating || 1500;
+        });
+        
+        // Trier les matchs par journée
+        const sortedMatches = [...futureMatches].sort((a, b) => (a.matchDay || 0) - (b.matchDay || 0));
+        
+        // Simuler chaque match
+        sortedMatches.forEach(match => {
+            const homeElo = simElo[match.homeTeamId] || 1500;
+            const awayElo = simElo[match.awayTeamId] || 1500;
+            
+            const homeAdvantage = 50;
+            const adjustedHomeElo = homeElo + homeAdvantage;
+            
+            const homeExpectancy = 1 / (1 + Math.pow(10, (awayElo - adjustedHomeElo) / 400));
+            
+            const eloDiff = Math.abs(adjustedHomeElo - awayElo);
+            const isCloseMatch = eloDiff < 100;
+            let drawProb = isCloseMatch ? 0.30 : 0.25;
+            
+            let homeWinProb = homeExpectancy * (1 - drawProb);
+            let awayWinProb = (1 - homeExpectancy) * (1 - drawProb);
+            
+            const score = generateSimulatedScore(homeWinProb, drawProb, awayWinProb, adjustedHomeElo, awayElo);
+            
+            // Mettre à jour les stats
+            simStats[match.homeTeamId].goalsFor += score.home;
+            simStats[match.homeTeamId].goalsAgainst += score.away;
+            simStats[match.awayTeamId].goalsFor += score.away;
+            simStats[match.awayTeamId].goalsAgainst += score.home;
+            
+            if (score.home > score.away) {
+                simStats[match.homeTeamId].points += 3;
+            } else if (score.home < score.away) {
+                simStats[match.awayTeamId].points += 3;
+            } else {
+                simStats[match.homeTeamId].points += 1;
+                simStats[match.awayTeamId].points += 1;
+            }
+            
+            // Mettre à jour l'Elo simulé
+            const K = 32;
+            const expectedHome = 1 / (1 + Math.pow(10, (awayElo - adjustedHomeElo) / 400));
+            
+            let actualHome = score.home > score.away ? 1 : (score.home < score.away ? 0 : 0.5);
+            
+            simElo[match.homeTeamId] += Math.round(K * (actualHome - expectedHome));
+            simElo[match.awayTeamId] += Math.round(K * ((1 - actualHome) - (1 - expectedHome)));
+        });
+        
+        // Calculer le classement final de cette simulation
+        const finalRanking = allTeams.map(team => ({
+            id: team.id,
+            points: simStats[team.id].points,
+            goalDifference: simStats[team.id].goalsFor - simStats[team.id].goalsAgainst,
+            goalsFor: simStats[team.id].goalsFor
+        }));
+        
+        finalRanking.sort((a, b) => {
+            if (b.points !== a.points) return b.points - a.points;
+            if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
+            return b.goalsFor - a.goalsFor;
+        });
+        
+        // Enregistrer les positions
+        finalRanking.forEach((team, index) => {
+            const position = index + 1;
+            positionCounts[team.id][position]++;
+            pointsSum[team.id] += team.points;
+            pointsMin[team.id] = Math.min(pointsMin[team.id], team.points);
+            pointsMax[team.id] = Math.max(pointsMax[team.id], team.points);
+        });
+    }
+    
+    const endTime = performance.now();
+    console.log(`✅ ${numSimulations} simulations terminées en ${Math.round(endTime - startTime)}ms`);
+    
+    // Calculer les statistiques finales
+    const results = allTeams.map(team => {
+        const avgPoints = pointsSum[team.id] / numSimulations;
+        
+        // Position moyenne pondérée
+        let avgPosition = 0;
+        for (let pos = 1; pos <= allTeams.length; pos++) {
+            avgPosition += pos * (positionCounts[team.id][pos] / numSimulations);
+        }
+        
+        // Probabilités par zone
+        const config = getSeasonConfig();
+        let champProb = 0;
+        let euroProb = 0;
+        let relegProb = 0;
+        
+        for (let pos = 1; pos <= allTeams.length; pos++) {
+            const prob = positionCounts[team.id][pos] / numSimulations;
+            if (pos <= config.championPlaces) champProb += prob;
+            if (pos <= config.europeanPlaces) euroProb += prob;
+            if (pos > allTeams.length - config.relegationPlaces) relegProb += prob;
+        }
+        
+        return {
+            id: team.id,
+            name: team.name,
+            shortName: team.shortName,
+            avgPoints: Math.round(avgPoints * 10) / 10,
+            minPoints: pointsMin[team.id],
+            maxPoints: pointsMax[team.id],
+            avgPosition: Math.round(avgPosition * 10) / 10,
+            positionCounts: positionCounts[team.id],
+            champProb: Math.round(champProb * 100),
+            euroProb: Math.round(euroProb * 100),
+            relegProb: Math.round(relegProb * 100)
+        };
+    });
+    
+    // Trier par position moyenne
+    results.sort((a, b) => a.avgPosition - b.avgPosition);
+    
+    monteCarloResults = {
+        numSimulations,
+        generatedAt: new Date().toISOString(),
+        teams: results
+    };
+    
+    return monteCarloResults;
+}
+
+// Bouton pour lancer la simulation Monte Carlo
+function simulateMonteCarloBtn() {
+    // Récupérer le nombre de simulations choisi
+    const selectEl = document.getElementById('monteCarloCount');
+    const numSimulations = selectEl ? parseInt(selectEl.value) : 100;
+    
+    // Afficher un indicateur de chargement
+    const btn = document.getElementById('simulateMonteCarloBtn');
+    const originalText = btn ? btn.innerHTML : '';
+    
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `⏳ ${numSimulations} simulations...`;
+    }
+    
+    // Utiliser setTimeout pour laisser le temps à l'UI de se mettre à jour
+    setTimeout(() => {
+        try {
+            const startTime = performance.now();
+            simulateMonteCarloElo(numSimulations);
+            const endTime = performance.now();
+            
+            console.log(`✅ ${numSimulations} simulations en ${Math.round(endTime - startTime)}ms`);
+            displaySimulation();
+        } catch (error) {
+            console.error('Erreur simulation Monte Carlo:', error);
+            alert('Erreur lors de la simulation');
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '📊 Lancer la projection';
+            }
+        }
+    }, 50);
+}
+
+// ===============================
+// AFFICHAGE MONTE CARLO
+// ===============================
+
+function generateMonteCarloDisplay(results) {
+    if (!results || !results.teams) return '';
+    
+    const config = getSeasonConfig();
+    
+    let html = `
+        <div class="monte-carlo-section" style="margin-top: 2rem; background: white; border-radius: 15px; padding: 1.5rem; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+            <h4 style="margin-bottom: 1rem; color: #2c3e50;">
+                📊 Projection fin de saison 
+                <small style="color: #7f8c8d; font-weight: normal;">(${results.numSimulations} simulations)</small>
+            </h4>
+            
+            <div style="overflow-x: auto;">
+                <table class="monte-carlo-table" style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                    <thead>
+                        <tr style="background: linear-gradient(135deg, #2c3e50, #34495e); color: white;">
+                            <th style="padding: 0.8rem; text-align: center;">Proj.</th>
+                            <th style="padding: 0.8rem; text-align: left;">Équipe</th>
+                            <th style="padding: 0.8rem; text-align: center;">Pts moy.</th>
+                            <th style="padding: 0.8rem; text-align: center;">Min-Max</th>
+                            <th style="padding: 0.8rem; text-align: center;" title="Champion">🏆</th>
+                            <th style="padding: 0.8rem; text-align: center;" title="Europe">⭐</th>
+                            <th style="padding: 0.8rem; text-align: center;" title="Relégation">⬇️</th>
+                            <th style="padding: 0.8rem; text-align: center;">Distribution</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+    `;
+    
+    results.teams.forEach((team, index) => {
+        const position = index + 1;
+        let rowClass = '';
+        let rowStyle = '';
+        
+        if (position <= config.championPlaces) {
+            rowStyle = 'background: rgba(241, 196, 15, 0.15);';
+        } else if (position <= config.europeanPlaces) {
+            rowStyle = 'background: rgba(52, 152, 219, 0.1);';
+        } else if (position > results.teams.length - config.relegationPlaces) {
+            rowStyle = 'background: rgba(231, 76, 60, 0.1);';
+        }
+        
+        // Générer la barre de distribution des positions
+        const distributionBar = generatePositionDistributionBar(team.positionCounts, results.teams.length, config);
+        
+        html += `
+            <tr style="${rowStyle}">
+                <td style="padding: 0.6rem; text-align: center; font-weight: bold;">${team.avgPosition}</td>
+                <td style="padding: 0.6rem; font-weight: 600;">${team.shortName}</td>
+                <td style="padding: 0.6rem; text-align: center; font-weight: bold;">${team.avgPoints}</td>
+                <td style="padding: 0.6rem; text-align: center; color: #7f8c8d; font-size: 0.85rem;">${team.minPoints}-${team.maxPoints}</td>
+                <td style="padding: 0.6rem; text-align: center;">
+                    ${team.champProb > 0 ? `<span style="color: #f39c12; font-weight: bold;">${team.champProb}%</span>` : '-'}
+                </td>
+                <td style="padding: 0.6rem; text-align: center;">
+                    ${team.euroProb > 0 ? `<span style="color: #3498db; font-weight: bold;">${team.euroProb}%</span>` : '-'}
+                </td>
+                <td style="padding: 0.6rem; text-align: center;">
+                    ${team.relegProb > 0 ? `<span style="color: #e74c3c; font-weight: bold;">${team.relegProb}%</span>` : '-'}
+                </td>
+                <td style="padding: 0.6rem;">${distributionBar}</td>
+            </tr>
+        `;
+    });
+    
+    html += `
+                    </tbody>
+                </table>
+            </div>
+            
+            <div style="margin-top: 1rem; display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap; font-size: 0.85rem; color: #7f8c8d;">
+                <span><span style="display: inline-block; width: 12px; height: 12px; background: #f39c12; border-radius: 2px; margin-right: 4px;"></span> Champion</span>
+                <span><span style="display: inline-block; width: 12px; height: 12px; background: #3498db; border-radius: 2px; margin-right: 4px;"></span> Europe</span>
+                <span><span style="display: inline-block; width: 12px; height: 12px; background: #95a5a6; border-radius: 2px; margin-right: 4px;"></span> Milieu</span>
+                <span><span style="display: inline-block; width: 12px; height: 12px; background: #e74c3c; border-radius: 2px; margin-right: 4px;"></span> Relégation</span>
+            </div>
+        </div>
+    `;
+    
+    return html;
+}
+
+function generatePositionDistributionBar(positionCounts, totalTeams, config) {
+    const barWidth = 150;
+    let bars = '';
+    
+    for (let pos = 1; pos <= totalTeams; pos++) {
+        const count = positionCounts[pos] || 0;
+        const percent = count; // Déjà en % sur 100 simulations
+        
+        if (percent === 0) continue;
+        
+        let color;
+        if (pos <= config.championPlaces) {
+            color = '#f39c12'; // Or
+        } else if (pos <= config.europeanPlaces) {
+            color = '#3498db'; // Bleu
+        } else if (pos > totalTeams - config.relegationPlaces) {
+            color = '#e74c3c'; // Rouge
+        } else {
+            color = '#95a5a6'; // Gris
+        }
+        
+        const width = Math.max(2, (percent / 100) * barWidth);
+        
+        bars += `<div style="display: inline-block; width: ${width}px; height: 16px; background: ${color}; margin-right: 1px; border-radius: 2px;" title="Position ${pos}: ${percent}%"></div>`;
+    }
+    
+    return `<div style="display: flex; align-items: center; height: 16px;">${bars}</div>`;
+}
+
+// ===============================
+// MISE À JOUR DES BOUTONS
+// ===============================
+
+// Surcharger setupButtons pour ajouter le bouton Monte Carlo
+const originalSetupButtons = typeof setupButtons === 'function' ? setupButtons : null;
+
+function setupSimulationButtons() {
+    // Ajouter le bouton Monte Carlo s'il existe
+    document.getElementById('simulateMonteCarloBtn')?.addEventListener('click', simulateMonteCarloBtn);
+}
+
+// Appeler au chargement
+if (typeof document !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', function() {
+        setupSimulationButtons();
+    });
 }

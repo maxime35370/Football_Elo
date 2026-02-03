@@ -177,8 +177,21 @@
                     </div>
                     <div class="simulation-controls">
                         <button id="simulateRandomBtn" class="btn">🎲 Simulation aléatoire</button>
-                        <button id="simulateEloBtn" class="btn btn-primary">🎯 Simulation basée sur Elo</button>
+                        <button id="simulateEloBtn" class="btn btn-primary">🎯 Simulation Elo (1x)</button>
                         <button id="resetSimulationBtn" class="btn btn-secondary">↩️ Réinitialiser</button>
+                    </div>
+
+                    <div class="monte-carlo-controls" style="display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: 1rem; padding: 1rem; background: linear-gradient(135deg, rgba(155, 89, 182, 0.1), rgba(142, 68, 173, 0.1)); border-radius: 10px;">
+                        <label for="monteCarloCount" style="font-weight: 600; color: #8e44ad;">📊 Projection Monte Carlo :</label>
+                        <select id="monteCarloCount" style="padding: 0.5rem 1rem; border: 2px solid #9b59b6; border-radius: 8px; font-size: 1rem; background: white; cursor: pointer;">
+                            <option value="100">100 simulations (~rapide)</option>
+                            <option value="500">500 simulations (~précis)</option>
+                            <option value="1000" selected>1 000 simulations (~très précis)</option>
+                            <option value="5000">5 000 simulations (~lent)</option>
+                        </select>
+                        <button id="simulateMonteCarloBtn" class="btn" style="background: linear-gradient(135deg, #9b59b6, #8e44ad); color: white; font-weight: 600;">
+                            📊 Lancer la projection
+                        </button>
                     </div>
                     <div id="simulationContent" class="simulation-wrapper">
                         <!-- Généré dynamiquement -->
