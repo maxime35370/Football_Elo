@@ -120,8 +120,102 @@ function saveFutureMatches(season, matches) {
     try {
         const key = `footballEloFutureMatches_${season}`;
         localStorage.setItem(key, JSON.stringify(matches));
+        
+        // Sauvegarder sur Firebase en arrière-plan
+        if (typeof db !== 'undefined' && navigator.onLine) {
+            saveFutureMatchesToFirebase(season, matches).catch(error => {
+                console.log('Erreur Firebase futureMatches:', error);
+            });
+        }
     } catch (error) {
         console.error('Erreur saveFutureMatches:', error);
+    }
+}
+
+// Version async - Charger les futurs matchs depuis Firebase
+async function loadFutureMatchesAsync(season) {
+    try {
+        // Essayer Firebase d'abord
+        if (typeof db !== 'undefined' && navigator.onLine) {
+            const doc = await db.collection('futureMatches').doc(season).get();
+            
+            if (doc.exists) {
+                const data = doc.data();
+                const matches = data.matches || [];
+                console.log(`📥 ${matches.length} futurs matchs récupérés depuis Firebase pour ${season}`);
+                
+                // Mettre en cache local
+                const key = `footballEloFutureMatches_${season}`;
+                localStorage.setItem(key, JSON.stringify(matches));
+                return matches;
+            }
+        }
+        
+        // Fallback sur localStorage
+        console.log('📂 Chargement futurs matchs depuis localStorage');
+        return loadFutureMatches(season);
+    } catch (error) {
+        console.error('Erreur loadFutureMatchesAsync:', error);
+        return loadFutureMatches(season);
+    }
+}
+
+// Version async - Sauvegarder les futurs matchs dans Firebase
+async function saveFutureMatchesAsync(season, matches) {
+    try {
+        // Sauvegarder localement d'abord
+        const key = `footballEloFutureMatches_${season}`;
+        localStorage.setItem(key, JSON.stringify(matches));
+        
+        // Sauvegarder sur Firebase
+        if (typeof db !== 'undefined' && navigator.onLine) {
+            await saveFutureMatchesToFirebase(season, matches);
+            console.log(`✅ ${matches.length} futurs matchs sauvegardés sur Firebase pour ${season}`);
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('Erreur saveFutureMatchesAsync:', error);
+        return false;
+    }
+}
+
+// Sauvegarder les futurs matchs dans Firebase
+async function saveFutureMatchesToFirebase(season, matches) {
+    try {
+        if (typeof db === 'undefined') {
+            throw new Error('Firebase non disponible');
+        }
+        
+        await db.collection('futureMatches').doc(season).set({
+            season: season,
+            matches: matches,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            count: matches.length
+        });
+        
+        return true;
+    } catch (error) {
+        console.error('Erreur saveFutureMatchesToFirebase:', error);
+        throw error;
+    }
+}
+
+// Charger les futurs matchs depuis Firebase (utilisé par syncFromFirebase)
+async function loadFutureMatchesFromFirebase(season) {
+    try {
+        if (typeof db === 'undefined') return [];
+        
+        const doc = await db.collection('futureMatches').doc(season).get();
+        
+        if (doc.exists) {
+            const data = doc.data();
+            return data.matches || [];
+        }
+        return [];
+    } catch (error) {
+        console.error('Erreur loadFutureMatchesFromFirebase:', error);
+        return [];
     }
 }
 
