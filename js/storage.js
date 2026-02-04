@@ -1,15 +1,15 @@
 // storage.js - Stockage hybride Firebase + localStorage avec compatibilité sync/async
 
-// NOTE: Les constantes STORAGE_KEY, TEAMS_STORAGE_KEY, SEASONS_STORAGE_KEY 
-// sont définies dans d'autres fichiers (seasons.js, admin-teams.js)
-// On utilise directement les strings ici pour éviter les conflits
+const STORAGE_KEY = 'footballEloMatches';
+const TEAMS_STORAGE_KEY = 'footballEloTeams';
+const SEASON_CONFIG_KEY = 'footballEloSeasonConfig';
 
 // === FONCTIONS SYNCHRONES (pour compatibilité avec l'ancien code) ===
 
 // Récupérer les matchs de façon synchrone (localStorage uniquement)
 function getStoredMatches() {
     try {
-        const stored = localStorage.getItem('footballEloMatches');
+        const stored = localStorage.getItem(STORAGE_KEY);
         const matches = stored ? JSON.parse(stored) : [];
         
         // Assurer la compatibilité : ajouter matchDay = 1 si manquant
@@ -34,7 +34,7 @@ function saveMatch(matchData) {
         // Sauvegarder en local immédiatement
         const existingMatches = getStoredMatches();
         existingMatches.push(matchData);
-        localStorage.setItem('footballEloMatches', JSON.stringify(existingMatches));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(existingMatches));
         
         // Sauvegarder sur Firebase en arrière-plan (sans attendre)
         if (typeof firebaseService !== 'undefined') {
@@ -80,7 +80,7 @@ function updateMatch(matchId, newMatchData) {
         
         // Remplacer le match dans la liste locale
         matches[matchIndex] = updatedMatch;
-        localStorage.setItem('footballEloMatches', JSON.stringify(matches));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(matches));
         
         // Mettre à jour sur Firebase en arrière-plan
         if (typeof firebaseService !== 'undefined') {
@@ -102,10 +102,9 @@ function updateMatch(matchId, newMatchData) {
 }
 
 // ===============================
-// MATCHS FUTURS (CALENDRIER PRONOSTICS)
+// MATCHS FUTURS
 // ===============================
 
-// Charger les matchs futurs (synchrone - localStorage)
 function loadFutureMatches(season) {
     try {
         const key = `footballEloFutureMatches_${season}`;
@@ -117,85 +116,21 @@ function loadFutureMatches(season) {
     }
 }
 
-// Charger les matchs futurs (async - Firebase prioritaire)
-async function loadFutureMatchesAsync(season) {
-    try {
-        // Essayer Firebase d'abord si disponible et en ligne
-        if (typeof firebaseService !== 'undefined' && navigator.onLine) {
-            const firebaseMatches = await firebaseService.getFutureMatches(season);
-            if (firebaseMatches && firebaseMatches.length > 0) {
-                // Synchroniser avec localStorage
-                const key = `footballEloFutureMatches_${season}`;
-                localStorage.setItem(key, JSON.stringify(firebaseMatches));
-                console.log(`📥 ${firebaseMatches.length} matchs futurs chargés depuis Firebase`);
-                return firebaseMatches;
-            }
-        }
-        
-        // Fallback vers localStorage
-        return loadFutureMatches(season);
-    } catch (error) {
-        console.error('Erreur loadFutureMatchesAsync:', error);
-        return loadFutureMatches(season);
-    }
-}
-
-// Sauvegarder les matchs futurs (synchrone + Firebase en arrière-plan)
 function saveFutureMatches(season, matches) {
     try {
-        // Sauvegarder en local immédiatement
         const key = `footballEloFutureMatches_${season}`;
         localStorage.setItem(key, JSON.stringify(matches));
-        
-        // Sauvegarder sur Firebase en arrière-plan
-        if (typeof firebaseService !== 'undefined') {
-            firebaseService.saveFutureMatches(season, matches).then(success => {
-                if (success) {
-                    console.log('📤 Matchs futurs synchronisés sur Firebase');
-                }
-            }).catch(error => {
-                console.log('Erreur Firebase matchs futurs:', error);
-            });
-        }
-        
-        console.log(`💾 ${matches.length} matchs futurs sauvegardés`);
-        return true;
     } catch (error) {
         console.error('Erreur saveFutureMatches:', error);
-        return false;
     }
 }
-
-// Supprimer les matchs futurs
-function clearFutureMatches(season) {
-    try {
-        const key = `footballEloFutureMatches_${season}`;
-        localStorage.removeItem(key);
-        
-        // Supprimer sur Firebase en arrière-plan
-        if (typeof firebaseService !== 'undefined') {
-            firebaseService.deleteFutureMatches(season).catch(error => {
-                console.log('Erreur Firebase suppression matchs futurs:', error);
-            });
-        }
-        
-        return true;
-    } catch (error) {
-        console.error('Erreur clearFutureMatches:', error);
-        return false;
-    }
-}
-
-// ===============================
-// SUPPRESSION DE MATCHS
-// ===============================
 
 // Supprimer un match par ID (synchrone + Firebase en arrière-plan)
 function deleteMatch(matchId) {
     try {
         const matches = getStoredMatches();
         const filteredMatches = matches.filter(match => match.id != matchId);
-        localStorage.setItem('footballEloMatches', JSON.stringify(filteredMatches));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(filteredMatches));
         
         // Supprimer sur Firebase en arrière-plan
         if (typeof firebaseService !== 'undefined') {
@@ -218,7 +153,7 @@ function deleteMatch(matchId) {
 // Effacer tous les matchs (synchrone + Firebase en arrière-plan)
 function clearAllMatches() {
     try {
-        localStorage.removeItem('footballEloMatches');
+        localStorage.removeItem(STORAGE_KEY);
         
         // Effacer sur Firebase en arrière-plan
         if (typeof firebaseService !== 'undefined') {
@@ -238,27 +173,16 @@ function clearAllMatches() {
     }
 }
 
-// Sauvegarder des matchs filtrés (utilisé après suppression)
-function saveFilteredMatches(matches) {
-    try {
-        localStorage.setItem('footballEloMatches', JSON.stringify(matches));
-        return true;
-    } catch (error) {
-        console.error('Erreur saveFilteredMatches:', error);
-        return false;
-    }
-}
-
 // === GESTION DES ÉQUIPES (synchrone) ===
 
 // Récupérer les équipes stockées (synchrone)
 function getStoredTeams() {
     try {
-        const stored = localStorage.getItem('footballEloTeams');
-        return stored ? JSON.parse(stored) : [];
+        const stored = localStorage.getItem(TEAMS_STORAGE_KEY);
+        return stored ? JSON.parse(stored) : getDefaultTeams();
     } catch (error) {
         console.error('Erreur lors de la récupération des équipes:', error);
-        return [];
+        return getDefaultTeams();
     }
 }
 
@@ -266,7 +190,7 @@ function getStoredTeams() {
 function saveTeams(teams) {
     try {
         // Sauvegarder localement
-        localStorage.setItem('footballEloTeams', JSON.stringify(teams));
+        localStorage.setItem(TEAMS_STORAGE_KEY, JSON.stringify(teams));
         
         // Sauvegarder sur Firebase en arrière-plan
         if (typeof firebaseService !== 'undefined') {
@@ -345,7 +269,7 @@ async function getStoredMatchesAsync() {
             const firebaseMatches = await firebaseService.getMatches();
             if (firebaseMatches && firebaseMatches.length >= 0) {
                 // Synchroniser avec le localStorage
-                localStorage.setItem('footballEloMatches', JSON.stringify(firebaseMatches));
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(firebaseMatches));
                 return firebaseMatches;
             }
         }
@@ -367,7 +291,7 @@ async function getStoredTeamsAsync() {
             const firebaseTeams = await firebaseService.getTeams();
             if (firebaseTeams && firebaseTeams.length >= 0) {
                 // Synchroniser avec le localStorage
-                localStorage.setItem('footballEloTeams', JSON.stringify(firebaseTeams));
+                localStorage.setItem(TEAMS_STORAGE_KEY, JSON.stringify(firebaseTeams));
                 return firebaseTeams;
             }
         }
@@ -381,25 +305,113 @@ async function getStoredTeamsAsync() {
     }
 }
 
-// Récupérer les saisons avec priorité Firebase
-async function getStoredSeasonsAsync() {
+// =====================================================
+// CONFIGURATION DE SAISON (FIREBASE + CACHE LOCAL)
+// =====================================================
+
+// Configuration par défaut
+function getDefaultSeasonConfig() {
+    return {
+        championPlaces: 1,
+        europeanPlaces: 3,
+        relegationPlaces: 2,
+        seasonName: "2024-2025"
+    };
+}
+
+// Récupérer la config (synchrone - depuis le cache local)
+function getSeasonConfig() {
     try {
-        // Essayer Firebase d'abord si disponible et en ligne
-        if (typeof firebaseService !== 'undefined' && navigator.onLine) {
-            const firebaseSeasons = await firebaseService.getSeasons();
-            if (firebaseSeasons && firebaseSeasons.length >= 0) {
-                // Synchroniser avec le localStorage
-                localStorage.setItem('footballEloSeasons', JSON.stringify(firebaseSeasons));
-                return firebaseSeasons;
-            }
+        const cached = localStorage.getItem(SEASON_CONFIG_KEY);
+        if (cached) {
+            return JSON.parse(cached);
+        }
+        return getDefaultSeasonConfig();
+    } catch (error) {
+        console.error('Erreur récupération config saison:', error);
+        return getDefaultSeasonConfig();
+    }
+}
+
+// Récupérer la config depuis Firebase
+async function getSeasonConfigFromFirebase() {
+    try {
+        if (typeof db === 'undefined') {
+            console.log('Firebase db non disponible');
+            return getSeasonConfig();
         }
         
-        // Fallback vers localStorage
-        return typeof getStoredSeasons === 'function' ? getStoredSeasons() : [];
-        
+        const doc = await db.collection('settings').doc('seasonConfig').get();
+        if (doc.exists) {
+            const config = doc.data();
+            // Nettoyer les champs Firebase (timestamps, etc.)
+            return {
+                championPlaces: config.championPlaces || 1,
+                europeanPlaces: config.europeanPlaces || 3,
+                relegationPlaces: config.relegationPlaces || 2,
+                seasonName: config.seasonName || "2024-2025"
+            };
+        }
+        return getDefaultSeasonConfig();
     } catch (error) {
-        console.error('Erreur récupération async saisons:', error);
-        return typeof getStoredSeasons === 'function' ? getStoredSeasons() : [];
+        console.error('Erreur récupération config Firebase:', error);
+        return getDefaultSeasonConfig();
+    }
+}
+
+// Charger la config depuis Firebase et mettre en cache local
+async function loadSeasonConfigFromFirebase() {
+    try {
+        const config = await getSeasonConfigFromFirebase();
+        // Mettre en cache local pour les accès synchrones
+        localStorage.setItem(SEASON_CONFIG_KEY, JSON.stringify(config));
+        console.log('✅ Config saison chargée depuis Firebase:', config);
+        return config;
+    } catch (error) {
+        console.error('Erreur chargement config Firebase:', error);
+        return getSeasonConfig(); // Fallback sur le cache local
+    }
+}
+
+// Sauvegarder la config dans Firebase (utilisé par admin-teams.js)
+async function saveSeasonConfigToFirebase(config) {
+    try {
+        if (typeof db === 'undefined') {
+            throw new Error('Firebase non disponible');
+        }
+        
+        // Ajouter des métadonnées
+        const configWithMeta = {
+            ...config,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedBy: firebase.auth().currentUser?.email || 'unknown'
+        };
+        
+        // Sauvegarder dans Firebase
+        await db.collection('settings').doc('seasonConfig').set(configWithMeta);
+        
+        // Mettre à jour le cache local
+        localStorage.setItem(SEASON_CONFIG_KEY, JSON.stringify(config));
+        
+        console.log('✅ Config saison sauvegardée dans Firebase');
+        return true;
+    } catch (error) {
+        console.error('❌ Erreur sauvegarde config Firebase:', error);
+        throw error;
+    }
+}
+
+// Initialiser la config saison (appelée au chargement)
+async function initSeasonConfig() {
+    try {
+        if (typeof db !== 'undefined' && navigator.onLine) {
+            await loadSeasonConfigFromFirebase();
+            console.log('✅ Configuration de saison synchronisée depuis Firebase');
+        } else {
+            console.log('⚠️ Firebase non disponible, utilisation du cache local');
+        }
+    } catch (error) {
+        console.warn('⚠️ Erreur init config saison:', error);
     }
 }
 
@@ -419,12 +431,6 @@ async function syncToFirebase() {
         const localTeams = getStoredTeams();
         if (localTeams.length > 0) {
             await firebaseService.saveTeams(localTeams);
-        }
-        
-        // Synchroniser les saisons
-        const localSeasons = JSON.parse(localStorage.getItem('footballEloSeasons') || '[]');
-        if (localSeasons.length > 0) {
-            await firebaseService.saveSeasons(localSeasons);
         }
         
         // Synchroniser les matchs
@@ -453,36 +459,16 @@ async function syncFromFirebase() {
         
         console.log('Synchronisation depuis Firebase...');
         
-        // Récupérer et sauvegarder les saisons EN PREMIER (important !)
-        const firebaseSeasons = await firebaseService.getSeasons();
-        if (firebaseSeasons && firebaseSeasons.length > 0) {
-            localStorage.setItem('footballEloSeasons', JSON.stringify(firebaseSeasons));
-            console.log(`📥 ${firebaseSeasons.length} saison(s) synchronisée(s)`);
-        }
-        
         // Récupérer et sauvegarder les équipes
         const firebaseTeams = await firebaseService.getTeams();
-        if (firebaseTeams && firebaseTeams.length > 0) {
-            localStorage.setItem('footballEloTeams', JSON.stringify(firebaseTeams));
+        if (firebaseTeams.length > 0) {
+            localStorage.setItem(TEAMS_STORAGE_KEY, JSON.stringify(firebaseTeams));
         }
         
         // Récupérer et sauvegarder les matchs
         const firebaseMatches = await firebaseService.getMatches();
-        if (firebaseMatches && firebaseMatches.length > 0) {
-            localStorage.setItem('footballEloMatches', JSON.stringify(firebaseMatches));
-        }
-        
-        // Récupérer et sauvegarder les matchs futurs pour la saison en cours
-        if (typeof getCurrentSeason === 'function') {
-            const currentSeason = getCurrentSeason();
-            if (currentSeason) {
-                const firebaseFutureMatches = await firebaseService.getFutureMatches(currentSeason);
-                if (firebaseFutureMatches && firebaseFutureMatches.length > 0) {
-                    const key = `footballEloFutureMatches_${currentSeason}`;
-                    localStorage.setItem(key, JSON.stringify(firebaseFutureMatches));
-                    console.log(`📥 ${firebaseFutureMatches.length} matchs futurs synchronisés`);
-                }
-            }
+        if (firebaseMatches.length > 0) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(firebaseMatches));
         }
         
         console.log('Synchronisation depuis Firebase terminée');
@@ -526,13 +512,23 @@ function showSyncMessage(message, type) {
 if (typeof document !== 'undefined') {
     document.addEventListener('DOMContentLoaded', function() {
         // Petit délai pour laisser Firebase s'initialiser
-        setTimeout(() => {
-            if (typeof firebaseService !== 'undefined' && navigator.onLine) {
+        setTimeout(async () => {
+            if (typeof db !== 'undefined' && navigator.onLine) {
                 console.log('Firebase disponible - synchronisation automatique');
-                // Synchroniser depuis Firebase au démarrage
-                syncFromFirebase().catch(error => {
-                    console.log('Sync automatique échouée, utilisation des données locales');
-                });
+                
+                try {
+                    // 1. Charger la config saison depuis Firebase (NOUVEAU)
+                    await initSeasonConfig();
+                    
+                    // 2. Synchroniser les autres données depuis Firebase
+                    if (typeof firebaseService !== 'undefined') {
+                        await syncFromFirebase();
+                    }
+                } catch (error) {
+                    console.log('Sync automatique échouée, utilisation des données locales:', error);
+                }
+            } else {
+                console.log('Firebase non disponible ou hors ligne - utilisation des données locales');
             }
         }, 2000);
     });
@@ -540,11 +536,19 @@ if (typeof document !== 'undefined') {
 
 // Synchronisation périodique (toutes les 5 minutes si en ligne)
 if (typeof setInterval !== 'undefined') {
-    setInterval(() => {
-        if (typeof firebaseService !== 'undefined' && navigator.onLine) {
-            syncFromFirebase().catch(error => {
+    setInterval(async () => {
+        if (typeof db !== 'undefined' && navigator.onLine) {
+            try {
+                // Rafraîchir la config saison
+                await initSeasonConfig();
+                
+                // Rafraîchir les autres données
+                if (typeof firebaseService !== 'undefined') {
+                    await syncFromFirebase();
+                }
+            } catch (error) {
                 console.log('Sync périodique échouée');
-            });
+            }
         }
     }, 5 * 60 * 1000); // 5 minutes
 }

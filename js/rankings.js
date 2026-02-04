@@ -415,15 +415,6 @@ function getSeasonConfig() {
     }
 }
 
-// Mettre à jour le titre avec le nom de la saison
-function updateSeasonTitle() {
-    const config = getSeasonConfig();
-    const titleElement = document.querySelector('.rankings-header h2');
-    if (titleElement) {
-        titleElement.textContent = `🏆 Classement ${config.seasonName}`;
-    }
-}
-
 // NOUVEAUTÉ ELO : Afficher le classement Elo
 function displayEloRanking() {
     const eloRankingSection = document.querySelector('#eloRanking');

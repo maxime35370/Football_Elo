@@ -49,11 +49,11 @@ function loadAdminData() {
 // Récupérer les équipes stockées
 function getStoredTeams() {
     try {
-        const stored = localStorage.getItem(TEAMS_STORAGE_KEY);
-        return stored ? JSON.parse(stored) : []; // Retourner un tableau vide au lieu des équipes par défaut
+        const stored = localStorage.getItem('footballEloTeams');
+        return stored ? JSON.parse(stored) : [];
     } catch (error) {
         console.error('Erreur lors de la récupération des équipes:', error);
-        return []; // Retourner un tableau vide en cas d'erreur aussi
+        return [];
     }
 }
 
@@ -482,11 +482,103 @@ function getDefaultSeasonConfig() {
     };
 }
 
-// Récupérer la configuration de saison
+// Vérifier si l'utilisateur est admin
+async function checkIfUserIsAdmin(email) {
+    // Liste des emails admin (à adapter selon ton système)
+    const adminEmails = [
+        'maxime.theard@gmail.com' // Ton email admin
+        // Ajouter d'autres admins si nécessaire
+    ];
+    
+    // Vérification simple par email
+    if (adminEmails.includes(email)) {
+        return true;
+    }
+    
+    // Optionnel: vérifier dans Firebase si tu as une collection 'admins'
+    try {
+        const adminDoc = await db.collection('admins').doc(email).get();
+        return adminDoc.exists;
+    } catch (error) {
+        // Si la collection n'existe pas, utiliser seulement la liste
+        return false;
+    }
+}
+
+// =====================================================
+// SAUVEGARDER LA CONFIG DANS FIREBASE (admin only)
+// =====================================================
+async function saveSeasonConfigToFirebase(config) {
+    try {
+        // Vérifier que l'utilisateur est admin
+        const user = firebase.auth().currentUser;
+        if (!user) {
+            throw new Error('Vous devez être connecté');
+        }
+        
+        // Vérifier le statut admin
+        const isAdmin = await checkIfUserIsAdmin(user.email);
+        if (!isAdmin) {
+            throw new Error('Seuls les administrateurs peuvent modifier la configuration');
+        }
+        
+        // Ajouter des métadonnées
+        const configWithMeta = {
+            ...config,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedBy: user.email
+        };
+        
+        // Sauvegarder dans Firebase
+        await db.collection('settings').doc('seasonConfig').set(configWithMeta);
+        
+        // Mettre à jour le cache local
+        localStorage.setItem('footballEloSeasonConfig', JSON.stringify(config));
+        
+        console.log('✅ Config saison sauvegardée dans Firebase');
+        return true;
+    } catch (error) {
+        console.error('❌ Erreur sauvegarde config Firebase:', error);
+        throw error;
+    }
+}
+
+// Charger la config depuis Firebase et mettre en cache local
+async function loadSeasonConfigFromFirebase() {
+    try {
+        const config = await getSeasonConfigFromFirebase();
+        // Mettre en cache local pour les accès synchrones
+        localStorage.setItem('footballEloSeasonConfig', JSON.stringify(config));
+        console.log('✅ Config saison chargée depuis Firebase:', config);
+        return config;
+    } catch (error) {
+        console.error('Erreur chargement config Firebase:', error);
+        return getSeasonConfig(); // Fallback sur le cache local
+    }
+}
+
+async function getSeasonConfigFromFirebase() {
+    try {
+        const doc = await db.collection('settings').doc('seasonConfig').get();
+        if (doc.exists) {
+            return doc.data();
+        }
+        return getDefaultSeasonConfig();
+    } catch (error) {
+        console.error('Erreur récupération config Firebase:', error);
+        return getDefaultSeasonConfig();
+    }
+}
+
+// Version synchrone qui utilise le cache local (pour compatibilité)
 function getSeasonConfig() {
     try {
-        const stored = localStorage.getItem('footballEloSeasonConfig');
-        return stored ? JSON.parse(stored) : getDefaultSeasonConfig();
+        // D'abord essayer le cache local
+        const cached = localStorage.getItem('footballEloSeasonConfig');
+        if (cached) {
+            return JSON.parse(cached);
+        }
+        return getDefaultSeasonConfig();
     } catch (error) {
         console.error('Erreur récupération config saison:', error);
         return getDefaultSeasonConfig();
@@ -505,19 +597,42 @@ function saveSeasonConfig(config) {
 }
 
 // Afficher la section de configuration
-function showSeasonConfigSection() {
+async function showSeasonConfigSection() {
     console.log('showSeasonConfigSection appelée');
+    
+    // Vérifier que l'utilisateur est admin
+    const user = firebase.auth().currentUser;
+    if (!user) {
+        showMessage('Vous devez être connecté pour accéder à cette section', 'error');
+        return;
+    }
+    
+    const isAdmin = await checkIfUserIsAdmin(user.email);
+    if (!isAdmin) {
+        showMessage('⛔ Accès réservé aux administrateurs', 'error');
+        return;
+    }
     
     document.getElementById('seasonConfigSection').style.display = 'block';
     hideTeamForm();
     hideImportSection();
     
-    // Charger la configuration actuelle
-    const config = getSeasonConfig();
-    document.getElementById('championPlaces').value = config.championPlaces;
-    document.getElementById('europeanPlaces').value = config.europeanPlaces;
-    document.getElementById('relegationPlaces').value = config.relegationPlaces;
-    document.getElementById('seasonName').value = config.seasonName;
+    // Charger la configuration depuis Firebase
+    try {
+        const config = await loadSeasonConfigFromFirebase();
+        document.getElementById('championPlaces').value = config.championPlaces;
+        document.getElementById('europeanPlaces').value = config.europeanPlaces;
+        document.getElementById('relegationPlaces').value = config.relegationPlaces;
+        document.getElementById('seasonName').value = config.seasonName;
+    } catch (error) {
+        console.error('Erreur chargement config:', error);
+        // Utiliser les valeurs par défaut
+        const config = getDefaultSeasonConfig();
+        document.getElementById('championPlaces').value = config.championPlaces;
+        document.getElementById('europeanPlaces').value = config.europeanPlaces;
+        document.getElementById('relegationPlaces').value = config.relegationPlaces;
+        document.getElementById('seasonName').value = config.seasonName;
+    }
 }
 
 function hideSeasonConfigSection() {
@@ -525,7 +640,7 @@ function hideSeasonConfigSection() {
 }
 
 // Gérer la soumission de la configuration
-function handleSeasonConfigSubmit(event) {
+async function handleSeasonConfigSubmit(event) {
     event.preventDefault();
     
     const formData = new FormData(event.target);
@@ -541,18 +656,39 @@ function handleSeasonConfigSubmit(event) {
         return;
     }
     
-    if (saveSeasonConfig(config)) {
-        showMessage('Configuration de saison sauvegardée !', 'success');
+    // Désactiver le bouton pendant la sauvegarde
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = '⏳ Sauvegarde...';
+    
+    try {
+        await saveSeasonConfigToFirebase(config);
+        showMessage('✅ Configuration de saison sauvegardée pour tous les utilisateurs !', 'success');
         hideSeasonConfigSection();
-    } else {
-        showMessage('Erreur lors de la sauvegarde', 'error');
+    } catch (error) {
+        showMessage(`❌ Erreur: ${error.message}`, 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
     }
 }
 
 // Valider la configuration de saison
 function validateSeasonConfig(config) {
-    const teams = getStoredTeams();
+    // Récupérer les équipes depuis localStorage avec la bonne clé
+    let teams = [];
+    try {
+        const stored = localStorage.getItem('footballEloTeams');
+        teams = stored ? JSON.parse(stored) : [];
+    } catch (error) {
+        console.error('Erreur récupération équipes:', error);
+    }
+    
     const totalTeams = teams.length;
+    
+    // Si aucune équipe n'est trouvée, utiliser un minimum raisonnable
+    const effectiveTeams = totalTeams > 0 ? totalTeams : 18;
     
     if (config.championPlaces < 1) {
         showMessage('Il doit y avoir au moins 1 place de champion', 'error');
@@ -564,8 +700,8 @@ function validateSeasonConfig(config) {
         return false;
     }
     
-    if (config.europeanPlaces + config.relegationPlaces >= totalTeams) {
-        showMessage('Trop de places spéciales par rapport au nombre d\'équipes', 'error');
+    if (config.europeanPlaces + config.relegationPlaces >= effectiveTeams) {
+        showMessage(`Trop de places spéciales (${config.europeanPlaces} + ${config.relegationPlaces} = ${config.europeanPlaces + config.relegationPlaces}) pour ${effectiveTeams} équipes`, 'error');
         return false;
     }
     
@@ -575,4 +711,14 @@ function validateSeasonConfig(config) {
     }
     
     return true;
+}
+
+// Appeler cette fonction au chargement de la page
+async function initSeasonConfig() {
+    try {
+        await loadSeasonConfigFromFirebase();
+        console.log('✅ Configuration de saison initialisée');
+    } catch (error) {
+        console.warn('⚠️ Utilisation de la config locale:', error);
+    }
 }
