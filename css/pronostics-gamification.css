@@ -389,7 +389,7 @@
     margin-right: 0.5rem;
 }
 
-/* Joker dans la carte de match */
+/* Joker dans la carte de match - DESKTOP */
 .prediction-match .joker-btn {
     position: absolute;
     top: 0.5rem;
@@ -605,48 +605,8 @@
 }
 
 /* ===============================
-   RESPONSIVE
+   PROFIL
    =============================== */
-
-@media (max-width: 768px) {
-    .avatar-grid {
-        grid-template-columns: repeat(3, 1fr);
-    }
-    
-    .favorite-team-stats {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    
-    .mission-card {
-        flex-wrap: wrap;
-    }
-    
-    .mission-reward {
-        width: 100%;
-        text-align: right;
-        margin-top: 0.5rem;
-    }
-    
-    .gamification-widget {
-        flex-wrap: wrap;
-        justify-content: center;
-    }
-}
-
-@media (max-width: 480px) {
-    .avatar-grid {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 0.5rem;
-    }
-    
-    .avatar-option {
-        padding: 0.5rem;
-    }
-    
-    .avatar-icon {
-        font-size: 1.5rem;
-    }
-}
 
 .profile-section {
     margin-bottom: 2rem;
@@ -696,17 +656,57 @@
     text-align: center;
 }
 
+/* ===============================
+   RESPONSIVE
+   =============================== */
+
 @media (max-width: 768px) {
-    /* Joker : retirer le positionnement absolu sur mobile */
-    .prediction-match .joker-btn {
-        position: static;
+    /* Avatar */
+    .avatar-grid {
+        grid-template-columns: repeat(3, 1fr);
     }
     
-    .prediction-match .joker-slot {
-        grid-column: 1 / -1;
-        text-align: center;
-        order: -1;           /* place le joker AU-DESSUS des équipes */
-        margin-top: 0;
-        margin-bottom: 0.5rem;
+    /* Équipe favorite */
+    .favorite-team-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    /* Missions */
+    .mission-card {
+        flex-wrap: wrap;
+    }
+    
+    .mission-reward {
+        width: 100%;
+        text-align: right;
+        margin-top: 0.5rem;
+    }
+    
+    /* Widget */
+    .gamification-widget {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    /* Joker : sortir du positionnement absolu sur mobile */
+    .prediction-match .joker-btn {
+        position: static;
+        font-size: 0.75rem;
+        padding: 0.25rem 0.6rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .avatar-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+    }
+    
+    .avatar-option {
+        padding: 0.5rem;
+    }
+    
+    .avatar-icon {
+        font-size: 1.5rem;
     }
 }

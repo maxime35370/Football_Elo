@@ -271,33 +271,9 @@ footer {
         padding: 0.8rem;
     }
 }
-/* Très petit écran */
-@media (max-width: 400px) {
-    header h1 {
-        font-size: 1.5rem;
-    }
-    
-    .nav-btn {
-        font-size: 0.85rem;
-        padding: 0.8rem;
-    }
-}
-
-/* Très petit écran */
-@media (max-width: 400px) {
-    header h1 {
-        font-size: 1.5rem;
-    }
-    
-    .nav-btn {
-        font-size: 0.85rem;
-        padding: 0.8rem;
-    }
-}
 
 /* ============================================
    RESPONSIVE MOBILE COMPLET
-   À ajouter à la fin de style.css
    ============================================ */
 
 /* ============ TABLETTE (max 900px) ============ */
@@ -641,15 +617,42 @@ footer {
         gap: 0.5rem;
     }
     
+    /* GARDER 3 colonnes + texte encore plus réduit sur petit mobile */
     .prediction-match {
-        padding: 0.6rem;
+        grid-template-columns: 1fr auto 1fr;
+        gap: 0.3rem 0.4rem;
+        padding: 0.5rem;
         border-radius: 8px;
     }
     
+    .prediction-team.home {
+        text-align: right;
+    }
+    
+    .prediction-team.away {
+        text-align: left;
+    }
+    
+    .team-name {
+        font-size: 0.8rem;
+    }
+    
+    .team-badge {
+        font-size: 0.6rem;
+    }
+    
     .prediction-score input {
-        width: 40px;
-        height: 40px;
+        width: 35px;
+        height: 35px;
         font-size: 1.1rem;
+    }
+    
+    .prediction-score .separator {
+        font-size: 1.1rem;
+    }
+    
+    .prediction-score {
+        gap: 0.3rem;
     }
     
     /* Leaderboard pronostics */
