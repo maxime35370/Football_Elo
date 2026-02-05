@@ -695,3 +695,18 @@
     margin-top: 0.5rem;
     text-align: center;
 }
+
+@media (max-width: 768px) {
+    /* Joker : retirer le positionnement absolu sur mobile */
+    .prediction-match .joker-btn {
+        position: static;
+    }
+    
+    .prediction-match .joker-slot {
+        grid-column: 1 / -1;
+        text-align: center;
+        order: -1;           /* place le joker AU-DESSUS des équipes */
+        margin-top: 0;
+        margin-bottom: 0.5rem;
+    }
+}
