@@ -258,6 +258,9 @@ function displayActiveTab() {
         case 'predictions':
             displayPredictions();
             break;
+        case 'tree': 
+            displayProbabilityTree(); 
+            break;
     }
 }
 
