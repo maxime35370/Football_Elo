@@ -14,6 +14,27 @@ const IA_PLAYER_PSEUDO = '🤖 Claude IA';
 
 async function getIAPredictions(season) {
     try {
+        // 1. Essayer Firebase d'abord si disponible et en ligne
+        if (typeof db !== 'undefined' && navigator.onLine) {
+            try {
+                const doc = await db.collection('iaPredictions').doc(season).get();
+                if (doc.exists) {
+                    const data = doc.data();
+                    const predictions = data.predictions || null;
+                    console.log('📥 Pronostics IA récupérés depuis Firebase pour', season);
+                    
+                    // Mettre en cache local
+                    if (predictions) {
+                        localStorage.setItem(`footballEloIAPredictions_${season}`, JSON.stringify(predictions));
+                    }
+                    return predictions;
+                }
+            } catch (firebaseError) {
+                console.warn('⚠️ Erreur Firebase getIAPredictions, fallback localStorage:', firebaseError);
+            }
+        }
+        
+        // 2. Fallback sur localStorage
         const stored = localStorage.getItem(`footballEloIAPredictions_${season}`);
         return stored ? JSON.parse(stored) : null;
     } catch (e) {
@@ -24,7 +45,23 @@ async function getIAPredictions(season) {
 
 async function saveIAPredictions(season, predictions) {
     try {
+        // 1. Sauvegarder en localStorage (immédiat)
         localStorage.setItem(`footballEloIAPredictions_${season}`, JSON.stringify(predictions));
+        
+        // 2. Sauvegarder sur Firebase en arrière-plan
+        if (typeof db !== 'undefined' && navigator.onLine) {
+            try {
+                await db.collection('iaPredictions').doc(season).set({
+                    season: season,
+                    predictions: predictions,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    matchDayCount: Object.keys(predictions.matchDays || {}).length
+                });
+                console.log('✅ Pronostics IA sauvegardés sur Firebase pour', season);
+            } catch (firebaseError) {
+                console.warn('⚠️ Erreur Firebase saveIAPredictions (conservé en local):', firebaseError);
+            }
+        }
     } catch (e) {
         console.error('Erreur saveIAPredictions:', e);
     }
