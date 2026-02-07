@@ -359,28 +359,3 @@ async function addOddsToMatchCard(matchElement, match, teamsWithElo) {
         scoreDiv.after(oddsDiv);
     }
 }
-
-// ===============================
-// MODE COTES (TOGGLE)
-// ===============================
-
-let oddsMode = false;
-
-function toggleOddsMode() {
-    oddsMode = !oddsMode;
-    
-    const btn = document.getElementById('oddsModeBtn');
-    if (btn) {
-        btn.classList.toggle('active', oddsMode);
-        btn.textContent = oddsMode ? '📊 Cotes ON' : '📊 Cotes OFF';
-    }
-    
-    // Rafraîchir l'affichage
-    if (typeof displayPredictionsForm === 'function') {
-        displayPredictionsForm();
-    }
-}
-
-function isOddsModeEnabled() {
-    return oddsMode;
-}

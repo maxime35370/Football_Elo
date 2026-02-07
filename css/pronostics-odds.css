@@ -329,3 +329,128 @@
     flex: 0 0 100%;
     order: -1;
 }
+
+/* ===============================
+   COTES INLINE DANS LES CARTES
+   =============================== */
+
+/* Cote à côté du nom d'équipe */
+.team-odds {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #3498db;
+    background: #ebf5fb;
+    padding: 0.15rem 0.4rem;
+    border-radius: 6px;
+    margin-top: 0.15rem;
+}
+
+/* Séparateur avec cote du nul */
+.separator.odds-draw {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #7f8c8d;
+    background: #f0f0f0;
+    padding: 0.2rem 0.35rem;
+    border-radius: 6px;
+    min-width: auto;
+    white-space: nowrap;
+}
+
+/* Ligne des multiplicateurs de points */
+.odds-multipliers-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0.25rem;
+    width: 100%;
+    order: 5;
+    flex: 0 0 100%;
+    padding: 0.3rem 0.5rem;
+    margin-top: 0.25rem;
+    border-top: 1px dashed #ecf0f1;
+}
+
+.odds-mult-item {
+    text-align: center;
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 0.15rem 0.3rem;
+    border-radius: 4px;
+}
+
+.odds-mult-item.bonus {
+    color: #27ae60;
+    background: #e8f8f0;
+}
+
+.odds-mult-item.malus {
+    color: #e67e22;
+    background: #fef5e7;
+}
+
+/* Ajustements responsive */
+@media (max-width: 600px) {
+    .team-odds {
+        font-size: 0.65rem;
+        padding: 0.1rem 0.3rem;
+    }
+    
+    .separator.odds-draw {
+        font-size: 0.6rem;
+        padding: 0.15rem 0.25rem;
+    }
+    
+    .odds-mult-item {
+        font-size: 0.55rem;
+    }
+}
+
+/* ===============================
+   MULTIPLICATEURS INLINE DANS LES CARTES
+   =============================== */
+
+/* Multiplicateur à côté du nom d'équipe */
+.team-odds {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.15rem 0.4rem;
+    border-radius: 6px;
+    margin-top: 0.15rem;
+}
+
+.team-odds.bonus {
+    color: #27ae60;
+    background: #e8f8f0;
+}
+
+.team-odds.malus {
+    color: #e67e22;
+    background: #fef5e7;
+}
+
+/* Séparateur avec multiplicateur du nul */
+.separator.odds-draw {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #7f8c8d;
+    background: #f0f0f0;
+    padding: 0.2rem 0.35rem;
+    border-radius: 6px;
+    min-width: auto;
+    white-space: nowrap;
+}
+
+/* Ajustements responsive */
+@media (max-width: 600px) {
+    .team-odds {
+        font-size: 0.65rem;
+        padding: 0.1rem 0.3rem;
+    }
+    
+    .separator.odds-draw {
+        font-size: 0.6rem;
+        padding: 0.15rem 0.25rem;
+    }
+}

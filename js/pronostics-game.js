@@ -614,6 +614,21 @@ async function displayPredictionsForm() {
         statusEl.textContent = '';
     }
     
+    // Pré-charger toutes les cotes pour cette journée
+    const oddsMap = {};
+    if (typeof getMatchOdds === 'function') {
+        const oddsPromises = matchesThisDay.map(async (match) => {
+            const oddsKey = `${match.homeTeamId}-${match.awayTeamId}`;
+            try {
+                const odds = await getMatchOdds(match, teamsWithElo);
+                oddsMap[oddsKey] = odds;
+            } catch (e) {
+                console.warn('Erreur chargement cotes pour', oddsKey);
+            }
+        });
+        await Promise.all(oddsPromises);
+    }
+
     // Générer le HTML des matchs
     let html = '';
     
@@ -676,6 +691,21 @@ async function displayPredictionsForm() {
             `;
         }
         
+        // Récupérer les cotes pré-chargées et calculer les multiplicateurs de points
+        const matchOdds = oddsMap[key];
+        let homeMultHtml = '';
+        let awayMultHtml = '';
+        let drawMultText = '-';
+
+        if (matchOdds) {
+            const homeMult = Math.max(0.5, Math.min(3.0, Math.round((matchOdds.home / 2) * 100) / 100));
+            const drawMult = Math.max(0.5, Math.min(3.0, Math.round((matchOdds.draw / 2) * 100) / 100));
+            const awayMult = Math.max(0.5, Math.min(3.0, Math.round((matchOdds.away / 2) * 100) / 100));
+            homeMultHtml = `<span class="team-odds ${homeMult >= 1 ? 'bonus' : 'malus'}">×${homeMult.toFixed(2)}</span>`;
+            awayMultHtml = `<span class="team-odds ${awayMult >= 1 ? 'bonus' : 'malus'}">×${awayMult.toFixed(2)}</span>`;
+            drawMultText = `×${drawMult.toFixed(2)}`;
+        }
+
         html += `
             <div class="prediction-match ${isMatchLocked ? 'locked' : ''} ${resultHtml ? 'has-result' : ''}" 
                  data-home="${match.homeTeamId}" 
@@ -683,6 +713,7 @@ async function displayPredictionsForm() {
                 ${matchTimeText ? `<div class="match-time ${isMatchLocked ? 'locked' : ''}">${isMatchLocked ? '🔒' : '🕐'} ${matchTimeText}</div>` : ''}
                 <div class="prediction-team home">
                     <span class="team-name">${homeTeam?.shortName || '?'}</span>
+                    ${homeMultHtml}
                     <span class="team-badge">🏠 Domicile</span>
                 </div>
                 <div class="prediction-score">
@@ -691,7 +722,7 @@ async function displayPredictionsForm() {
                            ${isMatchLocked ? 'disabled' : ''}
                            data-home="${match.homeTeamId}" 
                            data-away="${match.awayTeamId}">
-                    <span class="separator">-</span>
+                    <span class="separator odds-draw">${drawMultText}</span>
                     <input type="number" min="0" max="20" class="away-score" 
                            value="${awayScore}" 
                            ${isMatchLocked ? 'disabled' : ''}
@@ -699,6 +730,7 @@ async function displayPredictionsForm() {
                            data-away="${match.awayTeamId}">
                 </div>
                 <div class="prediction-team away">
+                    ${awayMultHtml}
                     <span class="team-name">${awayTeam?.shortName || '?'}</span>
                     <span class="team-badge">✈️ Extérieur</span>
                 </div>
@@ -706,14 +738,6 @@ async function displayPredictionsForm() {
                 ${!isMatchLocked ? `<div class="joker-slot" data-home="${match.homeTeamId}" data-away="${match.awayTeamId}"></div>` : ''}
             </div>
         `;
-        // Ajouter les cotes si le mode est activé
-        if (typeof isOddsModeEnabled === 'function' && isOddsModeEnabled() && !isMatchLocked) {
-            // On ajoute un placeholder qui sera rempli après
-            html = html.replace(
-                `data-away="${match.awayTeamId}">`,
-                `data-away="${match.awayTeamId}" data-needs-odds="true">`
-            );
-        }
     });
     
     // IMPORTANT: D'abord injecter le HTML dans le DOM
@@ -730,36 +754,6 @@ async function displayPredictionsForm() {
             
             if (typeof renderJokerButton === 'function') {
                 slot.innerHTML = renderJokerButton(slot, jokers, selectedMatchDay, homeId, awayId, isLocked);
-            }
-        });
-    }
-
-    // Charger les cotes pour les matchs ouverts
-    if (typeof isOddsModeEnabled === 'function' && isOddsModeEnabled()) {
-        document.querySelectorAll('.prediction-match[data-needs-odds="true"]').forEach(async (matchEl) => {
-            const homeTeamId = parseInt(matchEl.dataset.home);
-            const awayTeamId = parseInt(matchEl.dataset.away);
-            
-            const match = matchesThisDay.find(m => 
-                m.homeTeamId == homeTeamId && m.awayTeamId == awayTeamId
-            );
-            
-            if (match && typeof getMatchOdds === 'function') {
-                const odds = await getMatchOdds(match, teamsWithElo);
-                const homeTeam = allTeams.find(t => t.id == homeTeamId);
-                const awayTeam = allTeams.find(t => t.id == awayTeamId);
-                
-                const oddsHtml = renderOddsDisplay(odds, homeTeam?.shortName || '?', awayTeam?.shortName || '?');
-                
-                const oddsDiv = document.createElement('div');
-                oddsDiv.className = 'match-odds-container';
-                oddsDiv.innerHTML = oddsHtml;
-                
-                // Insérer après prediction-score
-                const scoreDiv = matchEl.querySelector('.prediction-score');
-                if (scoreDiv) {
-                    scoreDiv.after(oddsDiv);
-                }
             }
         });
     }

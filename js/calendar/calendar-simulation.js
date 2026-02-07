@@ -94,7 +94,7 @@ function getTeamSituation(teamId, ranking, remainingMatches, config) {
 }
 
 // Analyser les enjeux d'un match spécifique
-function analyzeMatchStakes(match, ranking, matchDay, totalMatchDays, config) {
+function analyzeMatchStakesOld(match, ranking, matchDay, totalMatchDays, config) {
     const remainingAfterThis = totalMatchDays - matchDay;
     
     const homeSituation = getTeamSituation(match.homeTeamId, ranking, remainingAfterThis + 1, config);
@@ -762,18 +762,23 @@ function simulateMonteCarloElo(numSimulations = 100) {
     const totalMatchDays = (allTeams.length - 1) * 2;
     const lastPlayedMatchDay = Math.max(0, ...allMatches.map(m => m.matchDay || 0));
     
-    // Initialiser le tracking par journée
-    for (let day = lastPlayedMatchDay + 1; day <= totalMatchDays; day++) {
-        decisiveMoments[day] = {
-            titleRaceAlive: 0,      // Nb de simulations où le titre n'est pas encore décidé
-            relegationBattleAlive: 0, // Nb de simulations où la relégation n'est pas décidée
-            europeRaceAlive: 0,     // Nb de simulations où l'Europe n'est pas décidée
-            keyMatches: {},         // Matchs importants cette journée
-            averageHype: 0,         // Niveau moyen de hype
-            dramaticFinishes: 0     // Nb de fins dramatiques
-        };
-        hypeByMatchDay[day] = [];
-    }
+    // Initialiser le tracking par journée (inclure TOUTES les journées possibles dans futureMatches)
+    const allFutureMatchDays = [...new Set(futureMatches.map(m => m.matchDay || 0))].sort((a, b) => a - b);
+    allFutureMatchDays.forEach(day => {
+        if (!decisiveMoments[day]) {
+            decisiveMoments[day] = {
+                titleRaceAlive: 0,
+                relegationBattleAlive: 0,
+                europeRaceAlive: 0,
+                keyMatches: {},
+                averageHype: 0,
+                dramaticFinishes: 0
+            };
+        }
+        if (!hypeByMatchDay[day]) {
+            hypeByMatchDay[day] = [];
+        }
+    });
     
     // Lancer les simulations
     for (let sim = 0; sim < numSimulations; sim++) {
@@ -831,7 +836,16 @@ function simulateMonteCarloElo(numSimulations = 100) {
             
             // Calculer le niveau de hype pour cette journée
             const hypeLevel = calculateHypeLevel(situationBefore, remainingMatchDays, config);
+            if (!hypeByMatchDay[matchDay]) hypeByMatchDay[matchDay] = [];
             hypeByMatchDay[matchDay].push(hypeLevel);
+            
+            // Initialiser decisiveMoments si nécessaire
+            if (!decisiveMoments[matchDay]) {
+                decisiveMoments[matchDay] = {
+                    titleRaceAlive: 0, relegationBattleAlive: 0, europeRaceAlive: 0,
+                    keyMatches: {}, averageHype: 0, dramaticFinishes: 0
+                };
+            }
             
             // Tracker si les courses sont encore ouvertes
             if (!titleDecided && situationBefore.titleRaceTeams > 1) {
@@ -941,7 +955,7 @@ function simulateMonteCarloElo(numSimulations = 100) {
             }
             
             // Tracker les fins dramatiques (dernière journée avec enjeu)
-            if (matchDay === totalMatchDays) {
+            if (matchDay === totalMatchDays && decisiveMoments[matchDay]) {
                 if (!titleDecided || !relegationDecided) {
                     decisiveMoments[matchDay].dramaticFinishes++;
                 }
