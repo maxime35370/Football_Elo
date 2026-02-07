@@ -7,7 +7,17 @@
 function initPredictions() {
     loadStoredPredictions();
     
-    const lastPlayedMatchDay = Math.max(...allMatches.map(m => m.matchDay || 0), 0);
+    const expectedMatchesPerDayCalc = Math.floor(allTeams.length / 2);
+    let lastPlayedMatchDay = 0;
+    const maxMatchDayInAll = Math.max(...allMatches.map(m => m.matchDay || 0), 0);
+    for (let day = 1; day <= maxMatchDayInAll; day++) {
+        const playedInDay = allMatches.filter(m => m.matchDay === day && m.finalScore).length;
+        if (playedInDay >= expectedMatchesPerDayCalc) {
+            lastPlayedMatchDay = day;
+        } else {
+            break;
+        }
+    }
     const maxFutureMatchDay = futureMatches.length > 0 
         ? Math.max(...futureMatches.map(m => m.matchDay || 0)) 
         : lastPlayedMatchDay;
@@ -187,7 +197,17 @@ function updatePredictionNavButtons() {
 // ===============================
 
 function generateAllPredictions() {
-    const lastPlayedMatchDay = Math.max(...allMatches.map(m => m.matchDay || 0), 0);
+    const expectedMatchesPerDayCalc = Math.floor(allTeams.length / 2);
+    let lastPlayedMatchDay = 0;
+    const maxMatchDayInAll = Math.max(...allMatches.map(m => m.matchDay || 0), 0);
+    for (let day = 1; day <= maxMatchDayInAll; day++) {
+        const playedInDay = allMatches.filter(m => m.matchDay === day && m.finalScore).length;
+        if (playedInDay >= expectedMatchesPerDayCalc) {
+            lastPlayedMatchDay = day;
+        } else {
+            break;
+        }
+    }
     const maxFutureMatchDay = futureMatches.length > 0 
         ? Math.max(...futureMatches.map(m => m.matchDay || 0)) 
         : lastPlayedMatchDay;
