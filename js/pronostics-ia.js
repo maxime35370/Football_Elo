@@ -23,7 +23,7 @@ async function getIAPredictions(season) {
                     const predictions = data.predictions || null;
                     console.log('📥 Pronostics IA récupérés depuis Firebase pour', season);
                     
-                    // Mettre en cache local
+                    // Mettre en cache local pour accès hors-ligne
                     if (predictions) {
                         localStorage.setItem(`footballEloIAPredictions_${season}`, JSON.stringify(predictions));
                     }
@@ -34,7 +34,7 @@ async function getIAPredictions(season) {
             }
         }
         
-        // 2. Fallback sur localStorage
+        // 2. Fallback sur localStorage (hors-ligne ou Firebase indisponible)
         const stored = localStorage.getItem(`footballEloIAPredictions_${season}`);
         return stored ? JSON.parse(stored) : null;
     } catch (e) {
@@ -45,10 +45,10 @@ async function getIAPredictions(season) {
 
 async function saveIAPredictions(season, predictions) {
     try {
-        // 1. Sauvegarder en localStorage (immédiat)
+        // 1. Toujours sauvegarder en localStorage (accès immédiat)
         localStorage.setItem(`footballEloIAPredictions_${season}`, JSON.stringify(predictions));
         
-        // 2. Sauvegarder sur Firebase en arrière-plan
+        // 2. Sauvegarder sur Firebase (pour que TOUS les appareils voient la même chose)
         if (typeof db !== 'undefined' && navigator.onLine) {
             try {
                 await db.collection('iaPredictions').doc(season).set({
@@ -66,6 +66,8 @@ async function saveIAPredictions(season, predictions) {
         console.error('Erreur saveIAPredictions:', e);
     }
 }
+
+
 
 // ===============================
 // CALCUL ELO BASÉ SUR LES MATCHS JOUÉS
@@ -242,7 +244,29 @@ function generateIAPredictionForMatch(match, teamsWithElo) {
 async function generateAllIAPredictions() {
     if (!currentSeason) return;
     
-    // Récupérer les pronostics existants
+    // ====================================================
+    // NOUVEAU : Si l'utilisateur n'est PAS admin,
+    // on se contente de LIRE les pronostics depuis Firebase
+    // sans jamais en générer de nouveaux.
+    // Cela garantit que tout le monde voit les mêmes données.
+    // ====================================================
+    if (!isCurrentUserAdmin()) {
+        console.log('👤 Utilisateur non-admin : lecture des pronostics IA depuis Firebase uniquement');
+        const existing = await getIAPredictions(currentSeason);
+        if (existing) {
+            console.log('📊 ' + Object.keys(existing.matchDays || {}).length + ' journée(s) de pronostics IA chargées');
+        } else {
+            console.log('📭 Aucun pronostic IA disponible (l\'admin doit les générer)');
+        }
+        return existing;
+    }
+    
+    // ====================================================
+    // ADMIN SEULEMENT : Générer / mettre à jour les pronostics
+    // ====================================================
+    console.log('🔑 Admin détecté : génération des pronostics IA...');
+    
+    // Récupérer les pronostics existants (depuis Firebase si possible)
     let iaPredictions = await getIAPredictions(currentSeason) || {
         season: currentSeason,
         generatedAt: new Date().toISOString(),
@@ -262,20 +286,31 @@ async function generateAllIAPredictions() {
             .map(m => m.matchDay)
     )];
     
-    const matchDaysToProcess = [...new Set([...allFutureMatchDays, ...partialMatchDays])].sort((a, b) => a - b);
+    // Journées déjà jouées (pour vérifier qu'on a bien les pronostics)
+    const playedMatchDays = [...new Set(
+        allMatches
+            .filter(m => m.finalScore)
+            .map(m => m.matchDay)
+    )];
     
-    for (const matchDay of matchDaysToProcess) {
-        // Récupérer les matchs de cette journée (futurs + sans résultat)
+    const allMatchDaysToProcess = [...new Set([
+        ...allFutureMatchDays,
+        ...partialMatchDays,
+        ...playedMatchDays
+    ])].sort((a, b) => a - b);
+    
+    for (const matchDay of allMatchDaysToProcess) {
+        // Récupérer les matchs de cette journée
         const matchesThisDay = [
-            ...futureMatches.filter(m => m.matchDay === matchDay),
-            ...allMatches.filter(m => m.matchDay === matchDay && !m.finalScore)
+            ...allMatches.filter(m => m.matchDay == matchDay),
+            ...futureMatches.filter(m => m.matchDay == matchDay)
         ];
         
-        // Éviter les doublons
+        // Dédupliquer (au cas où un match serait dans les deux listes)
         const uniqueMatches = [];
         const seen = new Set();
         for (const m of matchesThisDay) {
-            const key = `${m.homeTeamId}-${m.awayTeamId}`;
+            const key = m.homeTeamId + '_' + m.awayTeamId;
             if (!seen.has(key)) {
                 seen.add(key);
                 uniqueMatches.push(m);
@@ -284,19 +319,17 @@ async function generateAllIAPredictions() {
         
         if (uniqueMatches.length === 0) continue;
         
-        // Pour cette journée, calculer l'Elo en fonction des matchs joués AVANT
-        let teamsWithElo;
-        const firstMatchDate = uniqueMatches
-            .filter(m => m.scheduledAt)
-            .sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt))[0]?.scheduledAt;
+        // Calculer l'Elo AU MOMENT de cette journée (pour les journées passées)
+        const hasPlayedMatches = allMatches.some(m => m.matchDay == matchDay && m.finalScore);
+        const teamsWithElo = hasPlayedMatches 
+            ? calculateEloAtDate(
+                allMatches.filter(m => m.matchDay == matchDay)[0]?.scheduledAt || new Date().toISOString(),
+                allMatches,
+                allTeams
+              )
+            : currentElo;
         
-        if (firstMatchDate) {
-            teamsWithElo = calculateEloAtDate(firstMatchDate, allMatches, allTeams);
-        } else {
-            teamsWithElo = currentElo;
-        }
-        
-        // Initialiser ou mettre à jour la journée
+        // Initialiser la journée si nécessaire
         if (!iaPredictions.matchDays[matchDay]) {
             iaPredictions.matchDays[matchDay] = {
                 predictions: [],
@@ -331,9 +364,11 @@ async function generateAllIAPredictions() {
         iaPredictions.matchDays[matchDay].generatedAt = new Date().toISOString();
     }
     
-    // Sauvegarder
+    // Sauvegarder (localStorage + Firebase)
     iaPredictions.lastUpdated = new Date().toISOString();
     await saveIAPredictions(currentSeason, iaPredictions);
+    
+    console.log('✅ Pronostics IA générés et synchronisés pour ' + Object.keys(iaPredictions.matchDays).length + ' journées');
     
     return iaPredictions;
 }
@@ -877,4 +912,16 @@ function debugIAPrediction(matchDay) {
         console.log(`  Probas: ${p.homeWinProb}% / ${p.drawProb}% / ${p.awayWinProb}%`);
         console.log('');
     });
+}
+
+function isCurrentUserAdmin() {
+    try {
+        const user = firebase.auth().currentUser;
+        if (!user) return false;
+        // Même vérification que dans admin-teams.js
+        const ADMIN_EMAILS = ['maxime.theard@gmail.com'];
+        return ADMIN_EMAILS.includes(user.email);
+    } catch (e) {
+        return false;
+    }
 }
