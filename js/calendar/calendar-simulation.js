@@ -386,6 +386,33 @@ function displaySimulation() {
     });
 }
 
+function calculateSimulatedRanking(simulatedStats) {
+    const ranking = allTeams.map(team => {
+        const stats = simulatedStats[team.id] || { points: 0, goalsFor: 0, goalsAgainst: 0, played: 0 };
+        return {
+            id: team.id,
+            shortName: team.shortName,
+            points: stats.points || 0,
+            goalDifference: (stats.goalsFor || 0) - (stats.goalsAgainst || 0),
+            goalsFor: stats.goalsFor || 0,
+            played: stats.played || 0,
+            rank: 0
+        };
+    });
+    
+    ranking.sort((a, b) => {
+        if (a.points !== b.points) return b.points - a.points;
+        if (a.goalDifference !== b.goalDifference) return b.goalDifference - a.goalDifference;
+        return b.goalsFor - a.goalsFor;
+    });
+    
+    for (let i = 0; i < ranking.length; i++) {
+        ranking[i].rank = i + 1;
+    }
+    
+    return ranking;
+}
+
 function createSimulationMatchRow(match) {
     const homeTeam = allTeams.find(t => t.id == match.homeTeamId);
     const awayTeam = allTeams.find(t => t.id == match.awayTeamId);
