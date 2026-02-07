@@ -4,8 +4,8 @@
 // INITIALISATION PRONOSTICS
 // ===============================
 
-function initPredictions() {
-    loadStoredPredictions();
+async function initPredictions() {
+    await loadStoredPredictions();  // <-- ajout du await
     
     const expectedMatchesPerDayCalc = Math.floor(allTeams.length / 2);
     let lastPlayedMatchDay = 0;
@@ -18,19 +18,20 @@ function initPredictions() {
             break;
         }
     }
-    const maxFutureMatchDay = futureMatches.length > 0 
-        ? Math.max(...futureMatches.map(m => m.matchDay || 0)) 
+
+    const maxFutureMatchDay = futureMatches.length > 0
+        ? Math.max(...futureMatches.map(m => m.matchDay || 0))
         : lastPlayedMatchDay;
-    
+
     const matchesInLastDay = allMatches.filter(m => m.matchDay === lastPlayedMatchDay).length;
     const expectedMatchesPerDay = Math.floor(allTeams.length / 2);
-    
+
     if (matchesInLastDay < expectedMatchesPerDay && lastPlayedMatchDay > 0) {
         currentPredictionMatchDay = lastPlayedMatchDay;
     } else {
         currentPredictionMatchDay = lastPlayedMatchDay + 1;
     }
-    
+
     const matchesAtDay = futureMatches.filter(m => m.matchDay === currentPredictionMatchDay);
     if (matchesAtDay.length === 0 && currentPredictionMatchDay <= maxFutureMatchDay) {
         for (let day = currentPredictionMatchDay; day <= maxFutureMatchDay; day++) {
@@ -40,7 +41,7 @@ function initPredictions() {
             }
         }
     }
-    
+
     // Événements de navigation
     document.getElementById('prevMatchdayBtn')?.addEventListener('click', () => {
         navigatePredictionMatchDay(-1);
@@ -48,14 +49,35 @@ function initPredictions() {
     document.getElementById('nextMatchdayBtn')?.addEventListener('click', () => {
         navigatePredictionMatchDay(1);
     });
-    
+
     // Événements des boutons
     document.getElementById('generateAllPredictionsBtn')?.addEventListener('click', generateAllPredictions);
     document.getElementById('recalculatePredictionsBtn')?.addEventListener('click', recalculatePredictions);
 }
 
-function loadStoredPredictions() {
+async function loadStoredPredictions() {
     try {
+        // 1. Essayer Firebase d'abord si disponible et en ligne
+        if (typeof db !== 'undefined' && navigator.onLine) {
+            try {
+                const doc = await db.collection('calendarPredictions').doc(currentSeason).get();
+                if (doc.exists) {
+                    const data = doc.data();
+                    storedPredictions = data.predictions || null;
+                    console.log('📥 Pronostics calendrier récupérés depuis Firebase pour', currentSeason);
+                    
+                    // Mettre en cache local
+                    if (storedPredictions) {
+                        localStorage.setItem(`footballEloPredictions_${currentSeason}`, JSON.stringify(storedPredictions));
+                    }
+                    return;
+                }
+            } catch (firebaseError) {
+                console.warn('⚠️ Erreur Firebase loadStoredPredictions, fallback localStorage:', firebaseError);
+            }
+        }
+        
+        // 2. Fallback sur localStorage
         const stored = localStorage.getItem(`footballEloPredictions_${currentSeason}`);
         storedPredictions = stored ? JSON.parse(stored) : null;
     } catch (e) {
@@ -64,13 +86,30 @@ function loadStoredPredictions() {
     }
 }
 
-function saveStoredPredictions() {
+async function saveStoredPredictions() {
     try {
+        // 1. Toujours sauvegarder en localStorage
         localStorage.setItem(`footballEloPredictions_${currentSeason}`, JSON.stringify(storedPredictions));
+        
+        // 2. Sauvegarder sur Firebase pour synchronisation
+        if (typeof db !== 'undefined' && navigator.onLine) {
+            try {
+                await db.collection('calendarPredictions').doc(currentSeason).set({
+                    season: currentSeason,
+                    predictions: storedPredictions,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    matchDayCount: storedPredictions ? Object.keys(storedPredictions.matchDays || {}).length : 0
+                });
+                console.log('✅ Pronostics calendrier sauvegardés sur Firebase pour', currentSeason);
+            } catch (firebaseError) {
+                console.warn('⚠️ Erreur Firebase saveStoredPredictions:', firebaseError);
+            }
+        }
     } catch (e) {
         console.error('Erreur sauvegarde pronostics:', e);
     }
 }
+
 
 function navigatePredictionMatchDay(direction) {
     const maxMatchDay = Math.max(
@@ -197,6 +236,10 @@ function updatePredictionNavButtons() {
 // ===============================
 
 function generateAllPredictions() {
+    if (typeof isCurrentUserAdmin === 'function' && !isCurrentUserAdmin()) {
+        alert('⛔ Seul l\'administrateur peut générer les pronostics.');
+        return;
+    }
     const expectedMatchesPerDayCalc = Math.floor(allTeams.length / 2);
     let lastPlayedMatchDay = 0;
     const maxMatchDayInAll = Math.max(...allMatches.map(m => m.matchDay || 0), 0);
@@ -336,6 +379,10 @@ function generateAllPredictions() {
 }
 
 function recalculatePredictions() {
+    if (typeof isCurrentUserAdmin === 'function' && !isCurrentUserAdmin()) {
+        alert('⛔ Seul l\'administrateur peut générer les pronostics.');
+        return;
+    }
     if (!confirm('Recalculer tous les pronostics avec les derniers résultats réels ?')) {
         return;
     }
