@@ -129,14 +129,14 @@ function navigatePredictionMatchDay(direction) {
 // AFFICHAGE DES PRONOSTICS
 // ===============================
 
-function displayPredictions() {
+async function displayPredictions() {
     const container = document.getElementById('predictionsContent');
     const title = document.getElementById('predictionsTitle');
     
     if (!container) return;
     
     if (currentPredictionMatchDay === null) {
-        initPredictions();
+        await initPredictions();
     }
     
     if (title) {
