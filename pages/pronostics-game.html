@@ -15,6 +15,7 @@
         <link rel="stylesheet" href="../css/pronostics-grid.css">
         <link rel="stylesheet" href="../css/pronostics-analysis.css">
         <link rel="stylesheet" href="../css/pronostics-gamification.css">
+        <link rel="stylesheet" href="../css/pronostics-chat.css">
 
     </head>
     <body>
@@ -112,6 +113,7 @@
                         <button class="game-tab" data-tab="duels">⚔️ Duels</button>
                         <button class="game-tab" data-tab="heatmap">🔥 Heatmap</button>
                         <button class="game-tab" data-tab="profile">🎭 Profil</button>
+                        <button class="game-tab" data-tab="chat">💬 Discussions</button>
                     </div>
 
                     <!-- Onglet Pronostics -->
@@ -277,6 +279,10 @@
                             </div>
                         </div>
                     </div>
+                    <!-- Onglet Chat -->
+                    <div id="chatTab" class="game-tab-content">
+                        <!-- Généré dynamiquement par pronostics-chat.js -->
+                    </div>
                 </section>
             </div>
         </main>
@@ -299,6 +305,7 @@
         <script src="../js/elo.js"></script>
         <script src="../js/elo-system.js"></script>
         <script src="../js/pronostics-game.js"></script>
+        <script src="../js/pronostics-chat.js"></script>
         <script src="../js/pronostics-stats.js"></script>
         <script src="../js/pronostics-ia.js"></script>
         <script src="../js/pronostics-badges.js"></script>

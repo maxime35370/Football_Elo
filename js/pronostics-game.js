@@ -385,6 +385,7 @@ function initGameEvents() {
             else if (tab.dataset.tab === 'duels') renderDuelsTab();
             else if (tab.dataset.tab === 'heatmap') renderHeatmapTab();
             else if (tab.dataset.tab === 'profile') renderProfileTab();
+            else if (tab.dataset.tab === 'chat') initChatTab();
         });
     });
     
