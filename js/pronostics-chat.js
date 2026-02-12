@@ -326,7 +326,6 @@ function renderSingleMessage(msg, replies = []) {
     return `
         <div class="chat-message ${isOwnMessage ? 'own-message' : ''}" id="msg-${msg.id}">
             <div class="chat-message-header">
-                <span class="chat-message-avatar">${msg.avatar || '👤'}</span>
                 <span class="chat-message-author">${msg.username}</span>
                 <span class="chat-message-time">${timeStr}</span>
                 <div class="chat-message-actions">
@@ -357,7 +356,6 @@ function renderReplyMessage(msg) {
     return `
         <div class="chat-reply-message ${isOwnMessage ? 'own-message' : ''}" id="msg-${msg.id}">
             <div class="chat-message-header">
-                <span class="chat-message-avatar small">${msg.avatar || '👤'}</span>
                 <span class="chat-message-author">${msg.username}</span>
                 <span class="chat-message-time">${timeStr}</span>
                 ${isOwnMessage ? `<button class="chat-action-btn chat-delete-btn" onclick="deleteChatMessage('${msg.id}')" title="Supprimer">🗑️</button>` : ''}
@@ -393,7 +391,6 @@ async function sendChatMessage() {
             channelId: chatCurrentChannel,
             playerId: currentPlayer.id,
             username: currentPlayer.pseudo,
-            avatar: currentPlayer.avatar || '👤',
             text: text,
             timestamp: firebase.firestore.FieldValue.serverTimestamp(),
             reactions: {},
