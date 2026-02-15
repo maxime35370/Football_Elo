@@ -326,6 +326,24 @@
                     </div>
                 </section>
 
+                <section class="stat-section">
+                    <h3>😵 Vulnérabilité post-but</h3>
+                    <p style="color: #7f8c8d; margin-bottom: 1rem;">
+                        Analyse : combien de fois une équipe encaisse dans les minutes suivant un but marqué
+                    </p>
+                    <div class="time-analysis-controls">
+                        <div class="control-group">
+                            <label for="vulnerabilityWindow">Fenêtre :</label>
+                            <select id="vulnerabilityWindow">
+                                <option value="2">2 minutes</option>
+                                <option value="3" selected>3 minutes</option>
+                                <option value="5">5 minutes</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="vulnerabilityContainer"></div>
+                </section>
+
                 <!-- Minutes exactes des buts -->
                 <section class="stat-section">
                     <h3>📋 Détail minute par minute</h3>

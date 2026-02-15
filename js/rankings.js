@@ -3,7 +3,7 @@
 let currentMatchDay = null;
 let selectedSeason = null; // ← AJOUTER CETTE LIGNE
 let teamsWithElo = [];
-let halftimeMode = false;
+let rankingMode = 'all';
 let fromMatchDay = null;
 let locationFilter = 'all'; // 'all', 'home', 'away'
 let rankingEvolutionChart = null;
@@ -23,8 +23,8 @@ document.addEventListener('DOMContentLoaded', function() {
         displayComparison();
     }
     // Mode mi-temps
-    document.getElementById('halftimeMode').addEventListener('change', function() {
-        halftimeMode = this.checked;
+    document.getElementById('rankingPeriod').addEventListener('change', function() {
+        rankingMode = this.value;
         displayRanking();
         updateChampionshipStats();
     });
@@ -219,7 +219,7 @@ function updateMatchDayInfo() {
 // Afficher le classement
 function displayRanking() {
     const season = selectedSeason || getCurrentSeason();
-    const ranking = generateRanking(currentMatchDay, season, fromMatchDay, halftimeMode, locationFilter);
+    const ranking = generateRanking(currentMatchDay, season, fromMatchDay, rankingMode, locationFilter);
     
     const tableBody = document.querySelector('#traditionalRanking tbody');
     const noMatchesMessage = document.getElementById('noMatchesMessage');
@@ -233,7 +233,13 @@ function displayRanking() {
     // Mettre à jour le titre selon le filtre
     const titleElement = document.getElementById('rankingTitle');
     if (titleElement) {
-        let titleText = halftimeMode ? '⏱️ Classement à la mi-temps' : '📊 Classement traditionnel';
+        let titleText;
+        switch (rankingMode) {
+            case 'firstHalf': titleText = '⏱️ Classement 1ère mi-temps'; break;
+            case 'secondHalf': titleText = '⏱️ Classement 2ème mi-temps'; break;
+            case 'noExtraTime': titleText = '⏱️ Classement sans temps additionnel'; break;
+            default: titleText = '📊 Classement traditionnel'; break;
+        }
         if (locationFilter === 'home') {
             titleText += ' (Domicile)';
         } else if (locationFilter === 'away') {
@@ -243,9 +249,12 @@ function displayRanking() {
     }
 
     if (sectionTitle) {
-        sectionTitle.innerHTML = halftimeMode 
-            ? '⏱️ Classement à la mi-temps (45\')' 
-            : '📊 Classement traditionnel (points)';
+        switch (rankingMode) {
+            case 'firstHalf': sectionTitle.innerHTML = '⏱️ Classement 1ère mi-temps (45\')'; break;
+            case 'secondHalf': sectionTitle.innerHTML = '⏱️ Classement 2ème mi-temps (46\'-90\')'; break;
+            case 'noExtraTime': sectionTitle.innerHTML = '⏱️ Classement sans temps additionnel'; break;
+            default: sectionTitle.innerHTML = '📊 Classement traditionnel (points)'; break;
+        }
     }
 
     // Vérifier s'il y a des matchs - UTILISER filteredRanking
@@ -390,7 +399,7 @@ function refreshRankings() {
 // Obtenir toutes les équipes qui ont joué au moins un match
 function getAllTeamsWithMatches() {
     const season = selectedSeason || getCurrentSeason();
-    const teamRanking = generateRanking(currentMatchDay, season, fromMatchDay, halftimeMode, locationFilter);
+    const teamRanking = generateRanking(currentMatchDay, season, fromMatchDay, rankingMode, locationFilter);
     return teamRanking.filter(team => team.played > 0);
 }
 
@@ -514,7 +523,7 @@ function displayComparison() {
     if (!tableBody) return;
     
     const season = selectedSeason || getCurrentSeason();
-    const traditionalRanking = generateRanking(currentMatchDay, season, fromMatchDay, halftimeMode, locationFilter);
+    const traditionalRanking = generateRanking(currentMatchDay, season, fromMatchDay, rankingMode, locationFilter);
     
     // Filtrer pour la saison
     const seasonTeams = getTeamsBySeason(season);

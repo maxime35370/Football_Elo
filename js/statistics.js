@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Après le chargement des données
     displayConfrontations();
     initConfrontationsListeners();
+    initVulnerabilityAnalysis();
 });
 
 // === GESTION DES SAISONS ===
@@ -2439,4 +2440,243 @@ function initConfrontationsListeners() {
         confrontationFilter.replaceWith(confrontationFilter.cloneNode(true));
         document.getElementById('confrontationFilter').addEventListener('change', displayConfrontations);
     }
+}
+
+/**
+ * Analyse la vulnérabilité post-but : combien de fois une équipe encaisse
+ * dans les X minutes après avoir marqué
+ * @param {number} windowMinutes - Fenêtre en minutes (par défaut 3)
+ * @returns {Array} Stats par équipe triées par vulnérabilité
+ */
+function analyzePostGoalVulnerability(windowMinutes = 3, season) {
+    season = season || getCurrentSeason();
+    const matches = getStoredMatches().filter(m => m.season === season);
+    const allTeamsList = getTeamsBySeason(season);
+    
+    // Structure par équipe
+    const teamStats = {};
+    allTeamsList.forEach(team => {
+        teamStats[team.id] = {
+            teamId: team.id,
+            name: team.name,
+            shortName: team.shortName,
+            goalsScored: 0,          // Total buts marqués
+            timesConcededAfter: 0,    // Fois où on encaisse dans la fenêtre après avoir marqué
+            timesScored: 0,           // Fois où on marque (= occasions d'être vulnérable)
+            concededDetails: [],      // Détails des buts encaissés après avoir marqué
+            // Inverse : combien de fois on marque juste après avoir encaissé
+            timesRespondedAfter: 0,   // Fois où on répond dans la fenêtre après avoir encaissé
+            respondedDetails: [],     // Détails des réponses après avoir encaissé
+            timesConceded: 0          // Fois où on encaisse (= occasions de répondre)
+        };
+    });
+    
+    matches.forEach(match => {
+        if (!match.goals || match.goals.length < 2) return; // Au moins 2 buts pour analyser
+        
+        // Trier les buts par minute réelle
+        const sortedGoals = [...match.goals].sort((a, b) => {
+            const minuteA = parseInt(a.minute) + (parseInt(a.extraTime) || 0) / 100;
+            const minuteB = parseInt(b.minute) + (parseInt(b.extraTime) || 0) / 100;
+            return minuteA - minuteB;
+        });
+        
+        // Pour chaque but, vérifier si l'équipe adverse marque dans les X minutes suivantes
+        for (let i = 0; i < sortedGoals.length; i++) {
+            const scoringGoal = sortedGoals[i];
+            const scoringTeamId = scoringGoal.teamId;
+            const scoringMinute = parseInt(scoringGoal.minute) + (parseInt(scoringGoal.extraTime) || 0) / 100;
+            
+            // L'équipe qui a marqué
+            const opponentTeamId = scoringTeamId == match.homeTeamId ? match.awayTeamId : match.homeTeamId;
+            
+            if (!teamStats[scoringTeamId]) continue;
+            
+            teamStats[scoringTeamId].timesScored++;
+            teamStats[opponentTeamId].timesConceded++;
+            
+            // Vérifier les buts suivants dans la fenêtre
+            for (let j = i + 1; j < sortedGoals.length; j++) {
+                const nextGoal = sortedGoals[j];
+                const nextMinute = parseInt(nextGoal.minute) + (parseInt(nextGoal.extraTime) || 0) / 100;
+                const timeDiff = nextMinute - scoringMinute;
+                
+                if (timeDiff > windowMinutes) break; // Plus dans la fenêtre
+                
+                // But de l'adversaire dans la fenêtre → vulnérabilité
+                if (nextGoal.teamId != scoringTeamId) {
+                    teamStats[scoringTeamId].timesConcededAfter++;
+                    teamStats[scoringTeamId].concededDetails.push({
+                        matchDay: match.matchDay,
+                        opponent: opponentTeamId,
+                        goalMinute: parseInt(scoringGoal.minute),
+                        concededMinute: parseInt(nextGoal.minute),
+                        timeDiff: Math.round(timeDiff * 100) / 100
+                    });
+                    break; // Compter qu'une seule fois par but marqué
+                }
+                
+                // But de la même équipe dans la fenêtre après avoir encaissé
+                if (nextGoal.teamId == scoringTeamId) {
+                    // C'est plutôt "l'adversaire a encaissé puis s'est fait marquer dessus"
+                    // On track l'inverse aussi
+                }
+            }
+            
+            // Vérifier si l'adversaire "répond" : l'adversaire a encaissé, puis marque dans la fenêtre
+            // (c'est le même calcul vu du côté adverse)
+            for (let j = i + 1; j < sortedGoals.length; j++) {
+                const nextGoal = sortedGoals[j];
+                const nextMinute = parseInt(nextGoal.minute) + (parseInt(nextGoal.extraTime) || 0) / 100;
+                const timeDiff = nextMinute - scoringMinute;
+                
+                if (timeDiff > windowMinutes) break;
+                
+                if (nextGoal.teamId == opponentTeamId) {
+                    teamStats[opponentTeamId].timesRespondedAfter++;
+                    teamStats[opponentTeamId].respondedDetails.push({
+                        matchDay: match.matchDay,
+                        opponent: scoringTeamId,
+                        concededMinute: parseInt(scoringGoal.minute),
+                        respondedMinute: parseInt(nextGoal.minute),
+                        timeDiff: Math.round(timeDiff * 100) / 100
+                    });
+                    break;
+                }
+            }
+        }
+    });
+    
+    // Calculer les pourcentages et trier
+    const results = Object.values(teamStats).map(team => {
+        const vulnerabilityPct = team.timesScored > 0 
+            ? Math.round((team.timesConcededAfter / team.timesScored) * 1000) / 10 
+            : 0;
+        const responsePct = team.timesConceded > 0 
+            ? Math.round((team.timesRespondedAfter / team.timesConceded) * 1000) / 10 
+            : 0;
+            
+        return {
+            ...team,
+            vulnerabilityPct,  // % de fois où on encaisse après avoir marqué
+            responsePct        // % de fois où on marque après avoir encaissé
+        };
+    });
+    
+    return results;
+}
+
+function initVulnerabilityAnalysis() {
+    const select = document.getElementById('vulnerabilityWindow');
+    if (!select) return;
+    
+    select.addEventListener('change', () => displayVulnerability());
+    displayVulnerability();
+}
+
+function displayVulnerability() {
+    const container = document.getElementById('vulnerabilityContainer');
+    if (!container) return;
+    
+    const windowMinutes = parseInt(document.getElementById('vulnerabilityWindow')?.value || 3);
+    const results = analyzePostGoalVulnerability(windowMinutes);
+    
+    if (!results || results.length === 0) {
+        container.innerHTML = '<p style="text-align:center;color:#95a5a6;">Pas assez de données</p>';
+        return;
+    }
+    
+    // Trier par vulnérabilité décroissante
+    const sortedByVuln = [...results]
+        .filter(t => t.timesScored >= 3) // Au moins 3 buts marqués pour être significatif
+        .sort((a, b) => b.vulnerabilityPct - a.vulnerabilityPct);
+    
+    let html = `
+        <table class="stats-table" style="width:100%; border-collapse:collapse;">
+            <thead>
+                <tr style="background: linear-gradient(135deg, #2c3e50, #34495e); color: white;">
+                    <th style="padding: 0.75rem 0.5rem;">Équipe</th>
+                    <th style="padding: 0.75rem 0.5rem;" title="Buts marqués">⚽ Marqués</th>
+                    <th style="padding: 0.75rem 0.5rem;" title="Fois encaissé dans les ${windowMinutes} min après avoir marqué">😵 Encaissé après</th>
+                    <th style="padding: 0.75rem 0.5rem;" title="% vulnérabilité">% Vulnérable</th>
+                    <th style="padding: 0.75rem 0.5rem;" title="Buts encaissés total">🛡️ Encaissés</th>
+                    <th style="padding: 0.75rem 0.5rem;" title="Fois répondu dans les ${windowMinutes} min après avoir encaissé">💪 Répondu après</th>
+                    <th style="padding: 0.75rem 0.5rem;" title="% réponse">% Réponse</th>
+                    <th style="padding: 0.75rem 0.5rem;">Bilan</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    sortedByVuln.forEach(team => {
+        const vulnColor = team.vulnerabilityPct >= 15 ? '#e74c3c' 
+                        : team.vulnerabilityPct >= 10 ? '#f39c12' 
+                        : '#27ae60';
+        const respColor = team.responsePct >= 15 ? '#27ae60' 
+                        : team.responsePct >= 10 ? '#f39c12' 
+                        : '#e74c3c';
+        
+        // Barre visuelle de vulnérabilité
+        const vulnBar = `<div style="display:flex;align-items:center;gap:0.5rem;">
+            <div style="flex:1;height:8px;background:#ecf0f1;border-radius:4px;overflow:hidden;">
+                <div style="width:${Math.min(team.vulnerabilityPct * 2, 100)}%;height:100%;background:${vulnColor};border-radius:4px;"></div>
+            </div>
+            <span style="font-weight:bold;color:${vulnColor};">${team.vulnerabilityPct}%</span>
+        </div>`;
+        
+        const respBar = `<div style="display:flex;align-items:center;gap:0.5rem;">
+            <div style="flex:1;height:8px;background:#ecf0f1;border-radius:4px;overflow:hidden;">
+                <div style="width:${Math.min(team.responsePct * 2, 100)}%;height:100%;background:${respColor};border-radius:4px;"></div>
+            </div>
+            <span style="font-weight:bold;color:${respColor};">${team.responsePct}%</span>
+        </div>`;
+        
+        // Bilan : lucide ou relâchement ?
+        let bilan = '';
+        if (team.vulnerabilityPct >= 15) {
+            bilan = '<span style="color:#e74c3c;">😴 Relâchement</span>';
+        } else if (team.vulnerabilityPct >= 10) {
+            bilan = '<span style="color:#f39c12;">⚠️ Attention</span>';
+        } else {
+            bilan = '<span style="color:#27ae60;">🧠 Lucide</span>';
+        }
+        
+        html += `
+            <tr>
+                <td style="padding:0.6rem 0.5rem;font-weight:600;">${team.shortName || team.name}</td>
+                <td style="padding:0.6rem 0.5rem;text-align:center;">${team.timesScored}</td>
+                <td style="padding:0.6rem 0.5rem;text-align:center;font-weight:bold;color:${vulnColor};cursor:help;" 
+                    title="${team.concededDetails.map(d => {
+                        const opp = allTeams.find(t => t.id == d.opponent);
+                        return 'J' + d.matchDay + ' vs ' + (opp ? opp.shortName : '?') + ' (but à ' + d.goalMinute + '\\\' → encaissé à ' + d.concededMinute + '\\\')';
+                    }).join('\n')}">
+                    ${team.timesConcededAfter}
+                </td>
+                <td style="padding:0.6rem 0.5rem;">${vulnBar}</td>
+                <td style="padding:0.6rem 0.5rem;text-align:center;">${team.timesConceded}</td>
+                <td style="padding:0.6rem 0.5rem;text-align:center;font-weight:bold;color:${respColor};cursor:help;" 
+                    title="${team.respondedDetails.map(d => {
+                        const opp = allTeams.find(t => t.id == d.opponent);
+                        return 'J' + d.matchDay + ' vs ' + (opp ? opp.shortName : '?') + ' (encaissé à ' + d.concededMinute + '\\\' → répondu à ' + d.respondedMinute + '\\\')';
+                    }).join('\n')}">
+                    ${team.timesRespondedAfter}
+                </td>
+                <td style="padding:0.6rem 0.5rem;">${respBar}</td>
+                <td style="padding:0.6rem 0.5rem;text-align:center;">${bilan}</td>
+            </tr>
+        `;
+    });
+    
+    html += '</tbody></table>';
+    
+    // Ajouter une légende
+    html += `
+        <div style="margin-top:1rem;padding:1rem;background:#f8f9fa;border-radius:8px;font-size:0.85rem;color:#7f8c8d;">
+            <strong>📖 Lecture :</strong> 
+            <strong style="color:#e74c3c;">😵 Vulnérabilité</strong> = % de fois où l'équipe encaisse dans les ${windowMinutes} min après avoir marqué (relâchement).
+            <strong style="color:#27ae60;">💪 Réponse</strong> = % de fois où l'équipe marque dans les ${windowMinutes} min après avoir encaissé (réaction).
+        </div>
+    `;
+    
+    container.innerHTML = html;
 }

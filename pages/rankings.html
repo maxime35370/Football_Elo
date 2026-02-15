@@ -36,10 +36,13 @@
                 <div class="rankings-header">
                     <h2>🏆 Classement du championnat</h2>
                     <div class="ranking-mode-selector" style="margin-bottom: 1rem; text-align: center;">
-                        <label style="cursor: pointer; padding: 0.5rem 1rem; background: #f8f9fa; border-radius: 8px;">
-                            <input type="checkbox" id="halftimeMode" style="margin-right: 0.5rem;"> 
-                            ⏱️ Classement à la mi-temps (score à la 45')
-                        </label>
+                        <label for="rankingPeriod" style="font-weight: 600; color: #2c3e50; margin-right: 0.5rem;">⏱️ Période :</label>
+                        <select id="rankingPeriod" style="padding: 0.5rem 1rem; border: 2px solid #e9ecef; border-radius: 8px; font-size: 0.95rem; font-weight: 600;">
+                            <option value="all">📊 Match complet</option>
+                            <option value="firstHalf">1️⃣ 1ère mi-temps (1'-45'+)</option>
+                            <option value="secondHalf">2️⃣ 2ème mi-temps (46'-90'+)</option>
+                            <option value="noExtraTime">⏱️ Sans temps additionnel</option>
+                        </select>
                     </div>
 
                     <div class="matchday-selector">
