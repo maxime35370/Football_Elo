@@ -328,12 +328,17 @@ async function enhanceMatchCardsWithConsensus() {
             card.insertAdjacentHTML('beforeend', enhancementHtml);
         }
     }
+    if (!showIASuggestions) {
+        document.querySelectorAll('.ia-suggestion').forEach(s => {
+            s.style.display = 'none';
+        });
+    }
 }
 
 /**
  * Toggle pour afficher/masquer les suggestions IA
  */
-let showIASuggestions = true;
+let showIASuggestions = false;
 
 function toggleIASuggestions() {
     showIASuggestions = !showIASuggestions;
