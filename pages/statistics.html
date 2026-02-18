@@ -205,6 +205,47 @@
                         </div>
                     </div>
                 </section>
+                <section class="stat-section">
+                    <h3>😱 Retournements de situation</h3>
+                    <p style="color: #7f8c8d; margin-bottom: 1rem;">
+                        Matchs où une équipe menait au score puis a perdu ou fait nul, et inversement
+                    </p>
+                    <div id="retournementsContainer">
+                        <!-- Généré dynamiquement -->
+                    </div>
+                </section>
+
+                <!-- Équipes clutch -->
+                <section class="stat-section">
+                    <h3>⏰ Équipes Clutch</h3>
+                    <p style="color: #7f8c8d; margin-bottom: 1rem;">
+                        Buts marqués et encaissés en fin de match, et leur impact sur le classement
+                    </p>
+                    <div class="time-analysis-controls">
+                        <div class="control-group">
+                            <label for="clutchWindow">Période :</label>
+                            <select id="clutchWindow">
+                                <option value="85">5 dernières min (85'+)</option>
+                                <option value="80" selected>10 dernières min (80'+)</option>
+                                <option value="75">15 dernières min (75'+)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="clutchContainer">
+                        <!-- Généré dynamiquement -->
+                    </div>
+                </section>
+
+                <!-- Écart Elo vs Points -->
+                <section class="stat-section">
+                    <h3>⚡ Écart Elo vs Points</h3>
+                    <p style="color: #7f8c8d; margin-bottom: 1rem;">
+                        Comparaison entre le classement traditionnel (points) et le classement Elo — qui est surcoté ou sous-coté ?
+                    </p>
+                    <div id="eloVsPointsContainer">
+                        <!-- Généré dynamiquement -->
+                    </div>
+                </section>
 
                 <section class="stat-section">
                     <h3>🎯 Distribution des scores</h3>
@@ -218,6 +259,8 @@
                         <!-- Généré dynamiquement -->
                     </div>
                 </section>
+
+
                 <!-- Carte des confrontations -->
                 <section class="stat-section">
                     <h3>🕸️ Carte des Confrontations</h3>
@@ -252,6 +295,17 @@
             </div>
 
             <div id="teamStatsWrapper" style="display: none;">
+
+                <!-- Radar de l'équipe -->
+                <section class="stat-section">
+                    <h3>🕸️ Profil de <span class="selected-team-name-radar"></span></h3>
+                    <p style="color: #7f8c8d; margin-bottom: 1rem;">
+                        Analyse multi-dimensionnelle normalisée par rapport à toutes les équipes de la saison
+                    </p>
+                    <div id="radarContainer">
+                        <!-- Généré dynamiquement -->
+                    </div>
+                </section>
 
                 <!-- Carte des résultats de l'équipe -->
                 <section class="stat-section">
@@ -428,8 +482,9 @@
     <script src="../js/seasons.js"></script>
     <script src="../js/teams-loader.js"></script>
     <script src="../js/storage.js"></script>
-    <script src="../js/statistics.js"></script>
     <script src="../js/elo-system.js"></script>
+    <script src="../js/statistics.js"></script>
+    
     <script>
     function toggleMenu() {
         document.querySelector('.nav-container').classList.toggle('open');

@@ -124,6 +124,7 @@ async function loadSeasonData() {
     updateTimeAnalysis();
     updateGeneralStats();
     toggleStatsView();
+    initNewStats();
 }
 
 function showEmptyState() {
@@ -315,6 +316,7 @@ function toggleStatsView() {
         // Afficher stats équipe
         generalWrapper.style.display = 'none';
         teamWrapper.style.display = 'block';
+        displayTeamRadar(selectedTeamId);
         updateTeamScorers();
         updateTimeAnalysis();
         updateScoreDistributionTeam(selectedTeamId);
@@ -2679,4 +2681,870 @@ function displayVulnerability() {
     `;
     
     container.innerHTML = html;
+}
+
+// ===============================
+// 1. RETOURNEMENTS DE SITUATION
+// ===============================
+
+function analyzeRetournements() {
+    const teamStats = {};
+    
+    allTeams.forEach(team => {
+        teamStats[team.id] = {
+            teamId: team.id,
+            name: team.name,
+            shortName: team.shortName,
+            // Menait puis a perdu
+            leadThenLost: 0,
+            leadThenLostDetails: [],
+            // Menait puis nul
+            leadThenDraw: 0,
+            leadThenDrawDetails: [],
+            // Était mené puis a gagné (remontada)
+            trailingThenWon: 0,
+            trailingThenWonDetails: [],
+            // Était mené puis nul
+            trailingThenDraw: 0,
+            trailingThenDrawDetails: [],
+            // Total matchs
+            totalMatches: 0
+        };
+    });
+    
+    allMatches.forEach(match => {
+        if (!match.goals || match.goals.length === 0) return;
+        
+        const homeId = match.homeTeamId;
+        const awayId = match.awayTeamId;
+        
+        if (!teamStats[homeId] || !teamStats[awayId]) return;
+        
+        teamStats[homeId].totalMatches++;
+        teamStats[awayId].totalMatches++;
+        
+        // Trier les buts chronologiquement
+        const sortedGoals = [...match.goals].sort((a, b) => {
+            const minA = parseInt(a.minute) + (parseInt(a.extraTime) || 0) / 100;
+            const minB = parseInt(b.minute) + (parseInt(b.extraTime) || 0) / 100;
+            return minA - minB;
+        });
+        
+        // Simuler le score au fil du match
+        let homeScore = 0, awayScore = 0;
+        let homeEverLed = false, awayEverLed = false;
+        
+        sortedGoals.forEach(goal => {
+            if (goal.teamId == homeId) homeScore++;
+            else awayScore++;
+            
+            if (homeScore > awayScore) homeEverLed = true;
+            if (awayScore > homeScore) awayEverLed = true;
+        });
+        
+        const finalHome = match.finalScore.home;
+        const finalAway = match.finalScore.away;
+        const homeTeam = allTeams.find(t => t.id == homeId);
+        const awayTeam = allTeams.find(t => t.id == awayId);
+        
+        const matchInfo = {
+            matchDay: match.matchDay,
+            home: homeTeam?.shortName || '?',
+            away: awayTeam?.shortName || '?',
+            score: `${finalHome}-${finalAway}`
+        };
+        
+        // Dom a mené puis perdu
+        if (homeEverLed && finalHome < finalAway) {
+            teamStats[homeId].leadThenLost++;
+            teamStats[homeId].leadThenLostDetails.push(matchInfo);
+            teamStats[awayId].trailingThenWon++;
+            teamStats[awayId].trailingThenWonDetails.push(matchInfo);
+        }
+        // Dom a mené puis nul
+        if (homeEverLed && finalHome === finalAway) {
+            teamStats[homeId].leadThenDraw++;
+            teamStats[homeId].leadThenDrawDetails.push(matchInfo);
+            teamStats[awayId].trailingThenDraw++;
+            teamStats[awayId].trailingThenDrawDetails.push(matchInfo);
+        }
+        // Ext a mené puis perdu
+        if (awayEverLed && finalAway < finalHome) {
+            teamStats[awayId].leadThenLost++;
+            teamStats[awayId].leadThenLostDetails.push(matchInfo);
+            teamStats[homeId].trailingThenWon++;
+            teamStats[homeId].trailingThenWonDetails.push(matchInfo);
+        }
+        // Ext a mené puis nul
+        if (awayEverLed && finalAway === finalHome) {
+            teamStats[awayId].leadThenDraw++;
+            teamStats[awayId].leadThenDrawDetails.push(matchInfo);
+            teamStats[homeId].trailingThenDraw++;
+            teamStats[homeId].trailingThenDrawDetails.push(matchInfo);
+        }
+    });
+    
+    return Object.values(teamStats);
+}
+
+function displayRetournements() {
+    const container = document.getElementById('retournementsContainer');
+    if (!container) return;
+    
+    const results = analyzeRetournements();
+    
+    // Trier par total de retournements subis (leadThenLost + leadThenDraw)
+    const sorted = results
+        .filter(t => t.totalMatches > 0)
+        .sort((a, b) => (b.leadThenLost + b.leadThenDraw + b.trailingThenWon + b.trailingThenDraw) 
+                      - (a.leadThenLost + a.leadThenDraw + a.trailingThenWon + a.trailingThenDraw));
+    
+    if (sorted.length === 0) {
+        container.innerHTML = '<p style="text-align:center;color:#95a5a6;">Pas assez de données</p>';
+        return;
+    }
+    
+    let html = `
+        <table class="stats-table" style="width:100%; border-collapse:collapse;">
+            <thead>
+                <tr>
+                    <th>Équipe</th>
+                    <th title="Menait puis a perdu">😱 Menait → Perdu</th>
+                    <th title="Menait puis match nul">😤 Menait → Nul</th>
+                    <th title="Était mené puis a gagné">🔥 Mené → Gagné</th>
+                    <th title="Était mené puis match nul">💪 Mené → Nul</th>
+                    <th>Bilan mental</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    sorted.forEach(team => {
+        const lost = team.leadThenLost;
+        const drawAfterLead = team.leadThenDraw;
+        const remontada = team.trailingThenWon;
+        const drawAfterTrail = team.trailingThenDraw;
+        
+        // Tooltip pour chaque cellule
+        const lostTitle = team.leadThenLostDetails.map(d => `J${d.matchDay}: ${d.home}-${d.away} (${d.score})`).join('\n');
+        const drawLeadTitle = team.leadThenDrawDetails.map(d => `J${d.matchDay}: ${d.home}-${d.away} (${d.score})`).join('\n');
+        const remontadaTitle = team.trailingThenWonDetails.map(d => `J${d.matchDay}: ${d.home}-${d.away} (${d.score})`).join('\n');
+        const drawTrailTitle = team.trailingThenDrawDetails.map(d => `J${d.matchDay}: ${d.home}-${d.away} (${d.score})`).join('\n');
+        
+        // Bilan : remontadas - effondrements
+        const bilanScore = (remontada + drawAfterTrail) - (lost + drawAfterLead);
+        let bilan;
+        if (bilanScore > 1) bilan = '<span style="color:#27ae60;">🦁 Mental d\'acier</span>';
+        else if (bilanScore > 0) bilan = '<span style="color:#27ae60;">💪 Solide</span>';
+        else if (bilanScore === 0) bilan = '<span style="color:#f39c12;">😐 Neutre</span>';
+        else if (bilanScore > -2) bilan = '<span style="color:#e67e22;">😰 Fragile</span>';
+        else bilan = '<span style="color:#e74c3c;">💔 Craque sous pression</span>';
+        
+        html += `
+            <tr>
+                <td style="padding:0.6rem 0.5rem;font-weight:600;">${team.shortName}</td>
+                <td style="padding:0.6rem 0.5rem;text-align:center;cursor:help;${lost > 0 ? 'font-weight:bold;color:#e74c3c;' : 'color:#95a5a6;'}" 
+                    title="${lostTitle || 'Aucun'}">${lost}</td>
+                <td style="padding:0.6rem 0.5rem;text-align:center;cursor:help;${drawAfterLead > 0 ? 'font-weight:bold;color:#e67e22;' : 'color:#95a5a6;'}" 
+                    title="${drawLeadTitle || 'Aucun'}">${drawAfterLead}</td>
+                <td style="padding:0.6rem 0.5rem;text-align:center;cursor:help;${remontada > 0 ? 'font-weight:bold;color:#27ae60;' : 'color:#95a5a6;'}" 
+                    title="${remontadaTitle || 'Aucun'}">${remontada}</td>
+                <td style="padding:0.6rem 0.5rem;text-align:center;cursor:help;${drawAfterTrail > 0 ? 'font-weight:bold;color:#3498db;' : 'color:#95a5a6;'}" 
+                    title="${drawTrailTitle || 'Aucun'}">${drawAfterTrail}</td>
+                <td style="padding:0.6rem 0.5rem;text-align:center;">${bilan}</td>
+            </tr>
+        `;
+    });
+    
+    html += '</tbody></table>';
+    
+    html += `
+        <div style="margin-top:1rem;padding:1rem;background:#f8f9fa;border-radius:8px;font-size:0.85rem;color:#7f8c8d;">
+            <strong>📖 Lecture :</strong> 
+            <strong style="color:#e74c3c;">😱 Menait → Perdu</strong> = l'équipe a mené au score puis a perdu le match.
+            <strong style="color:#27ae60;">🔥 Mené → Gagné</strong> = remontada, l'équipe était menée puis a retourné le match.
+            <em>Survolez les chiffres pour voir les détails.</em>
+        </div>
+    `;
+    
+    container.innerHTML = html;
+}
+
+
+// ===============================
+// 2. ÉQUIPES CLUTCH (10 dernières min)
+// ===============================
+
+function analyzeClutchTeams(windowStart = 80) {
+    const teamStats = {};
+    
+    allTeams.forEach(team => {
+        teamStats[team.id] = {
+            teamId: team.id,
+            name: team.name,
+            shortName: team.shortName,
+            goalsScored: 0,       // Buts marqués après windowStart'
+            goalsConceded: 0,     // Buts encaissés après windowStart'
+            totalGoalsScored: 0,  // Total buts marqués dans la saison
+            totalGoalsConceded: 0,
+            clutchDetails: [],    // Détails des buts clutch
+            concededDetails: [],  // Détails des buts encaissés clutch
+            pointsGained: 0,      // Points gagnés grâce aux buts clutch
+            pointsLost: 0         // Points perdus à cause de buts encaissés clutch
+        };
+    });
+    
+    allMatches.forEach(match => {
+        if (!match.goals || match.goals.length === 0) return;
+        
+        const homeId = match.homeTeamId;
+        const awayId = match.awayTeamId;
+        
+        if (!teamStats[homeId] || !teamStats[awayId]) return;
+        
+        // Total des buts
+        teamStats[homeId].totalGoalsScored += match.finalScore.home;
+        teamStats[homeId].totalGoalsConceded += match.finalScore.away;
+        teamStats[awayId].totalGoalsScored += match.finalScore.away;
+        teamStats[awayId].totalGoalsConceded += match.finalScore.home;
+        
+        // Simuler le score à la minute windowStart
+        let homeAtCutoff = 0, awayAtCutoff = 0;
+        let homeGoalsAfter = 0, awayGoalsAfter = 0;
+        
+        match.goals.forEach(goal => {
+            const minute = parseInt(goal.minute);
+            if (minute < windowStart) {
+                if (goal.teamId == homeId) homeAtCutoff++;
+                else awayAtCutoff++;
+            } else {
+                if (goal.teamId == homeId) homeGoalsAfter++;
+                else awayGoalsAfter++;
+            }
+        });
+        
+        const homeTeam = allTeams.find(t => t.id == homeId);
+        const awayTeam = allTeams.find(t => t.id == awayId);
+        
+        // Buts clutch marqués/encaissés
+        match.goals.forEach(goal => {
+            const minute = parseInt(goal.minute);
+            if (minute >= windowStart) {
+                const extraTime = parseInt(goal.extraTime) || 0;
+                const minuteStr = extraTime > 0 ? `${minute}+${extraTime}` : `${minute}`;
+                
+                if (goal.teamId == homeId) {
+                    teamStats[homeId].goalsScored++;
+                    teamStats[homeId].clutchDetails.push({
+                        matchDay: match.matchDay,
+                        opponent: awayTeam?.shortName || '?',
+                        minute: minuteStr,
+                        scorer: goal.scorer
+                    });
+                    teamStats[awayId].goalsConceded++;
+                    teamStats[awayId].concededDetails.push({
+                        matchDay: match.matchDay,
+                        opponent: homeTeam?.shortName || '?',
+                        minute: minuteStr,
+                        scorer: goal.scorer
+                    });
+                } else {
+                    teamStats[awayId].goalsScored++;
+                    teamStats[awayId].clutchDetails.push({
+                        matchDay: match.matchDay,
+                        opponent: homeTeam?.shortName || '?',
+                        minute: minuteStr,
+                        scorer: goal.scorer
+                    });
+                    teamStats[homeId].goalsConceded++;
+                    teamStats[homeId].concededDetails.push({
+                        matchDay: match.matchDay,
+                        opponent: awayTeam?.shortName || '?',
+                        minute: minuteStr,
+                        scorer: goal.scorer
+                    });
+                }
+            }
+        });
+        
+        // Calculer l'impact sur les points
+        // Score à la minute windowStart vs score final
+        const resultBefore = homeAtCutoff > awayAtCutoff ? 'H' : homeAtCutoff < awayAtCutoff ? 'A' : 'D';
+        const resultAfter = match.finalScore.home > match.finalScore.away ? 'H' : match.finalScore.home < match.finalScore.away ? 'A' : 'D';
+        
+        if (resultBefore !== resultAfter) {
+            // Les points ont changé grâce aux buts clutch
+            const pointsBefore = { H: { home: 3, away: 0 }, A: { home: 0, away: 3 }, D: { home: 1, away: 1 } };
+            const pointsAfter = { H: { home: 3, away: 0 }, A: { home: 0, away: 3 }, D: { home: 1, away: 1 } };
+            
+            const homeDiff = pointsAfter[resultAfter].home - pointsBefore[resultBefore].home;
+            const awayDiff = pointsAfter[resultAfter].away - pointsBefore[resultBefore].away;
+            
+            if (homeDiff > 0) teamStats[homeId].pointsGained += homeDiff;
+            if (homeDiff < 0) teamStats[homeId].pointsLost += Math.abs(homeDiff);
+            if (awayDiff > 0) teamStats[awayId].pointsGained += awayDiff;
+            if (awayDiff < 0) teamStats[awayId].pointsLost += Math.abs(awayDiff);
+        }
+    });
+    
+    return Object.values(teamStats);
+}
+
+function displayClutchTeams() {
+    const container = document.getElementById('clutchContainer');
+    if (!container) return;
+    
+    const windowStart = parseInt(document.getElementById('clutchWindow')?.value || 80);
+    const results = analyzeClutchTeams(windowStart);
+    
+    // Trier par buts clutch marqués
+    const sorted = results
+        .filter(t => t.totalGoalsScored > 0)
+        .sort((a, b) => b.goalsScored - a.goalsScored);
+    
+    if (sorted.length === 0) {
+        container.innerHTML = '<p style="text-align:center;color:#95a5a6;">Pas assez de données</p>';
+        return;
+    }
+    
+    let html = `
+        <table class="stats-table" style="width:100%; border-collapse:collapse;">
+            <thead>
+                <tr>
+                    <th>Équipe</th>
+                    <th title="Buts marqués après la ${windowStart}e minute">⚽ Buts marqués (${windowStart}'+)</th>
+                    <th title="% des buts totaux marqués après ${windowStart}'">% du total</th>
+                    <th title="Buts encaissés après la ${windowStart}e minute">🛡️ Buts encaissés (${windowStart}'+)</th>
+                    <th title="Points gagnés grâce aux buts tardifs">📈 Pts gagnés</th>
+                    <th title="Points perdus à cause de buts tardifs encaissés">📉 Pts perdus</th>
+                    <th>Profil</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    sorted.forEach(team => {
+        const pctScored = team.totalGoalsScored > 0 
+            ? Math.round((team.goalsScored / team.totalGoalsScored) * 100) 
+            : 0;
+        
+        // Tooltip détails
+        const scoredTitle = team.clutchDetails.map(d => 
+            `J${d.matchDay} vs ${d.opponent}: ${d.scorer} (${d.minute}')`
+        ).join('\n');
+        
+        const concededTitle = team.concededDetails.map(d => 
+            `J${d.matchDay} vs ${d.opponent}: ${d.scorer} (${d.minute}')`
+        ).join('\n');
+        
+        // Profil
+        let profil;
+        if (team.goalsScored >= 5 && team.pointsGained >= 3) {
+            profil = '<span style="color:#27ae60;">⏰ Clutch player</span>';
+        } else if (team.goalsConceded >= 5 && team.pointsLost >= 3) {
+            profil = '<span style="color:#e74c3c;">😴 S\'endort en fin de match</span>';
+        } else if (team.goalsScored > team.goalsConceded) {
+            profil = '<span style="color:#3498db;">💪 Finisseur</span>';
+        } else if (team.goalsConceded > team.goalsScored) {
+            profil = '<span style="color:#e67e22;">⚠️ Vulnérable</span>';
+        } else {
+            profil = '<span style="color:#95a5a6;">😐 Neutre</span>';
+        }
+        
+        // Barre visuelle
+        const barWidth = Math.min(pctScored * 2.5, 100);
+        const barColor = pctScored >= 20 ? '#27ae60' : pctScored >= 12 ? '#f39c12' : '#e74c3c';
+        
+        html += `
+            <tr>
+                <td style="padding:0.6rem 0.5rem;font-weight:600;">${team.shortName}</td>
+                <td style="padding:0.6rem 0.5rem;text-align:center;font-weight:bold;color:#27ae60;cursor:help;" 
+                    title="${scoredTitle || 'Aucun'}">${team.goalsScored}</td>
+                <td style="padding:0.6rem 0.5rem;">
+                    <div style="display:flex;align-items:center;gap:0.5rem;">
+                        <div style="flex:1;height:8px;background:#ecf0f1;border-radius:4px;overflow:hidden;">
+                            <div style="width:${barWidth}%;height:100%;background:${barColor};border-radius:4px;"></div>
+                        </div>
+                        <span style="font-weight:bold;font-size:0.85rem;">${pctScored}%</span>
+                    </div>
+                </td>
+                <td style="padding:0.6rem 0.5rem;text-align:center;font-weight:bold;color:#e74c3c;cursor:help;" 
+                    title="${concededTitle || 'Aucun'}">${team.goalsConceded}</td>
+                <td style="padding:0.6rem 0.5rem;text-align:center;font-weight:bold;color:#27ae60;">${team.pointsGained > 0 ? '+' + team.pointsGained : '0'}</td>
+                <td style="padding:0.6rem 0.5rem;text-align:center;font-weight:bold;color:#e74c3c;">${team.pointsLost > 0 ? '-' + team.pointsLost : '0'}</td>
+                <td style="padding:0.6rem 0.5rem;text-align:center;">${profil}</td>
+            </tr>
+        `;
+    });
+    
+    html += '</tbody></table>';
+    
+    html += `
+        <div style="margin-top:1rem;padding:1rem;background:#f8f9fa;border-radius:8px;font-size:0.85rem;color:#7f8c8d;">
+            <strong>📖 Lecture :</strong> 
+            <strong style="color:#27ae60;">📈 Pts gagnés</strong> = points obtenus grâce aux buts après la ${windowStart}'.
+            <strong style="color:#e74c3c;">📉 Pts perdus</strong> = points perdus à cause de buts encaissés après la ${windowStart}'.
+            <em>Survolez les chiffres pour voir le détail des buts.</em>
+        </div>
+    `;
+    
+    container.innerHTML = html;
+}
+
+
+// ===============================
+// 3. ÉCART ELO vs POINTS
+// ===============================
+
+function analyzeEloVsPoints() {
+    const season = currentSeason || (typeof getCurrentSeason === 'function' ? getCurrentSeason() : '');
+    
+    // Calculer le classement traditionnel directement
+    const teams = typeof getTeamsBySeason === 'function' ? getTeamsBySeason(season) : allTeams;
+    
+    const ranking = teams.map(team => {
+        let played = 0, won = 0, drawn = 0, lost = 0, goalsFor = 0, goalsAgainst = 0;
+        
+        allMatches.forEach(match => {
+            const isHome = match.homeTeamId == team.id;
+            const isAway = match.awayTeamId == team.id;
+            if (!isHome && !isAway) return;
+            
+            played++;
+            const gf = isHome ? match.finalScore.home : match.finalScore.away;
+            const ga = isHome ? match.finalScore.away : match.finalScore.home;
+            goalsFor += gf;
+            goalsAgainst += ga;
+            
+            if (gf > ga) won++;
+            else if (gf === ga) drawn++;
+            else lost++;
+        });
+        
+        return {
+            id: team.id, name: team.name, shortName: team.shortName,
+            played, won, drawn, lost, goalsFor, goalsAgainst,
+            goalDifference: goalsFor - goalsAgainst,
+            points: won * 3 + drawn
+        };
+    }).sort((a, b) => b.points - a.points || b.goalDifference - a.goalDifference || b.goalsFor - a.goalsFor);
+    
+    if (ranking.length === 0) return [];
+    
+    // Calculer l'Elo directement ici (pas dépendre de rankings.js)
+    if (typeof EloSystem === 'undefined') return [];
+    
+    const sortedMatches = [...allMatches].sort((a, b) => (a.matchDay || 0) - (b.matchDay || 0));
+    
+    const localTeamsWithElo = EloSystem.initializeTeamsElo(teams);
+    sortedMatches.forEach(match => {
+        EloSystem.processMatch(match, localTeamsWithElo);
+    });
+    
+    const eloRanking = EloSystem.generateEloRanking(localTeamsWithElo);
+    
+    if (eloRanking.length === 0) return [];
+    
+    // Construire la comparaison
+    const results = ranking.map((team, index) => {
+        const traditionalRank = index + 1;
+        
+        // Trouver le rang Elo
+        const eloTeam = eloRanking.find(e => e.id === team.id);
+        const eloIndex = eloRanking.findIndex(e => e.id === team.id);
+        const eloRank = eloIndex >= 0 ? eloIndex + 1 : null;
+        const eloRating = eloTeam ? (eloTeam.eloRating || 1500) : 1500;
+        
+        const rankDiff = eloRank !== null ? traditionalRank - eloRank : 0;
+        
+        return {
+            teamId: team.id,
+            name: team.name,
+            shortName: team.shortName || team.name,
+            points: team.points,
+            traditionalRank,
+            eloRank,
+            eloRating,
+            rankDiff
+        };
+    });
+    
+    return results;
+}
+
+function displayEloVsPoints() {
+    const container = document.getElementById('eloVsPointsContainer');
+    if (!container) return;
+    
+    const results = analyzeEloVsPoints();
+    
+    if (results.length === 0) {
+        container.innerHTML = '<p style="text-align:center;color:#95a5a6;">Données Elo non disponibles. Vérifiez que le système Elo est activé.</p>';
+        return;
+    }
+    
+    // Trier par écart absolu décroissant
+    const sorted = [...results].sort((a, b) => Math.abs(b.rankDiff) - Math.abs(a.rankDiff));
+    
+    let html = `
+        <table class="stats-table" style="width:100%; border-collapse:collapse;">
+            <thead>
+                <tr>
+                    <th>Équipe</th>
+                    <th title="Position au classement traditionnel (points)">📊 Rang Points</th>
+                    <th>Points</th>
+                    <th title="Position au classement Elo">⚡ Rang Elo</th>
+                    <th>Rating Elo</th>
+                    <th title="Différence entre rang Points et rang Elo">Écart</th>
+                    <th>Verdict</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    sorted.forEach(team => {
+        let ecartHtml, verdict;
+        
+        if (team.rankDiff > 2) {
+            // Bien mieux en Elo qu'en points → sous-coté / malchanceux
+            ecartHtml = `<span style="font-weight:bold;color:#e74c3c;">↓ ${team.rankDiff} places</span>`;
+            verdict = '<span style="color:#e74c3c;">🍀 Malchanceux</span>';
+        } else if (team.rankDiff > 0) {
+            ecartHtml = `<span style="font-weight:bold;color:#e67e22;">↓ ${team.rankDiff}</span>`;
+            verdict = '<span style="color:#e67e22;">😕 Sous-coté</span>';
+        } else if (team.rankDiff < -2) {
+            // Bien mieux en points qu'en Elo → surcoté / chanceux
+            ecartHtml = `<span style="font-weight:bold;color:#27ae60;">↑ ${Math.abs(team.rankDiff)} places</span>`;
+            verdict = '<span style="color:#27ae60;">🎰 Chanceux</span>';
+        } else if (team.rankDiff < 0) {
+            ecartHtml = `<span style="font-weight:bold;color:#3498db;">↑ ${Math.abs(team.rankDiff)}</span>`;
+            verdict = '<span style="color:#3498db;">😎 Surcoté</span>';
+        } else {
+            ecartHtml = '<span style="color:#95a5a6;">= 0</span>';
+            verdict = '<span style="color:#95a5a6;">✅ Juste valeur</span>';
+        }
+        
+        html += `
+            <tr>
+                <td style="padding:0.6rem 0.5rem;font-weight:600;">${team.shortName}</td>
+                <td style="padding:0.6rem 0.5rem;text-align:center;font-weight:bold;">${team.traditionalRank}${team.traditionalRank === 1 ? 'er' : 'e'}</td>
+                <td style="padding:0.6rem 0.5rem;text-align:center;">${team.points} pts</td>
+                <td style="padding:0.6rem 0.5rem;text-align:center;font-weight:bold;">${team.eloRank !== null ? team.eloRank + (team.eloRank === 1 ? 'er' : 'e') : '-'}</td>
+                <td style="padding:0.6rem 0.5rem;text-align:center;">${team.eloRating}</td>
+                <td style="padding:0.6rem 0.5rem;text-align:center;">${ecartHtml}</td>
+                <td style="padding:0.6rem 0.5rem;text-align:center;">${verdict}</td>
+            </tr>
+        `;
+    });
+    
+    html += '</tbody></table>';
+    
+    html += `
+        <div style="margin-top:1rem;padding:1rem;background:#f8f9fa;border-radius:8px;font-size:0.85rem;color:#7f8c8d;">
+            <strong>📖 Lecture :</strong> 
+            <strong style="color:#27ae60;">🎰 Chanceux</strong> = mieux classé en points qu'en Elo (résultats supérieurs au niveau de jeu).
+            <strong style="color:#e74c3c;">🍀 Malchanceux</strong> = mieux classé en Elo qu'en points (niveau de jeu supérieur aux résultats).
+            <strong style="color:#95a5a6;">✅ Juste valeur</strong> = classement cohérent entre points et Elo.
+        </div>
+    `;
+    
+    container.innerHTML = html;
+}
+
+// ===============================
+// INITIALISATION DES 3 STATS
+// ===============================
+
+function initNewStats() {
+    // Retournements
+    displayRetournements();
+    
+    // Clutch
+    const clutchSelect = document.getElementById('clutchWindow');
+    if (clutchSelect) {
+        clutchSelect.addEventListener('change', displayClutchTeams);
+    }
+    displayClutchTeams();
+    
+    // Elo vs Points
+    displayEloVsPoints();
+}
+
+// =====================================================
+// RADAR PAR ÉQUIPE (Spider Chart)
+// Ajouter ce code à la fin de statistics.js
+// =====================================================
+
+let radarChart = null;
+
+function calculateTeamRadarData(teamId) {
+    const teamMatches = allMatches.filter(m => 
+        m.homeTeamId == teamId || m.awayTeamId == teamId
+    ).sort((a, b) => (a.matchDay || 0) - (b.matchDay || 0));
+    
+    if (teamMatches.length === 0) return null;
+    
+    const team = allTeams.find(t => t.id == teamId);
+    
+    // --- Calculer les stats brutes de TOUTES les équipes pour normaliser ---
+    const allTeamStats = allTeams.map(t => {
+        const matches = allMatches.filter(m => m.homeTeamId == t.id || m.awayTeamId == t.id);
+        if (matches.length === 0) return null;
+        
+        let goalsFor = 0, goalsAgainst = 0, points = 0, results = [];
+        let clutchGoals = 0, totalGoals = 0;
+        
+        matches.forEach(match => {
+            const isHome = match.homeTeamId == t.id;
+            const gf = isHome ? match.finalScore.home : match.finalScore.away;
+            const ga = isHome ? match.finalScore.away : match.finalScore.home;
+            goalsFor += gf;
+            goalsAgainst += ga;
+            
+            const pts = gf > ga ? 3 : gf === ga ? 1 : 0;
+            points += pts;
+            results.push(pts);
+            
+            // Clutch : buts après 80'
+            if (match.goals) {
+                match.goals.forEach(goal => {
+                    if (goal.teamId == t.id) {
+                        totalGoals++;
+                        if (parseInt(goal.minute) >= 80) clutchGoals++;
+                    }
+                });
+            }
+        });
+        
+        // Forme : moyenne pondérée des 5 derniers matchs
+        const last5 = results.slice(-5);
+        const formScore = last5.reduce((sum, pts, i) => sum + pts * (i + 1), 0) / 
+                         (last5.length > 0 ? last5.reduce((sum, _, i) => sum + (i + 1), 0) : 1);
+        
+        // Régularité : inverse de l'écart-type des résultats
+        const mean = results.reduce((a, b) => a + b, 0) / results.length;
+        const variance = results.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / results.length;
+        const stdDev = Math.sqrt(variance);
+        
+        return {
+            id: t.id,
+            attack: goalsFor / matches.length,           // Buts marqués/match
+            defense: goalsAgainst / matches.length,       // Buts encaissés/match (inverse pour le radar)
+            form: formScore,                              // 0 à 3
+            consistency: 3 - stdDev,                      // Plus c'est haut, plus c'est régulier
+            clutch: totalGoals > 0 ? (clutchGoals / totalGoals) * 100 : 0, // % buts après 80'
+            points: points
+        };
+    }).filter(s => s !== null);
+    
+    if (allTeamStats.length === 0) return null;
+    
+    // --- Calculer Elo ---
+    let eloRating = 1500;
+    if (typeof EloSystem !== 'undefined') {
+        const teamsElo = EloSystem.initializeTeamsElo(allTeams);
+        const sortedMatches = [...allMatches].sort((a, b) => (a.matchDay || 0) - (b.matchDay || 0));
+        sortedMatches.forEach(m => EloSystem.processMatch(m, teamsElo));
+        const eloTeam = teamsElo.find(t => t.id == teamId);
+        if (eloTeam) eloRating = eloTeam.eloRating;
+    }
+    
+    // --- Normaliser sur 0-100 par rapport à toutes les équipes ---
+    const normalize = (value, allValues, inverse = false) => {
+        const min = Math.min(...allValues);
+        const max = Math.max(...allValues);
+        if (max === min) return 50;
+        const norm = ((value - min) / (max - min)) * 100;
+        return inverse ? 100 - norm : norm;
+    };
+    
+    const currentTeam = allTeamStats.find(s => s.id == teamId);
+    if (!currentTeam) return null;
+    
+    // Elo : normaliser entre min et max Elo de la saison
+    let allEloRatings = [1500];
+    if (typeof EloSystem !== 'undefined') {
+        const teamsElo = EloSystem.initializeTeamsElo(allTeams);
+        const sortedMatches = [...allMatches].sort((a, b) => (a.matchDay || 0) - (b.matchDay || 0));
+        sortedMatches.forEach(m => EloSystem.processMatch(m, teamsElo));
+        allEloRatings = teamsElo.map(t => t.eloRating || 1500);
+    }
+    
+    return {
+        teamName: team?.shortName || '?',
+        labels: ['⚔️ Attaque', '🛡️ Défense', '⚡ Elo', '📈 Forme', '🎯 Régularité', '⏰ Clutch'],
+        values: [
+            Math.round(normalize(currentTeam.attack, allTeamStats.map(s => s.attack))),
+            Math.round(normalize(currentTeam.defense, allTeamStats.map(s => s.defense), true)), // inverse : moins = mieux
+            Math.round(normalize(eloRating, allEloRatings)),
+            Math.round(normalize(currentTeam.form, allTeamStats.map(s => s.form))),
+            Math.round(normalize(currentTeam.consistency, allTeamStats.map(s => s.consistency))),
+            Math.round(normalize(currentTeam.clutch, allTeamStats.map(s => s.clutch)))
+        ],
+        raw: {
+            attack: currentTeam.attack.toFixed(2) + ' buts/match',
+            defense: currentTeam.defense.toFixed(2) + ' enc./match',
+            elo: eloRating,
+            form: currentTeam.form.toFixed(2) + '/3',
+            consistency: currentTeam.consistency.toFixed(2) + '/3',
+            clutch: currentTeam.clutch.toFixed(1) + '% buts après 80\''
+        }
+    };
+}
+
+function displayTeamRadar(teamId) {
+    const container = document.getElementById('radarContainer');
+    if (!container) return;
+    
+    const data = calculateTeamRadarData(teamId);
+    
+    if (!data) {
+        container.innerHTML = '<p style="text-align:center;color:#95a5a6;">Pas assez de données</p>';
+        return;
+    }
+    
+    // Mettre à jour le titre
+    document.querySelectorAll('.selected-team-name-radar').forEach(el => {
+        el.textContent = data.teamName;
+    });
+    
+    // Créer/mettre à jour le canvas
+    container.innerHTML = `
+        <div style="display:flex;gap:2rem;align-items:center;flex-wrap:wrap;justify-content:center;">
+            <div style="width:400px;max-width:100%;height:350px;">
+                <canvas id="teamRadarChart"></canvas>
+            </div>
+            <div id="radarDetails" style="flex:1;min-width:200px;"></div>
+        </div>
+    `;
+    
+    // Détruire l'ancien graphique
+    if (radarChart) {
+        radarChart.destroy();
+        radarChart = null;
+    }
+    
+    const ctx = document.getElementById('teamRadarChart').getContext('2d');
+    
+    // Couleur de l'équipe
+    const color = getTeamColor(teamId);
+    const colorRgb = hexToRgb(color);
+    
+    radarChart = new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: data.labels,
+            datasets: [{
+                label: data.teamName,
+                data: data.values,
+                backgroundColor: `rgba(${colorRgb.r}, ${colorRgb.g}, ${colorRgb.b}, 0.2)`,
+                borderColor: color,
+                borderWidth: 3,
+                pointBackgroundColor: color,
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 6,
+                pointHoverRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                datalabels: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const rawKeys = ['attack', 'defense', 'elo', 'form', 'consistency', 'clutch'];
+                            const rawVal = data.raw[rawKeys[context.dataIndex]];
+                            return `${context.label}: ${context.raw}/100 (${rawVal})`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                r: {
+                    beginAtZero: true,
+                    max: 100,
+                    min: 0,
+                    ticks: {
+                        stepSize: 20,
+                        font: { size: 10 },
+                        backdropColor: 'transparent',
+                        color: '#95a5a6'
+                    },
+                    grid: {
+                        color: 'rgba(0,0,0,0.08)'
+                    },
+                    pointLabels: {
+                        font: { size: 13, weight: 'bold' },
+                        color: '#2c3e50'
+                    },
+                    angleLines: {
+                        color: 'rgba(0,0,0,0.08)'
+                    }
+                }
+            }
+        }
+    });
+    
+    // Détails à droite
+    const rawKeys = ['attack', 'defense', 'elo', 'form', 'consistency', 'clutch'];
+    const emojis = ['⚔️', '🛡️', '⚡', '📈', '🎯', '⏰'];
+    const descriptions = [
+        'Buts marqués par match',
+        'Buts encaissés par match',
+        'Rating Elo actuel',
+        'Forme récente (5 derniers matchs)',
+        'Régularité des résultats',
+        'Buts en fin de match (80\'+)'
+    ];
+    
+    let detailsHtml = '';
+    data.labels.forEach((label, i) => {
+        const val = data.values[i];
+        const barColor = val >= 70 ? '#27ae60' : val >= 40 ? '#f39c12' : '#e74c3c';
+        
+        detailsHtml += `
+            <div style="margin-bottom:0.75rem;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem;">
+                    <span style="font-weight:600;font-size:0.9rem;">${emojis[i]} ${descriptions[i]}</span>
+                    <span style="font-weight:bold;color:${barColor};">${val}/100</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:0.5rem;">
+                    <div style="flex:1;height:6px;background:#ecf0f1;border-radius:3px;overflow:hidden;">
+                        <div style="width:${val}%;height:100%;background:${barColor};border-radius:3px;transition:width 0.5s;"></div>
+                    </div>
+                    <span style="font-size:0.8rem;color:#7f8c8d;min-width:90px;">${data.raw[rawKeys[i]]}</span>
+                </div>
+            </div>
+        `;
+    });
+    
+    // Score global
+    const avgScore = Math.round(data.values.reduce((a, b) => a + b, 0) / data.values.length);
+    const globalColor = avgScore >= 65 ? '#27ae60' : avgScore >= 45 ? '#f39c12' : '#e74c3c';
+    const globalLabel = avgScore >= 75 ? '🏆 Élite' : avgScore >= 60 ? '⭐ Solide' : avgScore >= 45 ? '😐 Moyen' : avgScore >= 30 ? '⚠️ En difficulté' : '💀 Critique';
+    
+    detailsHtml += `
+        <div style="margin-top:1rem;padding:0.75rem;background:linear-gradient(135deg,${globalColor}15,${globalColor}08);border-left:4px solid ${globalColor};border-radius:5px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:bold;font-size:1rem;">Score global</span>
+                <span style="font-weight:bold;font-size:1.3rem;color:${globalColor};">${avgScore}/100 ${globalLabel}</span>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('radarDetails').innerHTML = detailsHtml;
+}
+
+// Helper : convertir hex en rgb
+function hexToRgb(hex) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : { r: 52, g: 152, b: 219 }; // fallback bleu
 }
