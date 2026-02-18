@@ -202,7 +202,13 @@ async function showPlayerStatsModal(playerId, playerPseudo) {
             <div class="stats-modal-content">
                 <div class="stats-modal-header">
                     <h3 id="statsModalTitle">📊 Statistiques</h3>
-                    <button class="btn-close" onclick="closePlayerStatsModal()">✕</button>
+                    <div style="display:flex;gap:0.5rem;align-items:center;">
+                        <select id="shareMatchdaySelect" style="padding:0.3rem;border:none;border-radius:4px;font-size:0.8rem;"></select>
+                        <button id="shareStatsBtn" style="padding:0.4rem 0.8rem;background:rgba(255,255,255,0.2);color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.85rem;">
+                            📸 Partager
+                        </button>
+                        <button class="btn-close" onclick="closePlayerStatsModal()">✕</button>
+                    </div>
                 </div>
                 <div class="stats-modal-body" id="statsModalBody">
                     <div class="loading">Chargement...</div>
@@ -215,6 +221,15 @@ async function showPlayerStatsModal(playerId, playerPseudo) {
     // Afficher la modal
     modal.style.display = 'flex';
     document.getElementById('statsModalTitle').textContent = `📊 Statistiques de ${playerPseudo}`;
+    // Remplir le sélecteur de journées pour le partage
+    const playedDays = [...new Set(allMatches.map(m => m.matchDay))].sort((a, b) => b - a);
+    const shareSelect = document.getElementById('shareMatchdaySelect');
+    shareSelect.innerHTML = playedDays.map(d => `<option value="${d}">J${d}</option>`).join('');
+    
+    document.getElementById('shareStatsBtn').onclick = () => {
+        const day = parseInt(shareSelect.value);
+        sharePronosticsCard(playerId, playerPseudo, day);
+    };
     document.getElementById('statsModalBody').innerHTML = '<div class="loading">Chargement...</div>';
     
     // Calculer les stats

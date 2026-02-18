@@ -133,6 +133,15 @@ function renderJokerButton(matchEl, jokers, matchDay, homeTeamId, awayTeamId, is
 async function toggleJoker(matchDay, homeTeamId, awayTeamId) {
     if (!currentPlayer || !currentSeason) return;
     
+    // Vérifier si le Super Joker bloque les jokers individuels
+    if (typeof canUseIndividualJoker === 'function') {
+        const check = await canUseIndividualJoker(currentPlayer.id, currentSeason, matchDay);
+        if (!check.allowed) {
+            alert(check.reason);
+            return;
+        }
+    }
+    
     const jokers = await getPlayerJokers(currentPlayer.id, currentSeason);
     const hasJoker = isJokerOnMatch(jokers, matchDay, homeTeamId, awayTeamId);
     

@@ -55,7 +55,27 @@
             </div>
 
             <!-- ========== STATS GÉNÉRALES (sans équipe) ========== -->
+
             <div id="generalStatsWrapper">
+
+                <!-- Résumé de journée -->
+                <section class="stat-section">
+                    <h3>📰 Résumé de journée</h3>
+                    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem;flex-wrap:wrap;">
+                        <div>
+                            <label for="summaryMatchday" style="font-weight:600;color:#2c3e50;">Journée :</label>
+                            <select id="summaryMatchday" style="padding:0.5rem 1rem;border:2px solid #e9ecef;border-radius:5px;font-size:1rem;">
+                                <option value="">Chargement...</option>
+                            </select>
+                        </div>
+                        <button onclick="shareMatchdayResults()" 
+                                style="padding:0.5rem 1rem;background:linear-gradient(135deg,#e94560,#c0392b);color:white;border:none;border-radius:8px;cursor:pointer;font-size:0.9rem;font-weight:600;">
+                            📸 Partager l'image
+                        </button>
+                    </div>
+                    <div id="summaryContainer"></div>
+                </section>
+
                 <!-- Top 10 Buteurs -->
                 <section class="stat-section">
                     <h3>⚽ Top 10 Buteurs</h3>
@@ -292,6 +312,33 @@
                         <p>Cliquez sur un lien ou une équipe pour voir les détails</p>
                     </div>
                 </section>
+
+                <section class="stat-section">
+                    <h3>🗺️ Carte de France</h3>
+                    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem;flex-wrap:wrap;">
+                        <div>
+                            <label for="mapMode" style="font-weight:600;color:#2c3e50;">Affichage :</label>
+                            <select id="mapMode" onchange="initFranceMap()" style="padding:0.5rem 1rem;border:2px solid #e9ecef;border-radius:5px;font-size:1rem;">
+                                <option value="ranking">🏆 Classement</option>
+                                <option value="elo">⚡ Rating Elo</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="franceMapContainer">
+                        <!-- Généré dynamiquement -->
+                    </div>
+                </section>
+
+                <!-- Course au titre animée -->
+                <section class="stat-section">
+                    <h3>🏎️ Course au titre</h3>
+                    <p style="color:#7f8c8d;margin-bottom:1rem;">
+                        Revivez l'évolution du classement journée par journée
+                    </p>
+                    <div id="titleRaceContainer">
+                        <!-- Généré dynamiquement -->
+                    </div>
+                </section>
             </div>
 
             <div id="teamStatsWrapper" style="display: none;">
@@ -484,6 +531,7 @@
     <script src="../js/storage.js"></script>
     <script src="../js/elo-system.js"></script>
     <script src="../js/statistics.js"></script>
+    <script src="../js/shareable-card.js"></script>
     
     <script>
     function toggleMenu() {

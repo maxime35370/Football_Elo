@@ -125,6 +125,9 @@ async function loadSeasonData() {
     updateGeneralStats();
     toggleStatsView();
     initNewStats();
+    initMatchdaySummary();
+    initFranceMap();
+    initTitleRace();
 }
 
 function showEmptyState() {
@@ -3547,4 +3550,1104 @@ function hexToRgb(hex) {
         g: parseInt(result[2], 16),
         b: parseInt(result[3], 16)
     } : { r: 52, g: 152, b: 219 }; // fallback bleu
+}
+
+// =====================================================
+// RÉSUMÉ DE JOURNÉE - Auto-généré
+// Ajouter ce code à la fin de statistics.js
+// =====================================================
+
+function generateMatchdaySummary(matchDay) {
+    const matchesThisDay = allMatches.filter(m => m.matchDay === matchDay);
+    
+    if (matchesThisDay.length === 0) return null;
+    
+    const season = currentSeason;
+    const teams = typeof getTeamsBySeason === 'function' ? getTeamsBySeason(season) : allTeams;
+    
+    // --- 1. Résultats ---
+    const results = matchesThisDay.map(match => {
+        const home = allTeams.find(t => t.id == match.homeTeamId);
+        const away = allTeams.find(t => t.id == match.awayTeamId);
+        const hs = match.finalScore.home;
+        const as_ = match.finalScore.away;
+        const result = hs > as_ ? 'home' : hs < as_ ? 'away' : 'draw';
+        
+        return {
+            homeTeam: home?.shortName || '?',
+            awayTeam: away?.shortName || '?',
+            homeScore: hs,
+            awayScore: as_,
+            result,
+            totalGoals: hs + as_,
+            homeId: match.homeTeamId,
+            awayId: match.awayTeamId,
+            goals: match.goals || []
+        };
+    });
+    
+    // --- 2. Stats de la journée ---
+    const totalGoals = results.reduce((s, r) => s + r.totalGoals, 0);
+    const avgGoals = (totalGoals / results.length).toFixed(1);
+    const homeWins = results.filter(r => r.result === 'home').length;
+    const awayWins = results.filter(r => r.result === 'away').length;
+    const draws = results.filter(r => r.result === 'draw').length;
+    const biggestWin = results.reduce((best, r) => {
+        const diff = Math.abs(r.homeScore - r.awayScore);
+        return diff > best.diff ? { ...r, diff } : best;
+    }, { diff: 0 });
+    const highestScoring = results.reduce((best, r) => r.totalGoals > best.totalGoals ? r : best, results[0]);
+    
+    // --- 3. Surprises (basées sur l'Elo) ---
+    let surprises = [];
+    if (typeof EloSystem !== 'undefined') {
+        // Calculer l'Elo AVANT cette journée
+        const matchesBefore = allMatches
+            .filter(m => m.matchDay < matchDay)
+            .sort((a, b) => (a.matchDay || 0) - (b.matchDay || 0));
+        
+        const teamsElo = EloSystem.initializeTeamsElo(teams);
+        matchesBefore.forEach(m => EloSystem.processMatch(m, teamsElo));
+        
+        matchesThisDay.forEach(match => {
+            const homeElo = teamsElo.find(t => t.id == match.homeTeamId);
+            const awayElo = teamsElo.find(t => t.id == match.awayTeamId);
+            if (!homeElo || !awayElo) return;
+            
+            const homeRating = homeElo.eloRating || 1500;
+            const awayRating = awayElo.eloRating || 1500;
+            
+            // Probabilité victoire domicile (avec avantage terrain)
+            const expected = EloSystem.calculateExpectedScore(homeRating + (EloSystem.ELO_CONFIG?.HOME_ADVANTAGE || 50), awayRating);
+            
+            const hs = match.finalScore.home;
+            const as_ = match.finalScore.away;
+            const home = allTeams.find(t => t.id == match.homeTeamId);
+            const away = allTeams.find(t => t.id == match.awayTeamId);
+            
+            // Surprise si le perdant avait > 55% de chances de gagner
+            if (hs < as_ && expected > 0.55) {
+                surprises.push({
+                    type: 'upset',
+                    text: `${away?.shortName} s'impose chez ${home?.shortName} (${as_}-${hs})`,
+                    detail: `${home?.shortName} avait ${Math.round(expected * 100)}% de chances de gagner`,
+                    surpriseLevel: expected
+                });
+            } else if (hs > as_ && (1 - expected) > 0.55) {
+                surprises.push({
+                    type: 'upset',
+                    text: `${home?.shortName} bat ${away?.shortName} à domicile (${hs}-${as_})`,
+                    detail: `${away?.shortName} avait ${Math.round((1 - expected) * 100)}% de chances de gagner`,
+                    surpriseLevel: 1 - expected
+                });
+            }
+            
+            // Gros score inattendu
+            if (Math.abs(hs - as_) >= 3) {
+                const winner = hs > as_ ? home?.shortName : away?.shortName;
+                const loser = hs > as_ ? away?.shortName : home?.shortName;
+                surprises.push({
+                    type: 'thrashing',
+                    text: `${winner} écrase ${loser} (${hs}-${as_})`,
+                    detail: `Écart de ${Math.abs(hs - as_)} buts`,
+                    surpriseLevel: 0.5
+                });
+            }
+        });
+        
+        // Trier par niveau de surprise
+        surprises.sort((a, b) => b.surpriseLevel - a.surpriseLevel);
+    }
+    
+    // --- 4. Mouvements au classement ---
+    const rankingBefore = calculateRankingAtMatchday(matchDay - 1);
+    const rankingAfter = calculateRankingAtMatchday(matchDay);
+    
+    const movements = rankingAfter.map((team, newIndex) => {
+        const oldIndex = rankingBefore.findIndex(t => t.id === team.id);
+        const movement = oldIndex >= 0 ? oldIndex - newIndex : 0; // positif = montée
+        return {
+            id: team.id,
+            name: team.shortName || team.name,
+            newRank: newIndex + 1,
+            oldRank: oldIndex >= 0 ? oldIndex + 1 : '?',
+            movement,
+            points: team.points
+        };
+    });
+    
+    const biggestRisers = movements.filter(m => m.movement > 0).sort((a, b) => b.movement - a.movement);
+    const biggestFallers = movements.filter(m => m.movement < 0).sort((a, b) => a.movement - b.movement);
+    
+    // --- 5. Buteurs de la journée ---
+    const scorers = [];
+    matchesThisDay.forEach(match => {
+        if (match.goals) {
+            match.goals.forEach(goal => {
+                const team = allTeams.find(t => t.id == goal.teamId);
+                scorers.push({
+                    name: goal.scorer,
+                    team: team?.shortName || '?',
+                    minute: goal.minute,
+                    extraTime: goal.extraTime
+                });
+            });
+        }
+    });
+    
+    // Doublés/triplés
+    const scorerCounts = {};
+    scorers.forEach(s => {
+        const key = `${s.name}_${s.team}`;
+        scorerCounts[key] = (scorerCounts[key] || 0) + 1;
+    });
+    const multiScorers = Object.entries(scorerCounts)
+        .filter(([_, count]) => count >= 2)
+        .map(([key, count]) => {
+            const [name, team] = key.split('_');
+            return { name, team, goals: count, label: count >= 3 ? 'triplé' : 'doublé' };
+        });
+    
+    return {
+        matchDay,
+        results,
+        stats: { totalGoals, avgGoals, homeWins, awayWins, draws, biggestWin, highestScoring },
+        surprises,
+        movements,
+        biggestRisers,
+        biggestFallers,
+        scorers,
+        multiScorers,
+        matchCount: results.length
+    };
+}
+
+function calculateRankingAtMatchday(upToMatchDay) {
+    const teams = typeof getTeamsBySeason === 'function' ? getTeamsBySeason(currentSeason) : allTeams;
+    const matchesUpTo = allMatches.filter(m => m.matchDay <= upToMatchDay);
+    
+    return teams.map(team => {
+        let points = 0, goalsFor = 0, goalsAgainst = 0;
+        matchesUpTo.forEach(match => {
+            const isHome = match.homeTeamId == team.id;
+            const isAway = match.awayTeamId == team.id;
+            if (!isHome && !isAway) return;
+            const gf = isHome ? match.finalScore.home : match.finalScore.away;
+            const ga = isHome ? match.finalScore.away : match.finalScore.home;
+            goalsFor += gf;
+            goalsAgainst += ga;
+            if (gf > ga) points += 3;
+            else if (gf === ga) points += 1;
+        });
+        return {
+            id: team.id,
+            name: team.name,
+            shortName: team.shortName,
+            points,
+            goalDifference: goalsFor - goalsAgainst,
+            goalsFor
+        };
+    }).sort((a, b) => b.points - a.points || b.goalDifference - a.goalDifference || b.goalsFor - a.goalsFor);
+}
+
+function displayMatchdaySummary() {
+    const container = document.getElementById('summaryContainer');
+    if (!container) return;
+    
+    const matchDay = parseInt(document.getElementById('summaryMatchday')?.value);
+    if (!matchDay) {
+        container.innerHTML = '<p style="text-align:center;color:#95a5a6;">Sélectionnez une journée</p>';
+        return;
+    }
+    
+    const summary = generateMatchdaySummary(matchDay);
+    
+    if (!summary) {
+        container.innerHTML = '<p style="text-align:center;color:#95a5a6;">Aucun match joué cette journée</p>';
+        return;
+    }
+    
+    let html = '';
+    
+    // === TITRE ===
+    html += `
+        <div style="text-align:center;margin-bottom:1.5rem;">
+            <div style="font-size:1.3rem;font-weight:bold;color:#2c3e50;">
+                📰 Journée ${summary.matchDay}
+            </div>
+            <div style="color:#7f8c8d;font-size:0.9rem;">
+                ${summary.matchCount} matchs · ${summary.stats.totalGoals} buts · ${summary.stats.avgGoals} buts/match
+            </div>
+        </div>
+    `;
+    
+    // === RÉSULTATS ===
+    html += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:0.75rem;margin-bottom:1.5rem;">`;
+    
+    summary.results.forEach(r => {
+        const homeBold = r.result === 'home' ? 'font-weight:bold;' : '';
+        const awayBold = r.result === 'away' ? 'font-weight:bold;' : '';
+        const borderColor = r.result === 'home' ? '#3498db' : r.result === 'away' ? '#e74c3c' : '#f39c12';
+        
+        // Buteurs de ce match
+        const matchGoals = r.goals;
+        const homeGoals = matchGoals.filter(g => g.teamId == r.homeId);
+        const awayGoals = matchGoals.filter(g => g.teamId == r.awayId);
+        
+        const formatGoals = (goals) => goals.map(g => {
+            const extra = parseInt(g.extraTime) || 0;
+            const min = extra > 0 ? `${g.minute}+${extra}'` : `${g.minute}'`;
+            return `${g.scorer} ${min}`;
+        }).join(', ');
+        
+        html += `
+            <div style="background:white;border-radius:10px;padding:0.75rem 1rem;border-left:4px solid ${borderColor};box-shadow:0 2px 6px rgba(0,0,0,0.08);">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <span style="${homeBold}color:#2c3e50;flex:1;">${r.homeTeam}</span>
+                    <span style="font-size:1.3rem;font-weight:bold;color:#2c3e50;margin:0 0.75rem;min-width:50px;text-align:center;">
+                        ${r.homeScore} - ${r.awayScore}
+                    </span>
+                    <span style="${awayBold}color:#2c3e50;flex:1;text-align:right;">${r.awayTeam}</span>
+                </div>
+                ${matchGoals.length > 0 ? `
+                    <div style="font-size:0.75rem;color:#95a5a6;margin-top:0.4rem;line-height:1.4;">
+                        ${homeGoals.length > 0 ? `<div>⚽ ${formatGoals(homeGoals)}</div>` : ''}
+                        ${awayGoals.length > 0 ? `<div style="text-align:right;">⚽ ${formatGoals(awayGoals)}</div>` : ''}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    // === STATS FLASH ===
+    html += `
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:0.75rem;margin-bottom:1.5rem;">
+            <div style="background:#27ae6015;border-radius:10px;padding:0.75rem;text-align:center;">
+                <div style="font-size:1.5rem;font-weight:bold;color:#27ae60;">${summary.stats.homeWins}</div>
+                <div style="font-size:0.8rem;color:#7f8c8d;">Victoires dom.</div>
+            </div>
+            <div style="background:#f39c1215;border-radius:10px;padding:0.75rem;text-align:center;">
+                <div style="font-size:1.5rem;font-weight:bold;color:#f39c12;">${summary.stats.draws}</div>
+                <div style="font-size:0.8rem;color:#7f8c8d;">Nuls</div>
+            </div>
+            <div style="background:#e74c3c15;border-radius:10px;padding:0.75rem;text-align:center;">
+                <div style="font-size:1.5rem;font-weight:bold;color:#e74c3c;">${summary.stats.awayWins}</div>
+                <div style="font-size:0.8rem;color:#7f8c8d;">Victoires ext.</div>
+            </div>
+            <div style="background:#3498db15;border-radius:10px;padding:0.75rem;text-align:center;">
+                <div style="font-size:1.5rem;font-weight:bold;color:#3498db;">${summary.stats.totalGoals}</div>
+                <div style="font-size:0.8rem;color:#7f8c8d;">Buts</div>
+            </div>
+        </div>
+    `;
+    
+    // === DOUBLÉS / TRIPLÉS ===
+    if (summary.multiScorers.length > 0) {
+        html += `<div style="margin-bottom:1.5rem;padding:1rem;background:linear-gradient(135deg,#f1c40f15,#f39c1210);border-radius:10px;border-left:4px solid #f1c40f;">`;
+        html += `<div style="font-weight:bold;margin-bottom:0.5rem;color:#2c3e50;">⭐ Performances individuelles</div>`;
+        summary.multiScorers.forEach(s => {
+            html += `<div style="font-size:0.95rem;color:#2c3e50;">
+                <strong>${s.name}</strong> (${s.team}) — ${s.label} (${s.goals} buts)
+            </div>`;
+        });
+        html += '</div>';
+    }
+    
+    // === SURPRISES ===
+    if (summary.surprises.length > 0) {
+        html += `<div style="margin-bottom:1.5rem;">`;
+        html += `<div style="font-weight:bold;margin-bottom:0.75rem;font-size:1.05rem;color:#2c3e50;">😲 Faits marquants</div>`;
+        
+        summary.surprises.slice(0, 3).forEach(s => {
+            const icon = s.type === 'upset' ? '🔄' : '💥';
+            const bgColor = s.type === 'upset' ? '#e74c3c10' : '#9b59b610';
+            const borderColor = s.type === 'upset' ? '#e74c3c' : '#9b59b6';
+            
+            html += `
+                <div style="padding:0.75rem 1rem;background:${bgColor};border-left:4px solid ${borderColor};border-radius:8px;margin-bottom:0.5rem;">
+                    <div style="font-weight:600;color:#2c3e50;">${icon} ${s.text}</div>
+                    <div style="font-size:0.85rem;color:#7f8c8d;">${s.detail}</div>
+                </div>
+            `;
+        });
+        html += '</div>';
+    }
+    
+    // === MOUVEMENTS AU CLASSEMENT ===
+    html += `<div style="margin-bottom:1.5rem;">`;
+    html += `<div style="font-weight:bold;margin-bottom:0.75rem;font-size:1.05rem;color:#2c3e50;">📊 Mouvements au classement</div>`;
+    
+    // Top 5 du classement après cette journée
+    html += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:0.5rem;">`;
+    
+    summary.movements.slice(0, 5).forEach(m => {
+        let moveHtml;
+        if (m.movement > 0) {
+            moveHtml = `<span style="color:#27ae60;font-weight:bold;">▲ +${m.movement}</span>`;
+        } else if (m.movement < 0) {
+            moveHtml = `<span style="color:#e74c3c;font-weight:bold;">▼ ${m.movement}</span>`;
+        } else {
+            moveHtml = `<span style="color:#95a5a6;">=</span>`;
+        }
+        
+        const medal = m.newRank === 1 ? '🥇' : m.newRank === 2 ? '🥈' : m.newRank === 3 ? '🥉' : `${m.newRank}.`;
+        
+        html += `
+            <div style="display:flex;align-items:center;gap:0.5rem;padding:0.5rem 0.75rem;background:#f8f9fa;border-radius:8px;">
+                <span style="font-weight:bold;min-width:30px;">${medal}</span>
+                <span style="flex:1;font-weight:600;">${m.name}</span>
+                <span style="color:#7f8c8d;font-size:0.9rem;">${m.points} pts</span>
+                ${moveHtml}
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    // Montées / descentes notables
+    if (summary.biggestRisers.length > 0 || summary.biggestFallers.length > 0) {
+        html += `<div style="display:flex;gap:1rem;margin-top:0.75rem;flex-wrap:wrap;">`;
+        
+        if (summary.biggestRisers.length > 0) {
+            const riser = summary.biggestRisers[0];
+            html += `
+                <div style="flex:1;min-width:200px;padding:0.75rem;background:#27ae6010;border-radius:8px;border-left:4px solid #27ae60;">
+                    <div style="font-size:0.85rem;color:#27ae60;font-weight:bold;">🚀 Plus grosse montée</div>
+                    <div style="font-weight:bold;">${riser.name} : ${riser.oldRank}e → ${riser.newRank}e (+${riser.movement})</div>
+                </div>
+            `;
+        }
+        
+        if (summary.biggestFallers.length > 0) {
+            const faller = summary.biggestFallers[0];
+            html += `
+                <div style="flex:1;min-width:200px;padding:0.75rem;background:#e74c3c10;border-radius:8px;border-left:4px solid #e74c3c;">
+                    <div style="font-size:0.85rem;color:#e74c3c;font-weight:bold;">📉 Plus grosse chute</div>
+                    <div style="font-weight:bold;">${faller.name} : ${faller.oldRank}e → ${faller.newRank}e (${faller.movement})</div>
+                </div>
+            `;
+        }
+        
+        html += '</div>';
+    }
+    
+    html += '</div>';
+    
+    container.innerHTML = html;
+}
+
+function initMatchdaySummary() {
+    const select = document.getElementById('summaryMatchday');
+    if (!select) return;
+    
+    // Remplir le sélecteur avec les journées jouées
+    const playedMatchDays = [...new Set(allMatches.map(m => m.matchDay))].sort((a, b) => b - a);
+    
+    if (playedMatchDays.length === 0) {
+        select.innerHTML = '<option value="">Aucune journée jouée</option>';
+        return;
+    }
+    
+    select.innerHTML = playedMatchDays.map(day => 
+        `<option value="${day}">Journée ${day}</option>`
+    ).join('');
+    
+    // Sélectionner la dernière journée par défaut
+    select.value = playedMatchDays[0];
+    
+    // Événement
+    select.addEventListener('change', displayMatchdaySummary);
+    
+    // Afficher directement
+    displayMatchdaySummary();
+}
+
+// =====================================================
+// CARTE DE FRANCE - Positionnement géographique des équipes
+// Ajouter ce code à la fin de statistics.js
+// =====================================================
+
+// Coordonnées GPS des villes françaises (et Monaco)
+const CITY_COORDINATES = {
+    'paris': { lat: 48.8566, lng: 2.3522 },
+    'marseille': { lat: 43.2965, lng: 5.3698 },
+    'lyon': { lat: 45.7640, lng: 4.8357 },
+    'monaco': { lat: 43.7384, lng: 7.4246 },
+    'lille': { lat: 50.6292, lng: 3.0573 },
+    'rennes': { lat: 48.1173, lng: -1.6778 },
+    'nice': { lat: 43.7102, lng: 7.2620 },
+    'strasbourg': { lat: 48.5734, lng: 7.7521 },
+    'nantes': { lat: 47.2184, lng: -1.5536 },
+    'bordeaux': { lat: 44.8378, lng: -0.5792 },
+    'montpellier': { lat: 43.6108, lng: 3.8767 },
+    'toulouse': { lat: 43.6047, lng: 1.4442 },
+    'lens': { lat: 50.4289, lng: 2.8319 },
+    'brest': { lat: 48.3904, lng: -4.4861 },
+    'reims': { lat: 49.2583, lng: 3.5714 },
+    'le havre': { lat: 49.4944, lng: 0.1079 },
+    'clermont-ferrand': { lat: 45.7772, lng: 3.0870 },
+    'clermont': { lat: 45.7772, lng: 3.0870 },
+    'metz': { lat: 49.1193, lng: 6.1757 },
+    'angers': { lat: 47.4784, lng: -0.5632 },
+    'saint-étienne': { lat: 45.4397, lng: 4.3872 },
+    'saint-etienne': { lat: 45.4397, lng: 4.3872 },
+    'dijon': { lat: 47.3220, lng: 5.0415 },
+    'lorient': { lat: 47.7483, lng: -3.3660 },
+    'auxerre': { lat: 47.7979, lng: 3.5714 },
+    'troyes': { lat: 48.2973, lng: 4.0744 },
+    'ajaccio': { lat: 41.9192, lng: 8.7386 },
+    'bastia': { lat: 42.6970, lng: 9.4503 },
+    'caen': { lat: 49.1829, lng: -0.3707 },
+    'guingamp': { lat: 48.5608, lng: -3.1509 },
+    'nancy': { lat: 48.6921, lng: 6.1844 },
+    'amiens': { lat: 49.8941, lng: 2.2958 },
+    'nîmes': { lat: 43.8367, lng: 4.3601 },
+    'annecy': { lat: 45.8992, lng: 6.1294 },
+    'pau': { lat: 43.2951, lng: -0.3708 },
+    'grenoble': { lat: 45.1885, lng: 5.7245 },
+    'sedan': { lat: 49.7019, lng: 4.9427 },
+    'sochaux': { lat: 47.5072, lng: 6.8284 },
+    'montbéliard': { lat: 47.5072, lng: 6.8284 },
+    'valenciennes': { lat: 50.3490, lng: 3.5235 },
+    'laval': { lat: 48.0735, lng: -0.7714 },
+    'rodez': { lat: 44.3496, lng: 2.5728 },
+    'dunkerque': { lat: 51.0343, lng: 2.3768 },
+    'niort': { lat: 46.3234, lng: -0.4593 },
+    'orléans': { lat: 47.9029, lng: 1.9093 },
+    'orleans': { lat: 47.9029, lng: 1.9093 },
+    'chambéry': { lat: 45.5646, lng: 5.9178 },
+    'quevilly': { lat: 49.4107, lng: 1.0557 },
+    'rouen': { lat: 49.4432, lng: 1.0999 },
+    'red star': { lat: 48.9209, lng: 2.3573 },
+    'créteil': { lat: 48.7900, lng: 2.4551 },
+    'villefranche': { lat: 45.9900, lng: 4.7186 },
+    'concarneau': { lat: 47.8736, lng: -3.9176 },
+    'châteauroux': { lat: 46.8103, lng: 1.6912 },
+    'chateauroux': { lat: 46.8103, lng: 1.6912 },
+    'boulogne': { lat: 48.8607, lng: 2.2399 },
+    'boulogne-sur-mer': { lat: 50.7264, lng: 1.6147 },
+    'versailles': { lat: 48.8049, lng: 2.1204 },
+    'martigues': { lat: 43.4053, lng: 5.0476 }
+};
+
+function getTeamCoordinates(team) {
+    const city = (team.city || '').toLowerCase().trim();
+    
+    // Recherche directe
+    if (CITY_COORDINATES[city]) return CITY_COORDINATES[city];
+    
+    // Recherche partielle
+    for (const [key, coords] of Object.entries(CITY_COORDINATES)) {
+        if (city.includes(key) || key.includes(city)) return coords;
+    }
+    
+    // Recherche dans le nom de l'équipe
+    const name = (team.name || '').toLowerCase();
+    for (const [key, coords] of Object.entries(CITY_COORDINATES)) {
+        if (name.includes(key)) return coords;
+    }
+    
+    return null;
+}
+
+// Convertir GPS → coordonnées SVG sur la carte de France
+function gpsToSvg(lat, lng, viewBox) {
+    // Bornes approximatives de la France métropolitaine
+    const minLat = 41.3, maxLat = 51.1;
+    const minLng = -5.2, maxLng = 9.6;
+    
+    const x = viewBox.padding + ((lng - minLng) / (maxLng - minLng)) * viewBox.mapWidth;
+    const y = viewBox.padding + ((maxLat - lat) / (maxLat - minLat)) * viewBox.mapHeight;
+    
+    return { x, y };
+}
+
+function initFranceMap() {
+    const container = document.getElementById('franceMapContainer');
+    if (!container) return;
+    
+    const season = currentSeason;
+    const teams = typeof getTeamsBySeason === 'function' ? getTeamsBySeason(season) : allTeams;
+    
+    // Vérifier que les équipes ont des coordonnées
+    const teamsWithCoords = teams.map(team => {
+        const coords = getTeamCoordinates(team);
+        return coords ? { ...team, coords } : null;
+    }).filter(Boolean);
+    
+    if (teamsWithCoords.length === 0) {
+        container.innerHTML = '<p style="text-align:center;color:#95a5a6;">Aucune équipe localisée</p>';
+        return;
+    }
+    
+    // Mode d'affichage
+    const mode = document.getElementById('mapMode')?.value || 'ranking';
+    
+    // Calculer classement ou Elo
+    const ranking = calculateRankingForMap(teams);
+    
+    // Elo
+    let eloMap = {};
+    if (typeof EloSystem !== 'undefined') {
+        const teamsElo = EloSystem.initializeTeamsElo(teams);
+        const sorted = [...allMatches].sort((a, b) => (a.matchDay || 0) - (b.matchDay || 0));
+        sorted.forEach(m => EloSystem.processMatch(m, teamsElo));
+        teamsElo.forEach(t => { eloMap[t.id] = t.eloRating || 1500; });
+    }
+    
+    // Dimensions SVG
+    const svgWidth = 500;
+    const svgHeight = 520;
+    const padding = 40;
+    const viewBox = {
+        padding,
+        mapWidth: svgWidth - padding * 2,
+        mapHeight: svgHeight - padding * 2
+    };
+    
+    // Contour simplifié de la France (polygone)
+    const francePath = generateFranceOutline(viewBox);
+    
+    // Générer le SVG
+    let svg = `<svg width="100%" viewBox="0 0 ${svgWidth} ${svgHeight}" style="max-width:${svgWidth}px;margin:0 auto;display:block;">`;
+    
+    // Fond
+    svg += `<rect width="${svgWidth}" height="${svgHeight}" fill="#f0f4f8" rx="12"/>`;
+    
+    // Contour France
+    svg += `<path d="${francePath}" fill="#e8eef5" stroke="#bdc3c7" stroke-width="1.5"/>`;
+    
+    // Corse (petit rectangle symbolique)
+    const corse1 = gpsToSvg(42.5, 9.0, viewBox);
+    const corse2 = gpsToSvg(41.4, 9.5, viewBox);
+    svg += `<ellipse cx="${(corse1.x + corse2.x) / 2}" cy="${(corse1.y + corse2.y) / 2}" rx="8" ry="16" fill="#e8eef5" stroke="#bdc3c7" stroke-width="1"/>`;
+    
+    // Placer les équipes
+    teamsWithCoords.forEach(team => {
+        const pos = gpsToSvg(team.coords.lat, team.coords.lng, viewBox);
+        const rankData = ranking.find(r => r.id == team.id);
+        const rank = rankData ? rankData.rank : teams.length;
+        const points = rankData ? rankData.points : 0;
+        const elo = eloMap[team.id] || 1500;
+        
+        let color, value, radius;
+        
+        if (mode === 'elo') {
+            const minElo = Math.min(...Object.values(eloMap), 1400);
+            const maxElo = Math.max(...Object.values(eloMap), 1600);
+            const ratio = (elo - minElo) / (maxElo - minElo || 1);
+            color = getGradientColor(ratio);
+            value = Math.round(elo);
+            radius = 14 + ratio * 8;
+        } else {
+            // Mode classement
+            const ratio = 1 - (rank - 1) / (teams.length - 1 || 1);
+            color = getGradientColor(ratio);
+            value = `${rank}e`;
+            radius = 14 + ratio * 8;
+        }
+        
+        // Ombre
+        svg += `<circle cx="${pos.x + 1}" cy="${pos.y + 1}" r="${radius}" fill="rgba(0,0,0,0.15)"/>`;
+        
+        // Cercle principal
+        svg += `<circle cx="${pos.x}" cy="${pos.y}" r="${radius}" fill="${color}" stroke="white" stroke-width="2.5" 
+                    style="cursor:pointer;" class="team-dot" data-team-id="${team.id}"/>`;
+        
+        // Valeur dans le cercle
+        svg += `<text x="${pos.x}" y="${pos.y + 1}" text-anchor="middle" dominant-baseline="central" 
+                    fill="white" font-size="${mode === 'elo' ? 8 : 10}" font-weight="bold" 
+                    style="pointer-events:none;">${value}</text>`;
+        
+        // Nom de l'équipe (label)
+        const labelY = pos.y - radius - 6;
+        svg += `<text x="${pos.x}" y="${labelY}" text-anchor="middle" fill="#2c3e50" 
+                    font-size="10" font-weight="600" style="pointer-events:none;">${team.shortName}</text>`;
+    });
+    
+    svg += '</svg>';
+    
+    // Légende
+    let legendHtml = `<div style="display:flex;align-items:center;justify-content:center;gap:0.5rem;margin-top:1rem;">`;
+    legendHtml += `<span style="font-size:0.8rem;color:#27ae60;font-weight:bold;">🏆 ${mode === 'elo' ? 'Elo élevé' : '1er'}</span>`;
+    legendHtml += `<div style="width:120px;height:8px;border-radius:4px;background:linear-gradient(to right,#27ae60,#f39c12,#e74c3c);"></div>`;
+    legendHtml += `<span style="font-size:0.8rem;color:#e74c3c;font-weight:bold;">${mode === 'elo' ? 'Elo bas' : 'Dernier'}</span>`;
+    legendHtml += `</div>`;
+    
+    // Tooltip
+    legendHtml += `<div id="mapTooltip" style="display:none;position:fixed;background:#2c3e50;color:white;padding:0.5rem 0.75rem;border-radius:8px;font-size:0.85rem;z-index:1000;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,0.3);"></div>`;
+    
+    container.innerHTML = svg + legendHtml;
+    
+    // Événements hover
+    container.querySelectorAll('.team-dot').forEach(dot => {
+        dot.addEventListener('mouseenter', (e) => {
+            const teamId = dot.dataset.teamId;
+            const team = teams.find(t => t.id == teamId);
+            const rankData = ranking.find(r => r.id == teamId);
+            const elo = eloMap[teamId] || 1500;
+            
+            const tooltip = document.getElementById('mapTooltip');
+            tooltip.innerHTML = `
+                <strong>${team?.name || '?'}</strong><br>
+                📍 ${team?.city || '?'}<br>
+                🏆 ${rankData?.rank || '?'}e — ${rankData?.points || 0} pts<br>
+                ⚡ Elo: ${Math.round(elo)}
+            `;
+            tooltip.style.display = 'block';
+            tooltip.style.left = (e.clientX + 15) + 'px';
+            tooltip.style.top = (e.clientY - 15) + 'px';
+        });
+        
+        dot.addEventListener('mousemove', (e) => {
+            const tooltip = document.getElementById('mapTooltip');
+            tooltip.style.left = (e.clientX + 15) + 'px';
+            tooltip.style.top = (e.clientY - 15) + 'px';
+        });
+        
+        dot.addEventListener('mouseleave', () => {
+            document.getElementById('mapTooltip').style.display = 'none';
+        });
+    });
+}
+
+function calculateRankingForMap(teams) {
+    return teams.map(team => {
+        let points = 0, goalsFor = 0, goalsAgainst = 0;
+        allMatches.forEach(match => {
+            const isHome = match.homeTeamId == team.id;
+            const isAway = match.awayTeamId == team.id;
+            if (!isHome && !isAway) return;
+            const gf = isHome ? match.finalScore.home : match.finalScore.away;
+            const ga = isHome ? match.finalScore.away : match.finalScore.home;
+            goalsFor += gf; goalsAgainst += ga;
+            if (gf > ga) points += 3;
+            else if (gf === ga) points += 1;
+        });
+        return { id: team.id, points, goalDifference: goalsFor - goalsAgainst, goalsFor };
+    }).sort((a, b) => b.points - a.points || b.goalDifference - a.goalDifference || b.goalsFor - a.goalsFor)
+      .map((t, i) => ({ ...t, rank: i + 1 }));
+}
+
+function getGradientColor(ratio) {
+    // 1 = vert (bon), 0 = rouge (mauvais)
+    if (ratio > 0.66) {
+        const t = (ratio - 0.66) / 0.34;
+        return interpolateColor('#f39c12', '#27ae60', t);
+    } else if (ratio > 0.33) {
+        const t = (ratio - 0.33) / 0.33;
+        return interpolateColor('#e74c3c', '#f39c12', t);
+    } else {
+        return interpolateColor('#c0392b', '#e74c3c', ratio / 0.33);
+    }
+}
+
+function interpolateColor(color1, color2, t) {
+    const c1 = hexToRgbMap(color1);
+    const c2 = hexToRgbMap(color2);
+    const r = Math.round(c1.r + (c2.r - c1.r) * t);
+    const g = Math.round(c1.g + (c2.g - c1.g) * t);
+    const b = Math.round(c1.b + (c2.b - c1.b) * t);
+    return `rgb(${r},${g},${b})`;
+}
+
+function hexToRgbMap(hex) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : { r: 0, g: 0, b: 0 };
+}
+
+function generateFranceOutline(viewBox) {
+    // Points du contour simplifié de la France métropolitaine (lat/lng)
+    const outline = [
+        [51.05, 2.55],   // Dunkerque
+        [50.95, 1.85],   // Calais
+        [49.5, 0.1],     // Le Havre
+        [48.65, -1.6],   // St-Malo
+        [48.45, -4.5],   // Brest
+        [47.75, -3.4],   // Lorient
+        [47.3, -2.5],    // St-Nazaire
+        [47.0, -1.2],    // Pornic
+        [46.15, -1.15],  // La Rochelle
+        [45.6, -1.2],    // Royan
+        [44.65, -1.2],   // Arcachon
+        [43.5, -1.55],   // Bayonne
+        [42.7, 0.3],     // Luchon
+        [42.45, 1.9],    // Andorre
+        [42.5, 3.05],    // Perpignan
+        [43.1, 3.4],     // Narbonne
+        [43.4, 4.8],     // Camargue
+        [43.2, 5.4],     // Marseille
+        [43.1, 6.1],     // Toulon
+        [43.55, 7.0],    // Cannes
+        [43.7, 7.4],     // Monaco
+        [44.35, 6.6],    // Gap
+        [45.2, 6.8],     // Savoie
+        [46.2, 6.2],     // Genève
+        [47.35, 7.0],    // Bâle
+        [48.0, 7.6],     // Colmar
+        [49.0, 8.2],     // Wissembourg
+        [49.5, 6.4],     // Luxembourg
+        [49.6, 5.8],     // Longwy
+        [50.1, 4.2],     // Charleroi
+        [50.5, 3.1],     // Tournai
+        [51.05, 2.55]    // Dunkerque (fermer)
+    ];
+    
+    const points = outline.map(([lat, lng]) => gpsToSvg(lat, lng, viewBox));
+    return 'M ' + points.map(p => `${p.x},${p.y}`).join(' L ') + ' Z';
+}
+
+// =====================================================
+// 🏎️ COURSE AU TITRE ANIMÉE (Bar Chart Race)
+// Ajouter ce code à la fin de statistics.js
+// =====================================================
+
+let titleRaceInterval = null;
+let titleRaceCurrentDay = 0;
+let titleRaceSpeed = 800; // ms par journée
+let titleRacePlaying = false;
+
+function initTitleRace() {
+    const container = document.getElementById('titleRaceContainer');
+    if (!container) return;
+    
+    const playedMatchDays = [...new Set(allMatches.map(m => m.matchDay))].sort((a, b) => a - b);
+    
+    if (playedMatchDays.length < 2) {
+        container.innerHTML = '<p style="text-align:center;color:#95a5a6;">Il faut au moins 2 journées jouées</p>';
+        return;
+    }
+    
+    titleRaceCurrentDay = 0;
+    
+    // Pré-calculer tous les classements
+    const teams = typeof getTeamsBySeason === 'function' ? getTeamsBySeason(currentSeason) : allTeams;
+    const snapshots = [];
+    
+    // Snapshot initial (J0 = tout à 0)
+    snapshots.push({
+        matchDay: 0,
+        ranking: teams.map(t => ({
+            id: t.id,
+            name: t.shortName || t.name,
+            points: 0,
+            goalsFor: 0,
+            goalDifference: 0,
+            played: 0,
+            lastResult: null
+        })).sort((a, b) => a.name.localeCompare(b.name))
+    });
+    
+    // Snapshot pour chaque journée
+    playedMatchDays.forEach(day => {
+        const matchesUpTo = allMatches.filter(m => m.matchDay <= day);
+        
+        const ranking = teams.map(team => {
+            let points = 0, goalsFor = 0, goalsAgainst = 0, played = 0, lastResult = null;
+            
+            matchesUpTo.forEach(match => {
+                const isHome = match.homeTeamId == team.id;
+                const isAway = match.awayTeamId == team.id;
+                if (!isHome && !isAway) return;
+                
+                played++;
+                const gf = isHome ? match.finalScore.home : match.finalScore.away;
+                const ga = isHome ? match.finalScore.away : match.finalScore.home;
+                goalsFor += gf;
+                goalsAgainst += ga;
+                
+                if (gf > ga) points += 3;
+                else if (gf === ga) points += 1;
+                
+                // Dernier résultat de cette journée
+                if (match.matchDay === day) {
+                    lastResult = gf > ga ? 'V' : gf === ga ? 'N' : 'D';
+                }
+            });
+            
+            return {
+                id: team.id,
+                name: team.shortName || team.name,
+                points,
+                goalsFor,
+                goalDifference: goalsFor - goalsAgainst,
+                played,
+                lastResult
+            };
+        }).sort((a, b) => b.points - a.points || b.goalDifference - a.goalDifference || b.goalsFor - a.goalsFor);
+        
+        snapshots.push({ matchDay: day, ranking });
+    });
+    
+    window.titleRaceSnapshots = snapshots;
+    window.titleRaceMaxDay = snapshots.length - 1;
+    
+    // Render controls + area
+    container.innerHTML = `
+        <div class="title-race-controls" style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem;flex-wrap:wrap;justify-content:center;">
+            <button id="racePlayBtn" onclick="toggleTitleRace()" 
+                    style="padding:0.5rem 1.2rem;background:linear-gradient(135deg,#27ae60,#2ecc71);color:white;border:none;border-radius:8px;cursor:pointer;font-size:1rem;font-weight:bold;min-width:90px;">
+                ▶️ Play
+            </button>
+            <button onclick="stepTitleRace(-1)" style="padding:0.5rem 0.75rem;background:#ecf0f1;border:none;border-radius:6px;cursor:pointer;font-size:1rem;">⏪</button>
+            <button onclick="stepTitleRace(1)" style="padding:0.5rem 0.75rem;background:#ecf0f1;border:none;border-radius:6px;cursor:pointer;font-size:1rem;">⏩</button>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+                <label style="font-size:0.85rem;color:#7f8c8d;">Vitesse :</label>
+                <select id="raceSpeed" onchange="changeRaceSpeed(this.value)" style="padding:0.3rem;border:1px solid #ddd;border-radius:4px;">
+                    <option value="1200">🐢 Lent</option>
+                    <option value="800" selected>🏃 Normal</option>
+                    <option value="400">🏎️ Rapide</option>
+                    <option value="200">⚡ Turbo</option>
+                </select>
+            </div>
+            <input type="range" id="raceSlider" min="0" max="${snapshots.length - 1}" value="0" 
+                   oninput="jumpToDay(this.value)"
+                   style="flex:1;min-width:150px;accent-color:#3498db;">
+            <span id="raceLabel" style="font-weight:bold;font-size:1.1rem;color:#2c3e50;min-width:80px;text-align:center;">Début</span>
+        </div>
+        <div id="titleRaceBars" style="position:relative;overflow:hidden;">
+            <!-- Barres animées -->
+        </div>
+    `;
+    
+    // Afficher le premier frame
+    renderTitleRaceFrame(0);
+}
+
+function renderTitleRaceFrame(index) {
+    const snapshots = window.titleRaceSnapshots;
+    if (!snapshots || index < 0 || index >= snapshots.length) return;
+    
+    titleRaceCurrentDay = index;
+    
+    const snapshot = snapshots[index];
+    const ranking = snapshot.ranking;
+    const maxPoints = Math.max(...ranking.map(r => r.points), 1);
+    const teams = typeof getTeamsBySeason === 'function' ? getTeamsBySeason(currentSeason) : allTeams;
+    const totalTeams = teams.length;
+    
+    // Mettre à jour le slider et le label
+    const slider = document.getElementById('raceSlider');
+    const label = document.getElementById('raceLabel');
+    if (slider) slider.value = index;
+    if (label) label.textContent = index === 0 ? 'Début' : `Journée ${snapshot.matchDay}`;
+    
+    const barsContainer = document.getElementById('titleRaceBars');
+    if (!barsContainer) return;
+    
+    // Nombre d'équipes à afficher (top 10 ou toutes si <= 12)
+    const showCount = totalTeams <= 12 ? totalTeams : 10;
+    const barHeight = 32;
+    const barGap = 4;
+    const containerHeight = showCount * (barHeight + barGap) + 10;
+    
+    barsContainer.style.height = containerHeight + 'px';
+    
+    // Vérifier si les éléments existent déjà
+    const existingBars = barsContainer.querySelectorAll('.race-bar-item');
+    
+    if (existingBars.length === 0) {
+        // Première construction
+        barsContainer.innerHTML = '';
+        
+        ranking.slice(0, showCount).forEach((team, i) => {
+            const color = getTeamColor(team.id);
+            const barWidth = maxPoints > 0 ? (team.points / maxPoints) * 70 : 0;
+            const top = i * (barHeight + barGap) + 5;
+            
+            const el = document.createElement('div');
+            el.className = 'race-bar-item';
+            el.dataset.teamId = team.id;
+            el.style.cssText = `
+                position:absolute;left:0;right:0;height:${barHeight}px;
+                top:${top}px;
+                display:flex;align-items:center;
+                transition: top 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            `;
+            
+            el.innerHTML = `
+                <div class="race-rank" style="width:30px;text-align:center;font-weight:bold;font-size:0.85rem;color:#7f8c8d;">${i + 1}</div>
+                <div class="race-name" style="width:55px;font-size:0.8rem;font-weight:600;color:#2c3e50;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${team.name}</div>
+                <div style="flex:1;position:relative;height:100%;display:flex;align-items:center;">
+                    <div class="race-bar" style="
+                        height:${barHeight - 4}px;
+                        width:${barWidth}%;
+                        background:linear-gradient(90deg,${color},${color}dd);
+                        border-radius:0 6px 6px 0;
+                        transition: width 0.6s ease-out;
+                        min-width:4px;
+                        display:flex;align-items:center;justify-content:flex-end;padding-right:6px;
+                    ">
+                        <span style="color:white;font-size:0.75rem;font-weight:bold;text-shadow:0 1px 2px rgba(0,0,0,0.3);">${team.points > 0 ? team.points : ''}</span>
+                    </div>
+                    <span class="race-points-label" style="margin-left:6px;font-weight:bold;font-size:0.85rem;color:${color};">${team.points} pts</span>
+                    ${team.lastResult ? `<span class="race-result" style="margin-left:4px;font-size:0.7rem;padding:1px 5px;border-radius:3px;font-weight:bold;color:white;background:${team.lastResult === 'V' ? '#27ae60' : team.lastResult === 'N' ? '#f39c12' : '#e74c3c'};">${team.lastResult}</span>` : ''}
+                </div>
+            `;
+            
+            barsContainer.appendChild(el);
+        });
+    } else {
+        // Mise à jour animée
+        const visibleTeams = ranking.slice(0, showCount);
+        
+        visibleTeams.forEach((team, newIndex) => {
+            let el = barsContainer.querySelector(`.race-bar-item[data-team-id="${team.id}"]`);
+            
+            if (!el) {
+                // Nouvelle équipe dans le top — créer l'élément
+                el = document.createElement('div');
+                el.className = 'race-bar-item';
+                el.dataset.teamId = team.id;
+                el.style.cssText = `
+                    position:absolute;left:0;right:0;height:${barHeight}px;
+                    top:${newIndex * (barHeight + barGap) + 5}px;
+                    display:flex;align-items:center;
+                    transition: top 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+                    opacity:0;
+                `;
+                el.innerHTML = `
+                    <div class="race-rank" style="width:30px;text-align:center;font-weight:bold;font-size:0.85rem;color:#7f8c8d;"></div>
+                    <div class="race-name" style="width:55px;font-size:0.8rem;font-weight:600;color:#2c3e50;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${team.name}</div>
+                    <div style="flex:1;position:relative;height:100%;display:flex;align-items:center;">
+                        <div class="race-bar" style="height:${barHeight - 4}px;width:0%;border-radius:0 6px 6px 0;transition:width 0.6s ease-out;min-width:4px;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;">
+                            <span style="color:white;font-size:0.75rem;font-weight:bold;text-shadow:0 1px 2px rgba(0,0,0,0.3);"></span>
+                        </div>
+                        <span class="race-points-label" style="margin-left:6px;font-weight:bold;font-size:0.85rem;"></span>
+                    </div>
+                `;
+                barsContainer.appendChild(el);
+                requestAnimationFrame(() => { el.style.opacity = '1'; });
+            }
+            
+            const color = getTeamColor(team.id);
+            const barWidth = maxPoints > 0 ? (team.points / maxPoints) * 70 : 0;
+            const top = newIndex * (barHeight + barGap) + 5;
+            
+            // Animer la position
+            el.style.top = top + 'px';
+            
+            // Mettre à jour le rang
+            el.querySelector('.race-rank').textContent = newIndex + 1;
+            
+            // Mettre à jour la barre
+            const bar = el.querySelector('.race-bar');
+            bar.style.width = barWidth + '%';
+            bar.style.background = `linear-gradient(90deg,${color},${color}dd)`;
+            bar.querySelector('span').textContent = team.points > 0 ? team.points : '';
+            
+            // Mettre à jour les points
+            const ptsLabel = el.querySelector('.race-points-label');
+            ptsLabel.textContent = `${team.points} pts`;
+            ptsLabel.style.color = color;
+            
+            // Mettre à jour le résultat
+            let resultEl = el.querySelector('.race-result');
+            if (team.lastResult) {
+                if (!resultEl) {
+                    resultEl = document.createElement('span');
+                    resultEl.className = 'race-result';
+                    resultEl.style.cssText = 'margin-left:4px;font-size:0.7rem;padding:1px 5px;border-radius:3px;font-weight:bold;color:white;';
+                    el.querySelector('div[style*="flex:1"]').appendChild(resultEl);
+                }
+                resultEl.textContent = team.lastResult;
+                resultEl.style.background = team.lastResult === 'V' ? '#27ae60' : team.lastResult === 'N' ? '#f39c12' : '#e74c3c';
+                resultEl.style.display = '';
+            } else if (resultEl) {
+                resultEl.style.display = 'none';
+            }
+        });
+        
+        // Cacher les équipes qui sortent du top
+        barsContainer.querySelectorAll('.race-bar-item').forEach(el => {
+            const teamId = el.dataset.teamId;
+            const isVisible = visibleTeams.some(t => t.id == teamId);
+            if (!isVisible) {
+                el.style.opacity = '0';
+                setTimeout(() => el.remove(), 600);
+            }
+        });
+    }
+}
+
+function toggleTitleRace() {
+    if (titleRacePlaying) {
+        pauseTitleRace();
+    } else {
+        playTitleRace();
+    }
+}
+
+function playTitleRace() {
+    const maxDay = window.titleRaceMaxDay || 0;
+    
+    // Si à la fin, recommencer
+    if (titleRaceCurrentDay >= maxDay) {
+        titleRaceCurrentDay = 0;
+        // Reset les barres
+        const barsContainer = document.getElementById('titleRaceBars');
+        if (barsContainer) barsContainer.innerHTML = '';
+        renderTitleRaceFrame(0);
+    }
+    
+    titleRacePlaying = true;
+    document.getElementById('racePlayBtn').innerHTML = '⏸️ Pause';
+    document.getElementById('racePlayBtn').style.background = 'linear-gradient(135deg,#e74c3c,#c0392b)';
+    
+    titleRaceInterval = setInterval(() => {
+        titleRaceCurrentDay++;
+        if (titleRaceCurrentDay > maxDay) {
+            pauseTitleRace();
+            return;
+        }
+        renderTitleRaceFrame(titleRaceCurrentDay);
+    }, titleRaceSpeed);
+}
+
+function pauseTitleRace() {
+    titleRacePlaying = false;
+    clearInterval(titleRaceInterval);
+    document.getElementById('racePlayBtn').innerHTML = '▶️ Play';
+    document.getElementById('racePlayBtn').style.background = 'linear-gradient(135deg,#27ae60,#2ecc71)';
+}
+
+function stepTitleRace(direction) {
+    pauseTitleRace();
+    const maxDay = window.titleRaceMaxDay || 0;
+    const newDay = Math.max(0, Math.min(maxDay, titleRaceCurrentDay + direction));
+    
+    if (newDay !== titleRaceCurrentDay) {
+        // Reset bars si on recule
+        if (direction < 0) {
+            const barsContainer = document.getElementById('titleRaceBars');
+            if (barsContainer) barsContainer.innerHTML = '';
+        }
+        renderTitleRaceFrame(newDay);
+    }
+}
+
+function jumpToDay(index) {
+    pauseTitleRace();
+    const barsContainer = document.getElementById('titleRaceBars');
+    if (barsContainer) barsContainer.innerHTML = '';
+    renderTitleRaceFrame(parseInt(index));
+}
+
+function changeRaceSpeed(speed) {
+    titleRaceSpeed = parseInt(speed);
+    if (titleRacePlaying) {
+        clearInterval(titleRaceInterval);
+        titleRaceInterval = setInterval(() => {
+            titleRaceCurrentDay++;
+            if (titleRaceCurrentDay > (window.titleRaceMaxDay || 0)) {
+                pauseTitleRace();
+                return;
+            }
+            renderTitleRaceFrame(titleRaceCurrentDay);
+        }, titleRaceSpeed);
+    }
 }

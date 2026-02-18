@@ -275,6 +275,11 @@ async function displayMatchDayRankingContent(matchDay) {
             </div>
         `;
         
+        // MVP de la journée
+        if (typeof renderMVPInRanking === 'function') {
+            html = await renderMVPInRanking(matchDay, html);
+        }
+        
         container.innerHTML = html;
         
     } catch (error) {
@@ -300,7 +305,13 @@ async function showMatchDayPlayerDetail(playerId, matchDay) {
         <div class="modal-content">
             <div class="modal-header">
                 <h3>📊 ${playerData.pseudo} - Journée ${matchDay}</h3>
-                <button class="btn-close" onclick="this.closest('.matchday-detail-modal').remove()">✕</button>
+                <div style="display:flex;gap:0.5rem;align-items:center;">
+                    <button onclick="sharePronosticsCard('${playerData.playerId}', '${playerData.pseudo}', ${matchDay})" 
+                            style="padding:0.4rem 0.8rem;background:rgba(255,255,255,0.2);color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.85rem;">
+                        📸 Partager
+                    </button>
+                    <button class="btn-close" onclick="this.closest('.matchday-detail-modal').remove()">✕</button>
+                </div>
             </div>
             <div class="modal-body">
                 <div class="player-summary">
