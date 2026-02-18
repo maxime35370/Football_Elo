@@ -190,55 +190,150 @@
 
                     <!-- Onglet Règles -->
                     <div id="rulesTab" class="game-tab-content">
-                        <div class="rules-content">
-                            <h3>📖 Règles du Jeu</h3>
-                            
-                            <div class="rule-section">
-                                <h4>🎯 Objectif</h4>
-                                <p>Prédire les scores des matchs de chaque journée et accumuler un maximum de points.</p>
+                        <div class="rules-content" style="max-width:700px;margin:0 auto;line-height:1.6;color:#2c3e50;">
+
+                            <!-- OBJECTIF -->
+                            <h3 style="margin-top:0;">🎯 Objectif</h3>
+                            <p>Prédire les scores des matchs de chaque journée et accumuler un maximum de points grâce à tes pronostics, tes bonus et ta stratégie.</p>
+
+                            <!-- POINTS DE BASE -->
+                            <h3>📊 Système de Points</h3>
+                            <table style="width:100%;border-collapse:collapse;margin-bottom:1rem;">
+                                <thead>
+                                    <tr style="background:#f8f9fa;">
+                                        <th style="padding:0.6rem;text-align:left;border-bottom:2px solid #dee2e6;">Résultat</th>
+                                        <th style="padding:0.6rem;text-align:center;border-bottom:2px solid #dee2e6;">Points</th>
+                                        <th style="padding:0.6rem;text-align:left;border-bottom:2px solid #dee2e6;">Condition</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td style="padding:0.5rem;">❌ Mauvais résultat</td><td style="text-align:center;font-weight:bold;">0 pt</td><td>Mauvaise issue (1/N/2)</td></tr>
+                                    <tr style="background:#f8f9fa;"><td style="padding:0.5rem;">✅ Bon résultat</td><td style="text-align:center;font-weight:bold;color:#27ae60;">3 pts</td><td>Bonne issue, écart ≥ 3 buts</td></tr>
+                                    <tr><td style="padding:0.5rem;">✅ Bon + écart 2</td><td style="text-align:center;font-weight:bold;color:#27ae60;">4 pts</td><td>Bonne issue, écart de 2 buts</td></tr>
+                                    <tr style="background:#f8f9fa;"><td style="padding:0.5rem;">🎯 Score proche</td><td style="text-align:center;font-weight:bold;color:#f39c12;">6 pts</td><td>Bonne issue, écart de 1 but</td></tr>
+                                    <tr><td style="padding:0.5rem;">🏆 Score exact</td><td style="text-align:center;font-weight:bold;color:#e74c3c;">9 pts</td><td>Score parfaitement prédit !</td></tr>
+                                </tbody>
+                            </table>
+                            <div style="background:#ecf0f1;padding:0.75rem;border-radius:8px;font-size:0.9rem;margin-bottom:1rem;">
+                                <strong>📐 Écart</strong> = |buts dom prédit − réel| + |buts ext prédit − réel|<br>
+                                <em>Exemple :</em> Réel <strong>3-2</strong>, Prono <strong>3-1</strong> → 0 + 1 = 1 → 🎯 6 pts
                             </div>
-                            
-                            <div class="rule-section">
-                                <h4>📊 Système de Points</h4>
-                                <table class="rules-table">
-                                    <tr>
-                                        <td>❌ Mauvais résultat</td>
-                                        <td><strong>0 pt</strong></td>
-                                        <td>L'équipe prédite n'a pas gagné</td>
-                                    </tr>
-                                    <tr>
-                                        <td>✅ Bon résultat</td>
-                                        <td><strong>3 pts</strong></td>
-                                        <td>Bonne équipe gagnante (écart ≥3 buts)</td>
-                                    </tr>
-                                    <tr>
-                                        <td>✅ Bon + écart 2 buts</td>
-                                        <td><strong>4 pts</strong></td>
-                                        <td>Bon résultat + score proche</td>
-                                    </tr>
-                                    <tr>
-                                        <td>🎯 Score proche</td>
-                                        <td><strong>6 pts</strong></td>
-                                        <td>Bon résultat + 1 but d'écart total</td>
-                                    </tr>
-                                    <tr>
-                                        <td>🏆 Score exact</td>
-                                        <td><strong>9 pts</strong></td>
-                                        <td>Score parfaitement prédit !</td>
-                                    </tr>
+
+                            <!-- DEADLINE -->
+                            <h3>⏰ Deadline</h3>
+                            <p>Pronostics à soumettre <strong>avant le coup d'envoi</strong> de chaque match. Tu peux pronostiquer individuellement jusqu'au début de chaque match, même si d'autres ont déjà commencé.</p>
+
+                            <hr style="border:none;border-top:1px solid #dee2e6;margin:1.5rem 0;">
+
+                            <!-- OUTILS STRATÉGIQUES -->
+                            <h2 style="text-align:center;color:#667eea;margin-bottom:1.5rem;">🎮 Outils Stratégiques</h2>
+
+                            <!-- JOKER -->
+                            <div style="background:linear-gradient(135deg,#9b59b610,#8e44ad10);border:1px solid #9b59b640;border-radius:12px;padding:1rem;margin-bottom:1rem;">
+                                <h3 style="margin-top:0;color:#8e44ad;">🃏 Joker — ×2 sur un match</h3>
+                                <ul style="margin:0.5rem 0;padding-left:1.5rem;">
+                                    <li><strong>5 par saison</strong>, max 1 par journée</li>
+                                    <li>Double les points sur le match choisi</li>
+                                    <li>Consommé même si le résultat est mauvais (0 × 2 = 0)</li>
+                                </ul>
+                                <div style="background:#9b59b615;padding:0.5rem 0.75rem;border-radius:6px;font-size:0.9rem;">
+                                    💡 <em>Score exact (9) + Joker = <strong>18 pts</strong></em>
+                                </div>
+                            </div>
+
+                            <!-- SUPER JOKER -->
+                            <div style="background:linear-gradient(135deg,#f1c40f10,#f39c1210);border:1px solid #f1c40f60;border-radius:12px;padding:1rem;margin-bottom:1rem;">
+                                <h3 style="margin-top:0;color:#f39c12;">🃏✨ Super Joker — ×1.5 sur TOUTE la journée</h3>
+                                <ul style="margin:0.5rem 0;padding-left:1.5rem;">
+                                    <li><strong>1 seul par saison</strong> — à utiliser avec stratégie !</li>
+                                    <li>×1.5 sur <strong>tous les matchs</strong> de la journée</li>
+                                    <li>⚠️ <strong>Incompatible</strong> avec les jokers individuels sur la même journée</li>
+                                    <li>Retirable tant qu'aucun match n'a commencé, verrouillé ensuite</li>
+                                </ul>
+                                <div style="background:#f1c40f15;padding:0.5rem 0.75rem;border-radius:6px;font-size:0.9rem;">
+                                    💡 <em>25 pts sur la journée + Super Joker = <strong>37.5 pts</strong></em>
+                                </div>
+                            </div>
+
+                            <!-- PARI COMBINÉ -->
+                            <div style="background:linear-gradient(135deg,#3498db10,#2980b910);border:1px solid #3498db40;border-radius:12px;padding:1rem;margin-bottom:1rem;">
+                                <h3 style="margin-top:0;color:#2980b9;">🎲 Pari Combiné</h3>
+                                <p style="margin:0.25rem 0 0.5rem;">Sélectionne <strong>2 à 4 matchs</strong>. Si TOUS sont au moins "bon résultat" (≥ 3 pts), tu gagnes un bonus :</p>
+                                <table style="width:100%;border-collapse:collapse;margin-bottom:0.5rem;">
+                                    <tr style="background:#3498db10;"><td style="padding:0.4rem 0.75rem;">2 matchs</td><td style="text-align:center;font-weight:bold;">×1.3</td></tr>
+                                    <tr><td style="padding:0.4rem 0.75rem;">3 matchs</td><td style="text-align:center;font-weight:bold;">×1.6</td></tr>
+                                    <tr style="background:#3498db10;"><td style="padding:0.4rem 0.75rem;">4 matchs</td><td style="text-align:center;font-weight:bold;">×2.0</td></tr>
                                 </table>
+                                <p style="margin:0.25rem 0;font-size:0.9rem;">🌟 <strong>Bonus "All Perfect"</strong> : si TOUS sont des scores exacts → ×1.2 en plus !</p>
+                                <p style="margin:0.25rem 0;font-size:0.9rem;">❌ Si <strong>un seul</strong> match est sous 3 pts → pas de bonus.</p>
+                                <div style="background:#3498db10;padding:0.5rem 0.75rem;border-radius:6px;font-size:0.9rem;margin-top:0.5rem;">
+                                    💡 <em>Combiné 3 matchs : 9 + 6 + 3 = 18 × 1.6 = <strong>28.8 pts</strong></em>
+                                </div>
                             </div>
-                            
-                            <div class="rule-section">
-                                <h4>📐 Calcul de l'écart</h4>
-                                <p><code>Écart = |buts_dom_prédit - buts_dom_réel| + |buts_ext_prédit - buts_ext_réel|</code></p>
-                                <p><strong>Exemple :</strong> Match réel 3-2, Pronostic 3-1 → Écart = |3-3| + |1-2| = 0 + 1 = <strong>1 but</strong> → 🎯 6 pts</p>
+
+                            <!-- DÉFI BUTEUR -->
+                            <div style="background:linear-gradient(135deg,#e74c3c10,#c0392b10);border:1px solid #e74c3c40;border-radius:12px;padding:1rem;margin-bottom:1rem;">
+                                <h3 style="margin-top:0;color:#c0392b;">⚽ Défi Buteur — Prédit le 1er buteur</h3>
+                                <p style="margin:0.25rem 0 0.5rem;">Optionnel, match par match. Active le toggle et choisis un joueur :</p>
+                                <table style="width:100%;border-collapse:collapse;margin-bottom:0.5rem;">
+                                    <tr style="background:#e74c3c10;"><td style="padding:0.4rem 0.75rem;">🎯 1er buteur exact</td><td style="text-align:center;font-weight:bold;color:#27ae60;">+4 pts</td></tr>
+                                    <tr><td style="padding:0.4rem 0.75rem;">✅ A marqué (pas en 1er)</td><td style="text-align:center;font-weight:bold;color:#f39c12;">+1 pt</td></tr>
+                                    <tr style="background:#e74c3c10;"><td style="padding:0.4rem 0.75rem;">❌ N'a pas marqué / 0-0</td><td style="text-align:center;font-weight:bold;color:#95a5a6;">+0 pt</td></tr>
+                                </table>
+                                <p style="margin:0;font-size:0.9rem;">Les top 5 buteurs de chaque équipe sont proposés, ou tape un nom dans "Autre".</p>
                             </div>
-                            
-                            <div class="rule-section">
-                                <h4>⏰ Deadline</h4>
-                                <p>Les pronostics doivent être soumis <strong>avant le coup d'envoi de chaque match</strong>. Tu peux pronostiquer les matchs individuellement jusqu'à leur début, même si d'autres matchs de la journée ont déjà commencé.</p>
+
+                            <hr style="border:none;border-top:1px solid #dee2e6;margin:1.5rem 0;">
+
+                            <!-- MVP -->
+                            <h3>🏆 MVP de la Journée</h3>
+                            <p>Le <strong>meilleur pronostiqueur</strong> de chaque journée reçoit :</p>
+                            <ul style="padding-left:1.5rem;">
+                                <li>Le badge <strong>🏆 MVP</strong> affiché dans le classement</li>
+                                <li><strong>+2 points bonus</strong></li>
+                                <li>En cas d'ex-aequo : départage par scores exacts, puis scores proches</li>
+                            </ul>
+
+                            <!-- COTES -->
+                            <h3>📈 Système de Cotes</h3>
+                            <p>Les cotes sont calculées automatiquement d'après les <strong>ratings Elo</strong>. Un pronostic risqué (victoire d'une petite équipe) rapporte plus de points qu'un pronostic "facile".</p>
+
+                            <!-- IA -->
+                            <h3>🤖 IA Claude</h3>
+                            <p>L'IA génère ses propres pronostics et participe au classement. Tu peux voir ses suggestions et comparer tes performances aux siennes.</p>
+
+                            <hr style="border:none;border-top:1px solid #dee2e6;margin:1.5rem 0;">
+
+                            <!-- RÉCAP -->
+                            <h3>📋 Récapitulatif des points</h3>
+                            <table style="width:100%;border-collapse:collapse;">
+                                <thead>
+                                    <tr style="background:#667eea;color:white;">
+                                        <th style="padding:0.6rem;text-align:left;border-radius:8px 0 0 0;">Source</th>
+                                        <th style="padding:0.6rem;text-align:center;border-radius:0 8px 0 0;">Points</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td style="padding:0.5rem;border-bottom:1px solid #eee;">Pronostic de base</td><td style="text-align:center;border-bottom:1px solid #eee;">0 à 9 pts / match</td></tr>
+                                    <tr style="background:#f8f9fa;"><td style="padding:0.5rem;border-bottom:1px solid #eee;">🃏 Joker</td><td style="text-align:center;border-bottom:1px solid #eee;">×2 sur 1 match</td></tr>
+                                    <tr><td style="padding:0.5rem;border-bottom:1px solid #eee;">🃏✨ Super Joker</td><td style="text-align:center;border-bottom:1px solid #eee;">×1.5 sur toute la journée</td></tr>
+                                    <tr style="background:#f8f9fa;"><td style="padding:0.5rem;border-bottom:1px solid #eee;">🎲 Pari Combiné</td><td style="text-align:center;border-bottom:1px solid #eee;">×1.3 à ×2.0 bonus</td></tr>
+                                    <tr><td style="padding:0.5rem;border-bottom:1px solid #eee;">⚽ Défi Buteur</td><td style="text-align:center;border-bottom:1px solid #eee;">+1 à +4 pts / match</td></tr>
+                                    <tr style="background:#f8f9fa;"><td style="padding:0.5rem;border-bottom:1px solid #eee;">🏆 MVP</td><td style="text-align:center;border-bottom:1px solid #eee;">+2 pts / journée</td></tr>
+                                    <tr><td style="padding:0.5rem;">📈 Cotes</td><td style="text-align:center;">Multiplicateur variable</td></tr>
+                                </tbody>
+                            </table>
+
+                            <!-- CONSEILS -->
+                            <h3 style="margin-top:1.5rem;">💡 Conseils</h3>
+                            <div style="background:#ecf0f1;padding:1rem;border-radius:10px;font-size:0.9rem;">
+                                <p style="margin:0 0 0.5rem;">🃏✨ <strong>Super Joker :</strong> Garde-le pour une journée où tu es confiant sur TOUS les matchs</p>
+                                <p style="margin:0 0 0.5rem;">🎲 <strong>Combiné :</strong> Combine des matchs "sûrs" plutôt que des paris risqués</p>
+                                <p style="margin:0 0 0.5rem;">⚽ <strong>Buteur :</strong> Active-le surtout quand les meilleurs buteurs jouent</p>
+                                <p style="margin:0 0 0.5rem;">🃏 <strong>Jokers :</strong> Utilise-les quand tu es confiant ET que la cote est favorable</p>
+                                <p style="margin:0;">⚖️ <strong>Nuls :</strong> Un 0-0 ou 1-1 bien prédit vaut 9 pts comme tout score exact !</p>
                             </div>
+
                         </div>
                     </div>
                     <div id="iaTab" class="game-tab-content">
