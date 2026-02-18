@@ -106,6 +106,7 @@
                     <!-- Onglets du jeu -->
                     <div class="game-tabs">
                         <button class="game-tab active" data-tab="predictions">🎯 Pronostiquer</button>
+                        <button class="game-tab" data-tab="rankingBet">📊 Pronostique classement final</button>
                         <button class="game-tab" data-tab="leaderboard">🏆 Classement</button>
                         <button class="game-tab" data-tab="history">📜 Historique</button>
                         <button class="game-tab" data-tab="rules">📖 Règles</button>
@@ -143,6 +144,15 @@
                         
                         <div class="predictions-summary" id="predictionsSummary">
                             <!-- Résumé après calcul -->
+                        </div>
+                    </div>
+
+                    <!-- Onglet Pronostique classement finale -->
+                    <div id="rankingBetTab" class="game-tab-content">
+                        <div class="ranking-bet-container">
+                            <div id="rankingBetContainer">
+                                <div class="loading">Chargement...</div>
+                            </div>
                         </div>
                     </div>
 
@@ -415,6 +425,7 @@
         <script src="../js/pronostics-scorer.js"></script>
         <script src="../js/pronostics-super-joker.js"></script>
         <script src="../js/pronostics-combine.js"></script>
+        <script src="../js/pronostics-ranking-bet.js"></script>
     <script>
     function toggleMenu() {
         document.querySelector('.nav-container').classList.toggle('open');

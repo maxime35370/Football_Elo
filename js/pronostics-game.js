@@ -241,6 +241,10 @@ function showGameSection() {
     if (typeof updateMVPs === 'function') {
         updateMVPs();
     }
+    // Invalider le cache des côtes classement
+    if (typeof invalidateOddsCache === 'function') {
+        invalidateOddsCache();
+    }
 }
 
 // ===============================
@@ -389,6 +393,11 @@ function initGameEvents() {
             else if (tab.dataset.tab === 'heatmap') renderHeatmapTab();
             else if (tab.dataset.tab === 'profile') renderProfileTab();
             else if (tab.dataset.tab === 'chat') initChatTab();
+            else if (tab.dataset.tab === 'rankingBet') {
+                if (typeof initRankingBetUI === 'function') {
+                    initRankingBetUI('rankingBetContainer');
+                }
+            }
         });
     });
     
