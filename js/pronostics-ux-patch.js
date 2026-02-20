@@ -572,3 +572,56 @@ if (_origEnhanceMatchCards) {
 })();
 
 console.log('🔧 Patch UX chargé — buteur persistant, mobile toggle, exclusion jokers');
+
+
+// ===============================
+// 6. VERROUILLAGE COMBINÉ / SUPER JOKER / DÉFIS
+//    Dès que le 1er match de la journée a commencé
+// ===============================
+
+/**
+ * Vérifie si la journée a commencé (au moins 1 match démarré)
+ */
+function isMatchDayStarted(matchDay) {
+    const now = new Date();
+    const _futureMatches = typeof futureMatches !== 'undefined' ? futureMatches : [];
+    const allMatchesThisDay = [...allMatches, ..._futureMatches].filter(m => m.matchDay === matchDay);
+    
+    return allMatchesThisDay.some(m => {
+        if (m.finalScore) return true; // Déjà joué
+        if (m.scheduledAt) return now >= new Date(m.scheduledAt);
+        return false;
+    });
+}
+
+// --- Override toggleCombineMatch ---
+const _origToggleCombineMatch = typeof toggleCombineMatch === 'function' ? toggleCombineMatch : null;
+if (_origToggleCombineMatch) {
+    toggleCombineMatch = function(matchDay, homeTeamId, awayTeamId) {
+        if (isMatchDayStarted(matchDay)) {
+            if (typeof toastWarning === 'function') toastWarning('Le combiné est verrouillé — un match a déjà commencé');
+            else alert('⚠️ Le combiné est verrouillé — un match a déjà commencé');
+            return;
+        }
+        return _origToggleCombineMatch(matchDay, homeTeamId, awayTeamId);
+    };
+}
+
+// --- Override handleToggleSuperJoker ---
+const _origToggleSJ = typeof handleToggleSuperJoker === 'function' ? handleToggleSuperJoker : null;
+if (_origToggleSJ) {
+    handleToggleSuperJoker = async function(matchDay) {
+        if (isMatchDayStarted(matchDay)) {
+            if (typeof toastWarning === 'function') toastWarning('Le Super Joker est verrouillé — un match a déjà commencé');
+            else alert('⚠️ Le Super Joker est verrouillé — un match a déjà commencé');
+            return;
+        }
+        return _origToggleSJ(matchDay);
+    };
+}
+
+// --- Override toggleJoker ---
+// PAS de verrouillage ici — le joker individuel est déjà verrouillé
+// par match dans displayPredictionsForm() via isMatchLocked
+
+console.log('🔒 Verrouillage combiné/super joker activé');
