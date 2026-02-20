@@ -27,10 +27,9 @@ const CHALLENGE_CONFIG = {
 const CHALLENGE_TYPES = [
     {
         id: 'over_goals',
-        label: (match, threshold) => `+${threshold} buts dans ${match.homeShort} - ${match.awayShort} ?`,
+        label: (match, params) => `+${params.threshold} buts dans ${match.homeShort} - ${match.awayShort} ?`,
         emoji: '⚽',
         generate: (match) => {
-            // Basé sur les Elo : équipes offensives = seuil plus haut
             const avgElo = (match.homeElo + match.awayElo) / 2;
             const threshold = avgElo > 1550 ? 3.5 : avgElo > 1450 ? 2.5 : 1.5;
             return { threshold, difficulty: threshold >= 3.5 ? 'hard' : 'normal' };
@@ -44,19 +43,15 @@ const CHALLENGE_TYPES = [
         id: 'btts',
         label: (match) => `Les 2 équipes marquent dans ${match.homeShort} - ${match.awayShort} ?`,
         emoji: '🎯',
-        generate: (match) => {
-            return { difficulty: 'normal' };
-        },
-        resolve: (match) => {
-            return match.finalScore.home > 0 && match.finalScore.away > 0;
-        }
+        generate: () => ({ difficulty: 'normal' }),
+        resolve: (match) => match.finalScore.home > 0 && match.finalScore.away > 0
     },
     {
         id: 'clean_sheet',
         label: (match, params) => `Clean sheet pour ${params.teamShort} ?`,
         emoji: '🧤',
         generate: (match) => {
-            // L'équipe la plus forte a plus de chances de clean sheet
+            // L'équipe la plus forte (par Elo pré-journée) a plus de chances de clean sheet
             const stronger = match.homeElo >= match.awayElo 
                 ? { teamId: match.homeTeamId, teamShort: match.homeShort, isHome: true }
                 : { teamId: match.awayTeamId, teamShort: match.awayShort, isHome: false };
@@ -71,9 +66,7 @@ const CHALLENGE_TYPES = [
         id: 'early_goal',
         label: (match) => `But avant la 30e min dans ${match.homeShort} - ${match.awayShort} ?`,
         emoji: '⏱️',
-        generate: (match) => {
-            return { difficulty: 'normal' };
-        },
+        generate: () => ({ difficulty: 'normal' }),
         resolve: (match) => {
             if (!match.goals || match.goals.length === 0) return false;
             return match.goals.some(g => parseInt(g.minute) < 30);
@@ -83,12 +76,8 @@ const CHALLENGE_TYPES = [
         id: 'no_draw',
         label: (match) => `Pas de match nul dans ${match.homeShort} - ${match.awayShort} ?`,
         emoji: '🏆',
-        generate: (match) => {
-            return { difficulty: 'normal' };
-        },
-        resolve: (match) => {
-            return match.finalScore.home !== match.finalScore.away;
-        }
+        generate: () => ({ difficulty: 'normal' }),
+        resolve: (match) => match.finalScore.home !== match.finalScore.away
     },
     {
         id: 'home_win',
@@ -99,28 +88,20 @@ const CHALLENGE_TYPES = [
             const diff = match.awayElo - match.homeElo;
             return { difficulty: diff > 50 ? 'hard' : 'normal' };
         },
-        resolve: (match) => {
-            return match.finalScore.home > match.finalScore.away;
-        }
+        resolve: (match) => match.finalScore.home > match.finalScore.away
     },
     {
         id: 'high_scoring',
         label: (match) => `4+ buts dans ${match.homeShort} - ${match.awayShort} ?`,
         emoji: '💥',
-        generate: (match) => {
-            return { difficulty: 'hard' };
-        },
-        resolve: (match) => {
-            return (match.finalScore.home + match.finalScore.away) >= 4;
-        }
+        generate: () => ({ difficulty: 'hard' }),
+        resolve: (match) => (match.finalScore.home + match.finalScore.away) >= 4
     },
     {
         id: 'first_half_goal',
         label: (match) => `But en 1ère mi-temps dans ${match.homeShort} - ${match.awayShort} ?`,
         emoji: '🥅',
-        generate: (match) => {
-            return { difficulty: 'normal' };
-        },
+        generate: () => ({ difficulty: 'normal' }),
         resolve: (match) => {
             if (!match.goals || match.goals.length === 0) return false;
             return match.goals.some(g => parseInt(g.minute) <= 45);
@@ -134,12 +115,21 @@ const CHALLENGE_TYPES = [
 // ===============================
 
 /**
- * Génère les défis pour une journée
- * Utilise un seed basé sur la journée pour être déterministe
+ * Génère les défis pour une journée (calcul local pur)
+ * 100% déterministe si les données sont identiques
  */
-function generateChallenges(matchDay) {
+function _generateChallengesLocal(matchDay) {
     const _futureMatches = typeof futureMatches !== 'undefined' ? futureMatches : [];
-    const matchesThisDay = [...allMatches, ..._futureMatches].filter(m => m.matchDay === matchDay);
+    const allMatchesThisDay = [...allMatches, ..._futureMatches].filter(m => m.matchDay === matchDay);
+    
+    // Dédupliquer (un match peut être dans allMatches ET futureMatches)
+    const seen = new Set();
+    const matchesThisDay = allMatchesThisDay.filter(m => {
+        const key = `${m.homeTeamId}-${m.awayTeamId}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
     
     if (matchesThisDay.length === 0) return [];
     
@@ -151,18 +141,23 @@ function generateChallenges(matchDay) {
         return (rng - 1) / 2147483646;
     }
     
-    // Enrichir les matchs avec les infos Elo
+    // Enrichir les matchs avec Elo STABLE (matchs des journées PRÉCÉDENTES uniquement)
+    const matchesBeforeThisDay = allMatches.filter(m => m.matchDay < matchDay);
+    let cachedRatings = null;
+    if (typeof EloSystem !== 'undefined') {
+        try {
+            cachedRatings = EloSystem.recalculateAllEloRatings(allTeams, matchesBeforeThisDay);
+        } catch (e) {}
+    }
+    
     const enrichedMatches = matchesThisDay.map(m => {
         const homeTeam = allTeams.find(t => t.id == m.homeTeamId);
         const awayTeam = allTeams.find(t => t.id == m.awayTeamId);
         
         let homeElo = 1500, awayElo = 1500;
-        if (typeof EloSystem !== 'undefined') {
-            try {
-                const ratings = EloSystem.recalculateAllEloRatings(allTeams, allMatches);
-                homeElo = ratings.find(r => r.id == m.homeTeamId)?.elo || 1500;
-                awayElo = ratings.find(r => r.id == m.awayTeamId)?.elo || 1500;
-            } catch (e) {}
+        if (cachedRatings) {
+            homeElo = cachedRatings.find(r => r.id == m.homeTeamId)?.elo || 1500;
+            awayElo = cachedRatings.find(r => r.id == m.awayTeamId)?.elo || 1500;
         }
         
         return {
@@ -175,40 +170,33 @@ function generateChallenges(matchDay) {
         };
     });
     
-    // Sélectionner les matchs les plus intéressants (gros écart Elo ou derby)
-    const sortedByInterest = enrichedMatches.sort((a, b) => {
-        // Matchs serrés = plus intéressants
-        return a.eloDiff - b.eloDiff;
+    // Tri par intérêt : matchs serrés en premier (Elo stable car pré-journée)
+    const sortedMatches = enrichedMatches.sort((a, b) => {
+        // Matchs serrés = plus intéressants, puis par IDs pour départager
+        if (a.eloDiff !== b.eloDiff) return a.eloDiff - b.eloDiff;
+        const keyA = Number(a.homeTeamId) + Number(a.awayTeamId);
+        const keyB = Number(b.homeTeamId) + Number(b.awayTeamId);
+        return keyA - keyB;
     });
-    
-    // Choisir les matchs pour les défis
-    const challenges = [];
-    const usedTypes = new Set();
-    const usedMatches = new Set();
     
     // Mélanger les types de défis avec le seed
     const shuffledTypes = [...CHALLENGE_TYPES].sort(() => seededRandom() - 0.5);
+    
+    const challenges = [];
+    const usedTypes = new Set();
+    let matchIndex = 0;
     
     for (const challengeType of shuffledTypes) {
         if (challenges.length >= CHALLENGE_CONFIG.maxChallengesPerDay) break;
         if (usedTypes.has(challengeType.id)) continue;
         
-        // Choisir un match pour ce défi
-        let selectedMatch = null;
-        for (const match of sortedByInterest) {
-            const matchKey = `${match.homeTeamId}-${match.awayTeamId}`;
-            if (usedMatches.has(matchKey)) continue;
-            selectedMatch = match;
-            break;
-        }
-        
-        if (!selectedMatch) {
-            // Si tous les matchs sont pris, réutiliser
-            selectedMatch = sortedByInterest[Math.floor(seededRandom() * sortedByInterest.length)];
-        }
+        // Sélectionner un match de façon déterministe (round-robin)
+        const selectedMatch = sortedMatches[matchIndex % sortedMatches.length];
+        matchIndex++;
         
         if (!selectedMatch) continue;
         
+        // Générer les params avec Elo (stable car basé sur matchs pré-journée)
         const params = challengeType.generate(selectedMatch);
         const label = challengeType.label(selectedMatch, params);
         
@@ -226,10 +214,95 @@ function generateChallenges(matchDay) {
         });
         
         usedTypes.add(challengeType.id);
-        usedMatches.add(`${selectedMatch.homeTeamId}-${selectedMatch.awayTeamId}`);
     }
     
     return challenges;
+}
+
+/**
+ * Vérifie si une journée est terminée (tous les matchs joués)
+ */
+function isMatchDayCompleted(matchDay) {
+    const _futureMatches = typeof futureMatches !== 'undefined' ? futureMatches : [];
+    const allMatchesThisDay = [...allMatches, ..._futureMatches].filter(m => m.matchDay === matchDay);
+    
+    if (allMatchesThisDay.length === 0) return false;
+    
+    // Tous les matchs de cette journée doivent avoir un finalScore
+    return allMatchesThisDay.every(m => 
+        allMatches.some(am => 
+            am.homeTeamId == m.homeTeamId && 
+            am.awayTeamId == m.awayTeamId && 
+            am.matchDay === matchDay && 
+            am.finalScore
+        )
+    );
+}
+
+/**
+ * Récupère ou crée les défis pour une journée
+ * - Ne génère que si la journée PRÉCÉDENTE est terminée
+ * - Sauvegarde en Firebase pour garantir l'identité entre joueurs
+ */
+async function getOrCreateChallenges(matchDay) {
+    const season = typeof currentSeason !== 'undefined' ? currentSeason : null;
+    if (!season) return _generateChallengesLocal(matchDay);
+    
+    const docId = `${season}_J${matchDay}`;
+    
+    // 1. Essayer de lire depuis Firebase
+    if (typeof db !== 'undefined') {
+        try {
+            const doc = await db.collection('matchDayChallenges').doc(docId).get();
+            if (doc.exists) {
+                const data = doc.data();
+                if (data.challenges && data.challenges.length > 0) {
+                    return data.challenges;
+                }
+            }
+        } catch (e) {
+            console.warn('Erreur lecture défis Firebase:', e);
+        }
+    }
+    
+    // 2. Pas en Firebase → vérifier que la journée précédente est terminée
+    const prevMatchDay = matchDay - 1;
+    if (prevMatchDay >= 1 && !isMatchDayCompleted(prevMatchDay)) {
+        // Journée précédente pas finie → pas de défis encore
+        return [];
+    }
+    
+    // 3. Journée précédente terminée → générer et sauvegarder
+    const challenges = _generateChallengesLocal(matchDay);
+    
+    if (challenges.length > 0 && typeof db !== 'undefined') {
+        try {
+            await db.collection('matchDayChallenges').doc(docId).set({
+                season,
+                matchDay,
+                challenges,
+                generatedAt: new Date().toISOString()
+            });
+            console.log(`✅ Défis J${matchDay} sauvegardés dans Firebase`);
+        } catch (e) {
+            console.warn('Erreur sauvegarde défis Firebase:', e);
+        }
+    }
+    
+    return challenges;
+}
+
+/**
+ * Version synchrone (fallback pour les appels non-async)
+ * Utilise le cache local si disponible
+ */
+function generateChallenges(matchDay) {
+    // Vérifier que la journée précédente est terminée
+    const prevMatchDay = matchDay - 1;
+    if (prevMatchDay >= 1 && !isMatchDayCompleted(prevMatchDay)) {
+        return [];
+    }
+    return _generateChallengesLocal(matchDay);
 }
 
 
@@ -280,8 +353,8 @@ async function savePlayerChallengeAnswers(playerId, season, matchDay, data) {
 // RÉSOLUTION DES DÉFIS
 // ===============================
 
-function resolveChallenges(matchDay) {
-    const challenges = generateChallenges(matchDay);
+async function resolveChallenges(matchDay) {
+    const challenges = await getOrCreateChallenges(matchDay);
     const matchesThisDay = allMatches.filter(m => m.matchDay === matchDay && m.finalScore);
     
     return challenges.map(challenge => {
@@ -307,7 +380,7 @@ async function calculateChallengePoints(playerId, season, matchDay) {
     const answers = await getPlayerChallengeAnswers(playerId, season, matchDay);
     if (!answers || !answers.challenges) return { points: 0, details: [] };
     
-    const resolved = resolveChallenges(matchDay);
+    const resolved = await resolveChallenges(matchDay);
     let totalPoints = 0;
     const details = [];
     
@@ -379,14 +452,14 @@ function calculateTotalGoalsPoints(predicted, actual) {
  * Génère le HTML du widget de défis pour une journée
  */
 async function renderChallengesWidget(matchDay) {
-    const challenges = generateChallenges(matchDay);
+    const challenges = await getOrCreateChallenges(matchDay);
     if (challenges.length === 0) return '';
     
     const existingAnswers = currentPlayer 
         ? await getPlayerChallengeAnswers(currentPlayer.id, currentSeason, matchDay)
         : null;
     
-    const resolved = resolveChallenges(matchDay);
+    const resolved = await resolveChallenges(matchDay);
     const allResolved = resolved.every(c => c.resolved);
     
     // Vérifier si la journée est verrouillée (au moins un match commencé)
@@ -635,6 +708,9 @@ async function addChallengesWidget() {
     const container = document.getElementById('predictionsList');
     if (!container || !currentPlayer) return;
     
+    // Supprimer tout widget existant pour éviter les doublons
+    document.querySelectorAll('.challenges-widget').forEach(w => w.remove());
+    
     const widget = await renderChallengesWidget(selectedMatchDay);
     if (!widget) return;
     
@@ -680,21 +756,45 @@ async function calculateAllChallengePoints(playerId, season, matchDay) {
 // AUTO-HOOK : insérer le widget après le rendu du formulaire
 // ===============================
 
-const _origDisplayPredictionsFormForChallenges = typeof displayPredictionsForm === 'function' 
-    ? displayPredictionsForm : null;
-
-if (_origDisplayPredictionsFormForChallenges) {
-    displayPredictionsForm = async function() {
-        await _origDisplayPredictionsFormForChallenges();
+// Utiliser UNIQUEMENT le MutationObserver pour éviter le double affichage
+(function setupChallengesObserver() {
+    let _challengesPending = false;
+    
+    const insertChallengesIfNeeded = async () => {
+        const list = document.getElementById('predictionsList');
+        if (!list || list.children.length === 0) return;
+        if (!currentPlayer) return;
+        if (_challengesPending) return;
         
-        // Supprimer l'ancien widget s'il existe
+        // Vérifier s'il y a déjà un widget
         const existing = document.querySelector('.challenges-widget');
-        if (existing) existing.remove();
+        if (existing) return;
         
-        // Ajouter le widget
-        await addChallengesWidget();
+        _challengesPending = true;
+        try {
+            await addChallengesWidget();
+        } catch (e) {
+            console.warn('Erreur insertion défis:', e);
+        }
+        _challengesPending = false;
     };
-}
+    
+    const observer = new MutationObserver(() => {
+        insertChallengesIfNeeded();
+    });
+    
+    const startObserving = () => {
+        observer.observe(document.body, { childList: true, subtree: true });
+        // Aussi vérifier immédiatement
+        insertChallengesIfNeeded();
+    };
+    
+    if (document.body) {
+        startObserving();
+    } else {
+        document.addEventListener('DOMContentLoaded', startObserving);
+    }
+})();
 
 
 console.log('🎲 Module défis IA + buts totaux chargé');

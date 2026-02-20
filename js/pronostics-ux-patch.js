@@ -13,7 +13,7 @@
  * Override du renderScorerChallenge pour afficher le nom
  * du buteur choisi (bouton OU manuel) de façon visible
  */
-const _originalRenderScorerChallenge = typeof renderScorerChallenge === 'function' ? renderScorerChallenge : null;
+var _originalRenderScorerChallenge = typeof renderScorerChallenge === 'function' ? renderScorerChallenge : null;
 
 function renderScorerChallenge(homeTeamId, awayTeamId, existingPick, isLocked) {
     const matchKey = `${homeTeamId}_${awayTeamId}`;
@@ -199,7 +199,7 @@ function confirmCustomScorer(matchKey) {
 /**
  * Override selectScorer pour mettre à jour l'affichage
  */
-const _origSelectScorer = typeof selectScorer === 'function' ? selectScorer : null;
+var _origSelectScorer = typeof selectScorer === 'function' ? selectScorer : null;
 selectScorer = function(matchKey, scorerName) {
     // Désélectionner tous les boutons
     const container = document.querySelector(`.scorer-challenge[data-match="${matchKey}"]`);
@@ -356,7 +356,7 @@ function wrapExtrasForMobile() {
 }
 
 // Observer les changements de taille d'écran
-let _lastScreenWidth = window.innerWidth;
+var _lastScreenWidth = window.innerWidth;
 window.addEventListener('resize', () => {
     const newWidth = window.innerWidth;
     if ((_lastScreenWidth <= 768 && newWidth > 768) || (_lastScreenWidth > 768 && newWidth <= 768)) {
@@ -376,7 +376,7 @@ window.addEventListener('resize', () => {
 /**
  * Override renderJokerButton pour masquer si Super Joker actif
  */
-const _origRenderJokerButton = typeof renderJokerButton === 'function' ? renderJokerButton : null;
+var _origRenderJokerButton = typeof renderJokerButton === 'function' ? renderJokerButton : null;
 
 renderJokerButton = function(matchEl, jokers, matchDay, homeTeamId, awayTeamId, isLocked) {
     const hasJoker = isJokerOnMatch(jokers, matchDay, homeTeamId, awayTeamId);
@@ -407,7 +407,7 @@ renderJokerButton = function(matchEl, jokers, matchDay, homeTeamId, awayTeamId, 
 /**
  * Override renderSuperJokerBanner pour masquer si joker individuel actif
  */
-const _origRenderSuperJokerBanner = typeof renderSuperJokerBanner === 'function' ? renderSuperJokerBanner : null;
+var _origRenderSuperJokerBanner = typeof renderSuperJokerBanner === 'function' ? renderSuperJokerBanner : null;
 
 renderSuperJokerBanner = async function(playerId, season, matchDay) {
     const superJoker = await getSuperJoker(playerId, season);
@@ -448,15 +448,7 @@ renderSuperJokerBanner = async function(playerId, season, matchDay) {
  * Après activation/désactivation du Super Joker, refresh la page
  * pour masquer/afficher les jokers individuels
  */
-const _origHandleToggleSuperJoker = typeof handleToggleSuperJoker === 'function' ? handleToggleSuperJoker : null;
-
-handleToggleSuperJoker = async function(matchDay) {
-    if (_origHandleToggleSuperJoker) {
-        await _origHandleToggleSuperJoker(matchDay);
-    }
-    // Le displayPredictionsForm est déjà appelé dans l'original,
-    // ce qui va re-render les jokers masqués/visibles
-};
+// Note: handleToggleSuperJoker est overridé dans la section 6 (verrouillage)
 
 
 // ===============================
@@ -467,7 +459,7 @@ handleToggleSuperJoker = async function(matchDay) {
  * Hook qui s'exécute après chaque displayPredictionsForm
  * pour appliquer le wrapping mobile
  */
-const _origEnhanceMatchCards = typeof enhanceMatchCardsWithConsensus === 'function' 
+var _origEnhanceMatchCards = typeof enhanceMatchCardsWithConsensus === 'function' 
     ? enhanceMatchCardsWithConsensus : null;
 
 if (_origEnhanceMatchCards) {
@@ -595,7 +587,7 @@ function isMatchDayStarted(matchDay) {
 }
 
 // --- Override toggleCombineMatch ---
-const _origToggleCombineMatch = typeof toggleCombineMatch === 'function' ? toggleCombineMatch : null;
+var _origToggleCombineMatch = typeof toggleCombineMatch === 'function' ? toggleCombineMatch : null;
 if (_origToggleCombineMatch) {
     toggleCombineMatch = function(matchDay, homeTeamId, awayTeamId) {
         if (isMatchDayStarted(matchDay)) {
@@ -608,7 +600,7 @@ if (_origToggleCombineMatch) {
 }
 
 // --- Override handleToggleSuperJoker ---
-const _origToggleSJ = typeof handleToggleSuperJoker === 'function' ? handleToggleSuperJoker : null;
+var _origToggleSJ = typeof handleToggleSuperJoker === 'function' ? handleToggleSuperJoker : null;
 if (_origToggleSJ) {
     handleToggleSuperJoker = async function(matchDay) {
         if (isMatchDayStarted(matchDay)) {
