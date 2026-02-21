@@ -238,13 +238,6 @@ function showGameSection() {
     updatePlayerHeader();
     initMatchDaySelector();
     loadLeaderboard();
-    if (typeof updateMVPs === 'function') {
-        updateMVPs();
-    }
-    // Invalider le cache des côtes classement
-    if (typeof invalidateOddsCache === 'function') {
-        invalidateOddsCache();
-    }
 }
 
 // ===============================
@@ -392,12 +385,6 @@ function initGameEvents() {
             else if (tab.dataset.tab === 'duels') renderDuelsTab();
             else if (tab.dataset.tab === 'heatmap') renderHeatmapTab();
             else if (tab.dataset.tab === 'profile') renderProfileTab();
-            else if (tab.dataset.tab === 'chat') initChatTab();
-            else if (tab.dataset.tab === 'rankingBet') {
-                if (typeof initRankingBetUI === 'function') {
-                    initRankingBetUI('rankingBetContainer');
-                }
-            }
         });
     });
     
@@ -605,26 +592,17 @@ async function displayPredictionsForm() {
     
     // Récupérer les pronostics existants du joueur
     const existingPredictions = await getPlayerPredictions(currentPlayer.id, currentSeason, selectedMatchDay);
-
-    // Charger les picks buteurs existants
-    if (typeof loadScorerPicksFromPredictions === 'function' && existingPredictions?.predictions) {
-        loadScorerPicksFromPredictions(existingPredictions.predictions);
-    }
-    
-    // Charger le combiné existant
-    if (typeof getPlayerCombine === 'function' && currentPlayer) {
-        const existingCombine = await getPlayerCombine(currentPlayer.id, currentSeason, selectedMatchDay);
-        if (existingCombine && typeof loadCombineFromSaved === 'function') {
-            loadCombineFromSaved(existingCombine, selectedMatchDay);
-        }
-    }
-
     const predictionsMap = {};
     
     if (existingPredictions && existingPredictions.predictions) {
         existingPredictions.predictions.forEach(p => {
             predictionsMap[`${p.homeTeamId}-${p.awayTeamId}`] = p;
         });
+        
+        // Charger les picks buteurs depuis les prédictions sauvegardées
+        if (typeof loadScorerPicksFromPredictions === 'function') {
+            loadScorerPicksFromPredictions(existingPredictions.predictions);
+        }
     }
     
     // Mettre à jour le statut
@@ -763,23 +741,13 @@ async function displayPredictionsForm() {
                 </div>
                 ${resultHtml}
                 ${!isMatchLocked ? `<div class="joker-slot" data-home="${match.homeTeamId}" data-away="${match.awayTeamId}"></div>` : ''}
-                ${typeof renderScorerChallenge === 'function' ? renderScorerChallenge(match.homeTeamId, match.awayTeamId, existingPredictions?.predictions?.find(p => p.homeTeamId == match.homeTeamId && p.awayTeamId == match.awayTeamId)?.scorerPick || null, isMatchLocked) : ''}
-                ${typeof renderCombineButton === 'function' && !isMatchLocked ? renderCombineButton(selectedMatchDay, match.homeTeamId, match.awayTeamId, isMatchLocked) : ''}
+                <div class="scorer-slot" data-home="${match.homeTeamId}" data-away="${match.awayTeamId}"></div>
             </div>
         `;
     });
     
-    // Bandeaux Super Joker + Combiné (ajoutés avant les matchs)
-    let bannersHtml = '';
-    if (typeof renderSuperJokerBanner === 'function' && currentPlayer) {
-        bannersHtml += await renderSuperJokerBanner(currentPlayer.id, currentSeason, selectedMatchDay);
-    }
-    if (typeof renderCombinePanel === 'function') {
-        bannersHtml += renderCombinePanel(selectedMatchDay, isPastMatchDay);
-    }
-    
     // IMPORTANT: D'abord injecter le HTML dans le DOM
-    container.innerHTML = bannersHtml + html;
+    container.innerHTML = html;
 
     // ENSUITE ajouter les boutons joker (après que le DOM existe)
     if (currentPlayer && currentSeason && typeof getPlayerJokers === 'function') {
@@ -793,6 +761,20 @@ async function displayPredictionsForm() {
             if (typeof renderJokerButton === 'function') {
                 slot.innerHTML = renderJokerButton(slot, jokers, selectedMatchDay, homeId, awayId, isLocked);
             }
+        });
+    }
+    
+    // Ajouter les défis buteur (après que le DOM existe)
+    if (typeof renderScorerChallenge === 'function') {
+        document.querySelectorAll('.scorer-slot').forEach(slot => {
+            const homeId = parseInt(slot.dataset.home);
+            const awayId = parseInt(slot.dataset.away);
+            const matchKey = `${homeId}_${awayId}`;
+            const match = matchesThisDay.find(m => m.homeTeamId == homeId && m.awayTeamId == awayId);
+            const isLocked = match?.finalScore || (match?.scheduledAt && new Date() >= new Date(match.scheduledAt));
+            const existingPick = window._scorerPicks ? window._scorerPicks[matchKey] : null;
+            
+            slot.innerHTML = renderScorerChallenge(homeId, awayId, existingPick, isLocked);
         });
     }
     
@@ -927,7 +909,7 @@ async function handleSavePredictions() {
         jokers = await getPlayerJokers(currentPlayer.id, currentSeason);
     }
     
-    let predictions = [];
+    const predictions = [];
     
     for (const matchEl of document.querySelectorAll('.prediction-match')) {
         const homeTeamId = parseInt(matchEl.dataset.home);
@@ -998,15 +980,10 @@ async function handleSavePredictions() {
         alert('Remplis au moins un pronostic !');
         return;
     }
-
+    
     // Ajouter les picks buteurs aux prédictions
     if (typeof addScorerPicksToPredictions === 'function') {
-        predictions = addScorerPicksToPredictions(predictions);
-    }
-    
-    // Sauvegarder le combiné
-    if (typeof saveCombineWithPredictions === 'function') {
-        await saveCombineWithPredictions(currentPlayer.id, currentSeason, selectedMatchDay);
+        addScorerPicksToPredictions(predictions);
     }
     
     const success = await savePredictions(
@@ -1352,32 +1329,6 @@ async function renderProfileTab() {
                 <div class="profile-section">
                     <h4>💙 Équipe Favorite</h4>
                     ${await renderFavoriteTeamStats(currentPlayer.id)}
-                </div>
-            `;
-        }
-
-        // MVP stats
-        if (typeof renderMVPStatsWidget === 'function') {
-            html += `
-                <div class="profile-section">
-                    <h4>🏆 MVP</h4>
-                    ${await renderMVPStatsWidget(currentPlayer.id)}
-                </div>
-            `;
-        }
-        
-        // Super Joker status
-        if (typeof getSuperJoker === 'function') {
-            const sj = await getSuperJoker(currentPlayer.id, currentSeason);
-            html += `
-                <div class="profile-section">
-                    <h4>🃏✨ Super Joker</h4>
-                    <div style="padding:1rem;background:${sj.used ? '#ecf0f1' : 'linear-gradient(135deg,#9b59b620,#8e44ad20)'};border-radius:12px;text-align:center;">
-                        ${sj.used 
-                            ? `<p style="color:#7f8c8d;">Utilisé sur la <strong>Journée ${sj.matchDay}</strong></p>` 
-                            : `<p style="color:#8e44ad;font-weight:bold;">🟢 Disponible — ×${SUPER_JOKER_CONFIG.multiplier} sur toute une journée</p>`
-                        }
-                    </div>
                 </div>
             `;
         }

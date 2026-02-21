@@ -283,13 +283,29 @@ function clearScorerSelection(matchKey) {
 function storeScorerPick(matchKey, scorerName) {
     if (!window._scorerPicks) window._scorerPicks = {};
     window._scorerPicks[matchKey] = scorerName;
+    
+    // Persister dans localStorage en backup
+    try {
+        localStorage.setItem('footballElo_scorerPicks', JSON.stringify(window._scorerPicks));
+    } catch (e) {}
 }
 
 /**
  * Récupère tous les picks de buteurs en cours
  */
 function getScorerPicks() {
-    return window._scorerPicks || {};
+    if (window._scorerPicks && Object.keys(window._scorerPicks).length > 0) {
+        return window._scorerPicks;
+    }
+    // Fallback localStorage
+    try {
+        const stored = localStorage.getItem('footballElo_scorerPicks');
+        if (stored) {
+            window._scorerPicks = JSON.parse(stored);
+            return window._scorerPicks;
+        }
+    } catch (e) {}
+    return {};
 }
 
 // ===============================
@@ -329,6 +345,11 @@ function loadScorerPicksFromPredictions(predictions) {
             window._scorerPicks[matchKey] = pred.scorerPick;
         }
     });
+    
+    // Persister dans localStorage
+    try {
+        localStorage.setItem('footballElo_scorerPicks', JSON.stringify(window._scorerPicks));
+    } catch (e) {}
 }
 
 // ===============================
