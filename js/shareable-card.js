@@ -17,8 +17,18 @@ async function generateShareableCard(mode, data) {
     // Dimensions (format story 1080x1920 réduit pour perf)
     const W = 540;
     const matchCount = data.matches?.length || 0;
+    // Calcul hauteur bonus
+    let bonusHeight = 0;
+    if (data.superJokerBonus > 0) bonusHeight += 40;
+    if (data.scorerBonus > 0) {
+        const scorerMatches = (data.matches || []).filter(m => m.scorerInfo && m.scorerInfo.result !== 'pending');
+        bonusHeight += 35 + scorerMatches.length * 24;
+    }
+    if (data.combineInfo) bonusHeight += 50;
+    if (data.isMVP) bonusHeight += 35;
+    
     const H = mode === 'pronostics' 
-        ? 380 + matchCount * 52 + 120
+        ? 380 + matchCount * 52 + bonusHeight + 120
         : 350 + matchCount * 48 + 100;
     
     canvas.width = W;
@@ -179,10 +189,11 @@ function drawResultsMode(ctx, data, W, y) {
 
 function drawPronosticsMode(ctx, data, W, y) {
     const matches = data.matches || [];
+    const hasBonuses = data.superJokerBonus > 0 || data.scorerBonus > 0 || data.combineInfo || data.isMVP;
     
     // Score total en haut
     ctx.fillStyle = 'rgba(233, 69, 96, 0.2)';
-    roundRect(ctx, 40, y - 5, W - 80, 55, 12);
+    roundRect(ctx, 40, y - 5, W - 80, hasBonuses ? 70 : 55, 12);
     ctx.fill();
     
     ctx.textAlign = 'center';
@@ -192,7 +203,33 @@ function drawPronosticsMode(ctx, data, W, y) {
     ctx.fillStyle = '#8899aa';
     ctx.font = '12px -apple-system, BlinkMacSystemFont, sans-serif';
     ctx.fillText(`${data.exactScores || 0} score(s) exact(s) · ${data.correctResults || 0} bon(s) résultat(s)`, W / 2, y + 43);
-    y += 70;
+    
+    // Détail base + bonus si applicable
+    if (hasBonuses) {
+        ctx.fillStyle = '#667788';
+        ctx.font = '11px -apple-system, BlinkMacSystemFont, sans-serif';
+        const parts = [`Base: ${data.basePoints}`];
+        if (data.superJokerBonus > 0) parts.push(`SJ: +${data.superJokerBonus}`);
+        if (data.scorerBonus > 0) parts.push(`Buteur: +${data.scorerBonus}`);
+        if (data.combineInfo?.points > 0) parts.push(`Combiné: +${data.combineInfo.points}`);
+        if (data.mvpBonus > 0) parts.push(`MVP: +${data.mvpBonus}`);
+        ctx.fillText(parts.join(' · '), W / 2, y + 58);
+        y += 85;
+    } else {
+        y += 70;
+    }
+    
+    // --- Super Joker bannière ---
+    if (data.superJokerBonus > 0) {
+        ctx.fillStyle = 'rgba(155, 89, 182, 0.2)';
+        roundRect(ctx, 30, y - 5, W - 60, 30, 8);
+        ctx.fill();
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#9b59b6';
+        ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, sans-serif';
+        ctx.fillText(`🃏✨ Super Joker activé (×1.5) → +${data.superJokerBonus} pts`, W / 2, y + 14);
+        y += 40;
+    }
     
     // Header colonnes
     ctx.fillStyle = '#556677';
@@ -216,11 +253,27 @@ function drawPronosticsMode(ctx, data, W, y) {
         roundRect(ctx, 15, y - 8, W - 30, 42, 6);
         ctx.fill();
         
-        // Équipes
+        // Équipes + joker badge
         ctx.textAlign = 'left';
         ctx.fillStyle = '#ccddee';
         ctx.font = '12px -apple-system, BlinkMacSystemFont, sans-serif';
-        ctx.fillText(`${match.homeTeam} - ${match.awayTeam}`, 25, y + 12);
+        const jokerBadge = match.joker ? ' 🃏' : '';
+        ctx.fillText(`${match.homeTeam} - ${match.awayTeam}${jokerBadge}`, 25, y + 12);
+        
+        // Scorer info sous le nom du match
+        if (match.scorerInfo) {
+            ctx.font = '9px -apple-system, BlinkMacSystemFont, sans-serif';
+            if (match.scorerInfo.result === 'first') {
+                ctx.fillStyle = '#2ecc71';
+                ctx.fillText(`⚽🎯 ${match.scorerInfo.name} (+${match.scorerInfo.points})`, 25, y + 28);
+            } else if (match.scorerInfo.result === 'scored') {
+                ctx.fillStyle = '#3498db';
+                ctx.fillText(`⚽✅ ${match.scorerInfo.name} (+${match.scorerInfo.points})`, 25, y + 28);
+            } else if (match.scorerInfo.result === 'missed' || match.scorerInfo.result === 'nogoal') {
+                ctx.fillStyle = '#7f8c8d';
+                ctx.fillText(`⚽❌ ${match.scorerInfo.name}`, 25, y + 28);
+            }
+        }
         
         // Prono
         ctx.textAlign = 'center';
@@ -244,11 +297,45 @@ function drawPronosticsMode(ctx, data, W, y) {
             ctx.fillStyle = '#2ecc71';
             ctx.font = '10px -apple-system, BlinkMacSystemFont, sans-serif';
             ctx.textAlign = 'left';
-            ctx.fillText('🎯', 25, y + 28);
+            ctx.fillText('🎯', W - 60, y + 13);
         }
         
         y += 52;
     });
+    
+    // --- Section Combiné ---
+    if (data.combineInfo) {
+        y += 5;
+        const combBg = data.combineInfo.success ? 'rgba(46, 204, 113, 0.12)' : 'rgba(231, 76, 60, 0.08)';
+        ctx.fillStyle = combBg;
+        roundRect(ctx, 20, y - 5, W - 40, 40, 8);
+        ctx.fill();
+        
+        ctx.textAlign = 'left';
+        ctx.fillStyle = data.combineInfo.success ? '#2ecc71' : '#e74c3c';
+        ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, sans-serif';
+        const combLabel = data.combineInfo.success 
+            ? `🎲 Combiné réussi ! +${data.combineInfo.points} pts` 
+            : '🎲 Combiné raté';
+        ctx.fillText(combLabel, 30, y + 12);
+        
+        ctx.fillStyle = '#8899aa';
+        ctx.font = '10px -apple-system, BlinkMacSystemFont, sans-serif';
+        ctx.fillText(data.combineInfo.matches.join(' · '), 30, y + 27);
+        y += 45;
+    }
+    
+    // --- MVP Badge ---
+    if (data.isMVP) {
+        ctx.fillStyle = 'rgba(243, 156, 18, 0.15)';
+        roundRect(ctx, 30, y - 5, W - 60, 28, 8);
+        ctx.fill();
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#f39c12';
+        ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, sans-serif';
+        ctx.fillText(`🏆 MVP de la journée ! +${data.mvpBonus} pts`, W / 2, y + 13);
+        y += 35;
+    }
     
     // Résumé visuel
     y += 5;
@@ -377,9 +464,6 @@ async function shareMatchdayResults() {
 // =====================================================
 
 async function sharePronosticsCard(playerId, playerName, matchDay) {
-    // Cette fonction doit être appelée depuis la page pronostics
-    // où getPlayerPredictions et calculatePredictionResult sont disponibles
-    
     if (typeof getPlayerPredictions !== 'function') {
         console.warn('getPlayerPredictions non disponible');
         return;
@@ -393,7 +477,7 @@ async function sharePronosticsCard(playerId, playerName, matchDay) {
     
     const matchesThisDay = allMatches.filter(m => m.matchDay === matchDay && m.finalScore);
     
-    let totalPoints = 0;
+    let basePoints = 0;
     let exactScores = 0, closeScores = 0, correctResults = 0, wrongResults = 0;
     const matchResults = [];
     
@@ -407,11 +491,11 @@ async function sharePronosticsCard(playerId, playerName, matchDay) {
         const result = calculatePredictionResult(
             pred.homeScore, pred.awayScore,
             match.finalScore.home, match.finalScore.away,
-            pred.savedAt, match, pred.odds
+            pred.savedAt, match, pred.odds, pred.joker || false
         );
         
         const pts = result.finalPoints || result.points;
-        totalPoints += pts;
+        basePoints += pts;
         
         if (result.points === 9) exactScores++;
         else if (result.points === 6) closeScores++;
@@ -421,25 +505,108 @@ async function sharePronosticsCard(playerId, playerName, matchDay) {
         const homeTeam = allTeams.find(t => t.id == pred.homeTeamId);
         const awayTeam = allTeams.find(t => t.id == pred.awayTeamId);
         
+        // --- Scorer pick pour ce match ---
+        let scorerInfo = null;
+        if (pred.scorerPick && match.goals && match.goals.length > 0) {
+            const sortedGoals = [...match.goals].sort((a, b) => (a.minute || 0) - (b.minute || 0));
+            const firstGoal = sortedGoals[0];
+            const matchFunc = typeof matchScorerNames === 'function' ? matchScorerNames : 
+                (a, b) => a.toLowerCase().trim() === b.toLowerCase().trim();
+            
+            if (matchFunc(pred.scorerPick, firstGoal.scorer || '')) {
+                scorerInfo = { name: pred.scorerPick, result: 'first', points: typeof SCORER_FIRST_EXACT !== 'undefined' ? SCORER_FIRST_EXACT : 4 };
+            } else if (sortedGoals.some(g => matchFunc(pred.scorerPick, g.scorer || ''))) {
+                scorerInfo = { name: pred.scorerPick, result: 'scored', points: typeof SCORER_SCORED !== 'undefined' ? SCORER_SCORED : 1 };
+            } else {
+                scorerInfo = { name: pred.scorerPick, result: 'missed', points: 0 };
+            }
+        } else if (pred.scorerPick && match.goals?.length === 0) {
+            scorerInfo = { name: pred.scorerPick, result: 'nogoal', points: 0 };
+        } else if (pred.scorerPick) {
+            scorerInfo = { name: pred.scorerPick, result: 'pending', points: 0 };
+        }
+        
         matchResults.push({
             homeTeam: homeTeam?.shortName || '?',
             awayTeam: awayTeam?.shortName || '?',
             prediction: `${pred.homeScore}-${pred.awayScore}`,
             actual: `${match.finalScore.home}-${match.finalScore.away}`,
             points: pts,
-            class: result.class
+            class: result.class,
+            joker: pred.joker || false,
+            scorerInfo
         });
     }
+    
+    // --- Bonus : Super Joker ---
+    let superJokerBonus = 0;
+    if (typeof getSuperJoker === 'function') {
+        try {
+            const sj = await getSuperJoker(playerId, currentSeason);
+            if (sj && sj.used && sj.matchDay === matchDay) {
+                superJokerBonus = Math.round(basePoints * 0.5 * 10) / 10;
+            }
+        } catch (e) {}
+    }
+    
+    // --- Bonus : Scorer total ---
+    let scorerBonus = 0;
+    if (typeof calculateScorerPointsForMatchDay === 'function') {
+        try {
+            const scorerResult = calculateScorerPointsForMatchDay(predictions.predictions, matchDay);
+            scorerBonus = scorerResult?.totalPoints || 0;
+        } catch (e) {}
+    }
+    
+    // --- Bonus : Combiné ---
+    let combineInfo = null;
+    if (typeof getPlayerCombine === 'function' && typeof calculateCombineResult === 'function') {
+        try {
+            const combine = await getPlayerCombine(playerId, currentSeason, matchDay);
+            if (combine && combine.matches && combine.matches.length > 0) {
+                const combineResult = calculateCombineResult(combine, predictions.predictions, matchesThisDay);
+                const combineMatchNames = combine.matches.map(cm => {
+                    const h = allTeams.find(t => t.id == cm.homeTeamId)?.shortName || '?';
+                    const a = allTeams.find(t => t.id == cm.awayTeamId)?.shortName || '?';
+                    return `${h}-${a}`;
+                });
+                combineInfo = {
+                    matches: combineMatchNames,
+                    success: combineResult?.success || false,
+                    points: combineResult?.bonusPoints || 0
+                };
+            }
+        } catch (e) {}
+    }
+    
+    // --- Bonus : MVP ---
+    let mvpBonus = 0;
+    let isMVP = false;
+    if (typeof getMVPBonusForPlayer === 'function') {
+        try {
+            mvpBonus = await getMVPBonusForPlayer(playerId, currentSeason, matchDay);
+            isMVP = mvpBonus > 0;
+        } catch (e) {}
+    }
+    
+    const totalPoints = Math.round((basePoints + superJokerBonus + scorerBonus + (combineInfo?.points || 0) + mvpBonus) * 10) / 10;
     
     const cardData = {
         matchDay,
         playerName,
-        totalPoints: Math.round(totalPoints * 10) / 10,
+        basePoints: Math.round(basePoints * 10) / 10,
+        totalPoints,
         exactScores,
         closeScores,
         correctResults,
         wrongResults,
-        matches: matchResults
+        matches: matchResults,
+        // Bonus
+        superJokerBonus,
+        scorerBonus,
+        combineInfo,
+        mvpBonus,
+        isMVP
     };
     
     const dataUrl = await generateShareableCard('pronostics', cardData);
