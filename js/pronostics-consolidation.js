@@ -24,6 +24,7 @@ calculatePlayerDetailedStats = async function(playerId) {
         superJoker: 0,
         scorer: 0,
         combine: 0,
+        challenges: 0,
         mvp: 0,
         total: 0
     };
@@ -55,15 +56,23 @@ calculatePlayerDetailedStats = async function(playerId) {
         if (typeof calculateScorerPointsForMatchDay === 'function') {
             for (const matchDay of stats.journeysPlayed) {
                 try {
-                    const scorerPts = await calculateScorerPointsForMatchDay(playerId, season, matchDay);
-                    if (scorerPts && scorerPts > 0) {
-                        stats.bonusPoints.scorer += scorerPts;
-                        if (!stats.bonusByMatchDay[matchDay]) stats.bonusByMatchDay[matchDay] = {};
-                        stats.bonusByMatchDay[matchDay].scorer = scorerPts;
-                        stats.pointsByMatchDay[matchDay] = Math.round((stats.pointsByMatchDay[matchDay] + scorerPts) * 10) / 10;
+                    const preds = await getPlayerPredictions(playerId, season, matchDay);
+                    if (preds && preds.predictions) {
+                        const scorerResult = calculateScorerPointsForMatchDay(preds.predictions, matchDay);
+                        const scorerPts = scorerResult?.totalPoints || 0;
+                        if (scorerPts > 0) {
+                            stats.bonusPoints.scorer += scorerPts;
+                            if (!stats.bonusByMatchDay[matchDay]) stats.bonusByMatchDay[matchDay] = {};
+                            stats.bonusByMatchDay[matchDay].scorer = scorerPts;
+                            stats.pointsByMatchDay[matchDay] = Math.round((stats.pointsByMatchDay[matchDay] + scorerPts) * 10) / 10;
+                        }
                     }
-                } catch (e) {}
+                } catch (e) {
+                    console.error(`❌ Erreur scorer J${matchDay}:`, e);
+                }
             }
+        } else {
+            console.warn('⚠️ calculateScorerPointsForMatchDay non trouvée');
         }
         
         // --- PARI COMBINÉ ---
@@ -84,6 +93,23 @@ calculatePlayerDetailedStats = async function(playerId) {
                                 stats.pointsByMatchDay[matchDay] = Math.round((stats.pointsByMatchDay[matchDay] + combineResult.bonusPoints) * 10) / 10;
                             }
                         }
+                    }
+                } catch (e) {
+                    console.error(`❌ Erreur combiné J${matchDay}:`, e);
+                }
+            }
+        }
+        
+        // --- DÉFIS IA + BUTS TOTAUX ---
+        if (typeof calculateAllChallengePoints === 'function') {
+            for (const matchDay of stats.journeysPlayed) {
+                try {
+                    const challengeResult = await calculateAllChallengePoints(playerId, season, matchDay);
+                    if (challengeResult && challengeResult.points > 0) {
+                        stats.bonusPoints.challenges = (stats.bonusPoints.challenges || 0) + challengeResult.points;
+                        if (!stats.bonusByMatchDay[matchDay]) stats.bonusByMatchDay[matchDay] = {};
+                        stats.bonusByMatchDay[matchDay].challenges = challengeResult.points;
+                        stats.pointsByMatchDay[matchDay] = Math.round((stats.pointsByMatchDay[matchDay] + challengeResult.points) * 10) / 10;
                     }
                 } catch (e) {}
             }
@@ -107,7 +133,7 @@ calculatePlayerDetailedStats = async function(playerId) {
         // --- RECALCUL TOTAL ---
         stats.bonusPoints.total = Math.round(
             (stats.bonusPoints.superJoker + stats.bonusPoints.scorer + 
-             stats.bonusPoints.combine + stats.bonusPoints.mvp) * 10
+             stats.bonusPoints.combine + (stats.bonusPoints.challenges || 0) + stats.bonusPoints.mvp) * 10
         ) / 10;
         
         // Recalculer totalPoints et cumulativePoints
@@ -170,10 +196,14 @@ getMatchDayRanking = async function(matchDay) {
         // Buteur
         if (typeof calculateScorerPointsForMatchDay === 'function') {
             try {
-                const scorerPts = await calculateScorerPointsForMatchDay(player.playerId, season, matchDay);
-                if (scorerPts > 0) {
-                    player.bonuses.scorer = scorerPts;
-                    bonusTotal += scorerPts;
+                const preds = await getPlayerPredictions(player.playerId, season, matchDay);
+                if (preds && preds.predictions) {
+                    const scorerResult = calculateScorerPointsForMatchDay(preds.predictions, matchDay);
+                    const scorerPts = scorerResult?.totalPoints || 0;
+                    if (scorerPts > 0) {
+                        player.bonuses.scorer = scorerPts;
+                        bonusTotal += scorerPts;
+                    }
                 }
             } catch (e) {}
         }
@@ -203,6 +233,17 @@ getMatchDayRanking = async function(matchDay) {
                 if (mvpBonus > 0) {
                     player.bonuses.mvp = mvpBonus;
                     bonusTotal += mvpBonus;
+                }
+            } catch (e) {}
+        }
+        
+        // Défis IA + buts totaux
+        if (typeof calculateAllChallengePoints === 'function') {
+            try {
+                const challengeResult = await calculateAllChallengePoints(player.playerId, season, matchDay);
+                if (challengeResult && challengeResult.points > 0) {
+                    player.bonuses.challenges = challengeResult.points;
+                    bonusTotal += challengeResult.points;
                 }
             } catch (e) {}
         }
@@ -257,8 +298,11 @@ getMatchDayLeaderboard = async function(matchDay) {
         // Buteur
         if (typeof calculateScorerPointsForMatchDay === 'function') {
             try {
-                const pts = await calculateScorerPointsForMatchDay(player.playerId, season, matchDay);
-                if (pts > 0) bonusTotal += pts;
+                const preds = await getPlayerPredictions(player.playerId, season, matchDay);
+                if (preds && preds.predictions) {
+                    const scorerResult = calculateScorerPointsForMatchDay(preds.predictions, matchDay);
+                    if (scorerResult?.totalPoints > 0) bonusTotal += scorerResult.totalPoints;
+                }
             } catch (e) {}
         }
         
@@ -282,6 +326,14 @@ getMatchDayLeaderboard = async function(matchDay) {
             try {
                 const mvpBonus = await getMVPBonusForPlayer(player.playerId, season, matchDay);
                 if (mvpBonus > 0) bonusTotal += mvpBonus;
+            } catch (e) {}
+        }
+        
+        // Défis IA + buts totaux
+        if (typeof calculateAllChallengePoints === 'function') {
+            try {
+                const challengeResult = await calculateAllChallengePoints(player.playerId, season, matchDay);
+                if (challengeResult && challengeResult.points > 0) bonusTotal += challengeResult.points;
             } catch (e) {}
         }
         
@@ -388,10 +440,25 @@ async function getMatchDayRecap(playerId, matchDay) {
     // --- Buteur ---
     if (typeof calculateScorerPointsForMatchDay === 'function') {
         try {
-            const scorerPts = await calculateScorerPointsForMatchDay(playerId, season, matchDay);
-            if (scorerPts > 0) {
-                recap.bonuses.push({ type: 'scorer', label: '⚽ Défi buteur', points: scorerPts });
-                recap.totalBonus += scorerPts;
+            if (predictions && predictions.predictions) {
+                const scorerResult = calculateScorerPointsForMatchDay(predictions.predictions, matchDay);
+                const scorerPts = scorerResult?.totalPoints || 0;
+                if (scorerPts > 0) {
+                    recap.bonuses.push({ type: 'scorer', label: '⚽ Défi buteur', points: scorerPts });
+                    recap.totalBonus += scorerPts;
+                }
+                // Ajouter le détail par match
+                if (scorerResult?.details) {
+                    scorerResult.details.forEach(d => {
+                        if (d.result?.participated) {
+                            recap.bonuses.push({ 
+                                type: 'scorerDetail', 
+                                label: `  └ ${d.pick} (${d.match}) : ${d.result.label}`, 
+                                points: d.result.points 
+                            });
+                        }
+                    });
+                }
             }
         } catch (e) {}
     }
@@ -423,6 +490,21 @@ async function getMatchDayRecap(playerId, matchDay) {
                     recap.bonuses.push({ type: 'mvp', label: '🏆 MVP de la journée', points: MVP_BONUS_POINTS || 2 });
                     recap.totalBonus += MVP_BONUS_POINTS || 2;
                 }
+            }
+        } catch (e) {}
+    }
+    
+    // --- Défis IA + Buts totaux ---
+    if (typeof calculateAllChallengePoints === 'function') {
+        try {
+            const challengeResult = await calculateAllChallengePoints(playerId, season, matchDay);
+            if (challengeResult && challengeResult.points > 0) {
+                recap.bonuses.push({ type: 'challenges', label: '🎲 Défis IA', points: challengeResult.points });
+                recap.totalBonus += challengeResult.points;
+            }
+            // Stocker les détails pour le récap détaillé
+            if (challengeResult && challengeResult.details) {
+                recap.challengeDetails = challengeResult.details;
             }
         } catch (e) {}
     }
@@ -630,55 +712,18 @@ function renderBonusBadges(bonuses) {
     if (bonuses.superJoker) badges += `<span title="Super Joker +${bonuses.superJoker}" style="font-size:0.7rem;">🃏✨</span> `;
     if (bonuses.scorer) badges += `<span title="Buteur +${bonuses.scorer}" style="font-size:0.7rem;">⚽</span> `;
     if (bonuses.combine) badges += `<span title="Combiné +${bonuses.combine}" style="font-size:0.7rem;">🎲</span> `;
+    if (bonuses.challenges) badges += `<span title="Défis IA +${bonuses.challenges}" style="font-size:0.7rem;">🎲🤖</span> `;
     if (bonuses.mvp) badges += `<span title="MVP +${bonuses.mvp}" style="font-size:0.7rem;">🏆</span> `;
     return badges;
 }
 
 
 // ===============================
-// 7. HELPER — calculateScorerPointsForMatchDay
-//    Wrapper si la fonction n'existe pas encore
+// 7. (Supprimé) — calculateScorerPointsForMatchDay
+//    Défini dans pronostics-scorer.js
+//    Signature: calculateScorerPointsForMatchDay(predictions, matchDay)
+//    Retourne: {totalPoints, details}
 // ===============================
-
-if (typeof calculateScorerPointsForMatchDay !== 'function') {
-    // Calcul des points buteur pour une journée
-    window.calculateScorerPointsForMatchDay = async function(playerId, season, matchDay) {
-        try {
-            const predictions = await getPlayerPredictions(playerId, season, matchDay);
-            if (!predictions || !predictions.predictions) return 0;
-            
-            let totalScorerPoints = 0;
-            const matchesThisDay = allMatches.filter(m => m.matchDay === matchDay && m.finalScore);
-            
-            for (const pred of predictions.predictions) {
-                if (!pred.scorerPick) continue;
-                
-                const match = matchesThisDay.find(m => 
-                    m.homeTeamId == pred.homeTeamId && m.awayTeamId == pred.awayTeamId
-                );
-                if (!match || !match.goals || match.goals.length === 0) continue;
-                
-                const firstGoal = match.goals.sort((a, b) => parseInt(a.minute) - parseInt(b.minute))[0];
-                const matchFunc = typeof matchScorerNames === 'function' ? matchScorerNames : 
-                    (a, b) => a.toLowerCase().trim() === b.toLowerCase().trim();
-                
-                if (matchFunc(pred.scorerPick, firstGoal.player || '')) {
-                    totalScorerPoints += (typeof SCORER_FIRST_EXACT !== 'undefined' ? SCORER_FIRST_EXACT : 4);
-                } else {
-                    // Vérifier s'il a marqué (mais pas 1er)
-                    const scored = match.goals.some(g => matchFunc(pred.scorerPick, g.player || ''));
-                    if (scored) {
-                        totalScorerPoints += (typeof SCORER_SCORED !== 'undefined' ? SCORER_SCORED : 1);
-                    }
-                }
-            }
-            
-            return totalScorerPoints;
-        } catch (e) {
-            return 0;
-        }
-    };
-}
 
 
 // ===============================
