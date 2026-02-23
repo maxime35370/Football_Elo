@@ -157,8 +157,10 @@ function createMatchElement(match) {
         <div class="match-header">
             <div class="match-date">${matchDate}</div>
             <div class="match-actions">
-                <button class="edit-match-btn" onclick="editMatch('${match.id}')">✏️</button>
-                <button class="delete-match-btn" onclick="deleteMatchWithConfirm('${match.id}')">🗑️</button>
+                ${window.isAdmin ? `
+                    <button class="edit-match-btn" onclick="editMatch('${match.id}')">✏️</button>
+                    <button class="delete-match-btn" onclick="deleteMatchWithConfirm('${match.id}')">🗑️</button>
+                ` : ''}
             </div>
         </div>
         

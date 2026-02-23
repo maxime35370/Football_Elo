@@ -63,7 +63,7 @@
                         </select>
                     </div>
 
-                    <button id="clearAllBtn" class="btn-danger">🗑️ Effacer tout</button>
+                    <button id="clearAllBtn" class="btn-danger" style="display:none">🗑️ Effacer tout</button>
                 </div>
 
                 <!-- Liste des matchs -->
@@ -88,9 +88,27 @@
          <!-- Firebase SDK -->
         <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
         <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
         <!-- Configuration Firebase -->
         <script src="../js/firebase-config.js"></script>
+        <script>
+            window.isAdmin = false;
+            firebase.auth().onAuthStateChanged((user) => {
+                if (user && user.email === 'maxime.theard@gmail.com') {
+                    console.log('✅ Admin connecté');
+                    window.isAdmin = true;
+                    document.getElementById('clearAllBtn').style.display = '';
+                    // Recharger l'affichage pour montrer les boutons
+                    if (typeof loadAndDisplayMatches === 'function') {
+                        loadAndDisplayMatches();
+                    }
+                } else {
+                    console.log('👤 Visiteur - mode lecture seule');
+                    window.isAdmin = false;
+                }
+            });
+        </script>
         <script src="../js/firebase-service.js"></script>
 
         <script src="../js/seasons.js"></script>

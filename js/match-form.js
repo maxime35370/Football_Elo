@@ -43,6 +43,7 @@ window.addEventListener('load', function() {
 
 // Vérifier si on est en mode édition
 function checkForEditMode() {
+    if (editingMatchId) return;
     const urlParams = new URLSearchParams(window.location.search);
     const editId = urlParams.get('edit');
     
@@ -96,10 +97,22 @@ function loadMatchForEditing(matchId) {
     
     console.log('Match trouvé pour édition:', match);
     
+    // ✅ FIX: Compteur de tentatives pour éviter la boucle infinie
+    let retryCount = 0;
+    const MAX_RETRIES = 50;
+    
     const loadMatchData = () => {
+        // ✅ FIX: Abandon après trop de tentatives
+        if (retryCount++ > MAX_RETRIES) {
+            console.error('Abandon: formulaire non prêt après', MAX_RETRIES, 'tentatives');
+            showError('Erreur de chargement du formulaire. Rechargez la page.');
+            return;
+        }
+        
         const homeSelect = document.getElementById('homeTeam');
         const awaySelect = document.getElementById('awayTeam');
-        const dateInput = document.getElementById('matchDate');
+        // ✅ FIX: Le champ s'appelle matchDateTime, pas matchDate
+        const dateInput = document.getElementById('matchDateTime');
         const matchDayInput = document.getElementById('matchDay');
         if (matchDayInput) {
             const journee = match.matchDay || 1; // Valeur par défaut si pas de journée
@@ -123,9 +136,13 @@ function loadMatchForEditing(matchId) {
         try {
             console.log('Chargement des données du match...');
             
-            // 1. Charger la date
-            dateInput.value = match.date;
-            console.log('Date chargée:', match.date);
+            // ✅ FIX: Charger la date au format datetime-local (YYYY-MM-DDTHH:MM)
+            if (match.scheduledAt) {
+                dateInput.value = new Date(match.scheduledAt).toISOString().slice(0, 16);
+            } else if (match.date) {
+                dateInput.value = match.date.includes('T') ? match.date.slice(0, 16) : match.date + 'T15:00';
+            }
+            console.log('Date chargée:', dateInput.value);
             
             // 2. Forcer la sélection des équipes
             homeSelect.value = match.homeTeamId;
