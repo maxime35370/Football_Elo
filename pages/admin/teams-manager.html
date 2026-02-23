@@ -47,6 +47,7 @@
                 <button id="exportDataBtn" class="btn btn-info">💾 Exporter données</button>
                 <button id="importDataBtn" class="btn btn-success">📥 Importer équipes</button>
                 <button id="configSeasonBtn" class="btn btn-info">⚙️ Config saison</button>
+                <button id="espnImportBtn" class="btn btn-warning" onclick="showESPNPanel()">📡 Import ESPN</button>
             </div>
 
             <div class="teams-list-section">
@@ -54,6 +55,28 @@
                 <div id="seasonsListAdmin">
                     <!-- Les saisons seront ajoutées ici -->
                 </div>
+            </div>
+
+            <!-- Panel ESPN Import -->
+            <div id="espnPanel" class="import-section" style="display:none">
+                <h3>📡 Import ESPN - Ligue 1</h3>
+                <p style="color:#7f8c8d; margin-bottom:1rem;">Récupère automatiquement les résultats, buteurs et statistiques depuis ESPN.</p>
+                <div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap; margin-bottom:1rem;">
+                    <div style="display:flex; flex-direction:column; gap:0.25rem;">
+                        <label style="font-size:0.8rem; color:#7f8c8d; font-weight:600;">Date</label>
+                        <input type="date" id="espnDate" style="padding:0.5rem; border-radius:5px; border:1px solid #ddd; font-size:1rem;">
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:0.25rem;">
+                        <label style="font-size:0.8rem; color:#7f8c8d; font-weight:600;">Journée (optionnel)</label>
+                        <input type="number" id="espnMatchDay" min="1" max="38" placeholder="Auto" style="padding:0.5rem; border-radius:5px; border:1px solid #ddd; width:80px; font-size:1rem;">
+                    </div>
+                    <div style="display:flex; gap:0.5rem; align-items:flex-end; padding-top:1.1rem;">
+                        <button class="btn btn-secondary" onclick="runESPNPreview()">👁️ Preview</button>
+                        <button class="btn btn-primary" onclick="runESPNImport()">🚀 Importer</button>
+                        <button class="btn btn-secondary" onclick="document.getElementById('espnPanel').style.display='none'">❌ Fermer</button>
+                    </div>
+                </div>
+                <div id="espnResults" class="import-preview" style="white-space:pre-wrap; font-family:monospace; font-size:0.85rem; display:none;"></div>
             </div>
 
             <!-- Formulaire d'ajout/modification d'équipe -->
@@ -192,7 +215,6 @@
     </script>
 
     <!-- Configuration Firebase -->
-   
     <script src="../../js/firebase-service.js"></script>
     <script src="../../js/seasons.js"></script>
     <script src="../../js/admin-seasons-manager.js"></script>
@@ -201,6 +223,201 @@
     <script src="../../js/teams-loader.js"></script>
     <script src="../../js/admin-teams.js"></script>
     <script src="../../js/elo-system.js"></script>
+    
+    <!-- ESPN Import Module -->
+    <script src="../../js/match-auto-update.js"></script>
+    <script>
+    // =====================================================
+    // ESPN IMPORT PANEL
+    // =====================================================
+
+    /**
+     * Charge allMatches, allTeams et futureMatches depuis Firebase
+     * si pas encore disponibles en mémoire.
+     * Indispensable car la page admin ne charge pas ces données par défaut.
+     */
+    async function ensureESPNDataLoaded() {
+        // Charger les matchs
+        if (typeof allMatches === 'undefined' || !window.allMatches || window.allMatches.length === 0) {
+            console.log('📥 Chargement des matchs depuis Firebase...');
+            const matchSnap = await db.collection('matches').get();
+            window.allMatches = matchSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            // Convertir matchDay en number pour la comparaison
+            window.allMatches.forEach(m => {
+                if (m.matchDay) m.matchDay = parseInt(m.matchDay) || m.matchDay;
+            });
+            console.log(`✅ ${window.allMatches.length} matchs chargés`);
+        }
+
+        // Charger les équipes
+        if (typeof allTeams === 'undefined' || !window.allTeams || window.allTeams.length === 0) {
+            console.log('📥 Chargement des équipes depuis Firebase...');
+            const teamSnap = await db.collection('teams').get();
+            window.allTeams = teamSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            console.log(`✅ ${window.allTeams.length} équipes chargées`);
+        }
+
+        // Charger futureMatches si disponible
+        if (typeof futureMatches === 'undefined' || !window.futureMatches) {
+            try {
+                const season = typeof getCurrentSeason === 'function' ? getCurrentSeason() : '2025-2026';
+                const futureSnap = await db.collection('futureMatches').where('season', '==', season).get();
+                if (!futureSnap.empty) {
+                    window.futureMatches = futureSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    window.futureMatches.forEach(m => {
+                        if (m.matchDay) m.matchDay = parseInt(m.matchDay) || m.matchDay;
+                    });
+                    console.log(`✅ ${window.futureMatches.length} futureMatches chargés`);
+                } else {
+                    window.futureMatches = [];
+                }
+            } catch (e) {
+                console.warn('⚠️ futureMatches non chargés:', e.message);
+                window.futureMatches = [];
+            }
+        }
+    }
+
+    function showESPNPanel() {
+        const panel = document.getElementById('espnPanel');
+        panel.style.display = 'block';
+        // Date du jour par défaut
+        document.getElementById('espnDate').value = new Date().toISOString().split('T')[0];
+        // Vider le champ journée
+        document.getElementById('espnMatchDay').value = '';
+        // Vider les résultats précédents
+        document.getElementById('espnResults').style.display = 'none';
+        document.getElementById('espnResults').textContent = '';
+        panel.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    async function runESPNPreview() {
+        const date = document.getElementById('espnDate').value;
+        const matchDayInput = document.getElementById('espnMatchDay').value;
+        const forceMatchDay = matchDayInput ? parseInt(matchDayInput) : undefined;
+        const results = document.getElementById('espnResults');
+
+        if (!date) { 
+            results.style.display = 'block';
+            results.textContent = '⚠️ Sélectionne une date'; 
+            return; 
+        }
+
+        results.style.display = 'block';
+        results.textContent = '⏳ Chargement des données et recherche ESPN...';
+
+        try {
+            // Charger les données Firebase AVANT de lancer le preview
+            await ensureESPNDataLoaded();
+
+            const r = await previewESPNDate(date, forceMatchDay);
+
+            if (!r) { 
+                results.textContent = '❌ Aucun match trouvé pour cette date.\n\n💡 Essaie de renseigner le numéro de journée manuellement.'; 
+                return; 
+            }
+
+            let txt = `📋 Résultats ESPN — ${date} (J${r.matchDay})\n`;
+            txt += `📊 Base locale : ${window.allMatches.length} matchs | ${window.allTeams.length} équipes\n`;
+            txt += `${'─'.repeat(45)}\n`;
+
+            if (r.alreadyDone && r.alreadyDone.length > 0) {
+                txt += `\n✅ Déjà enregistrés (${r.alreadyDone.length}):\n`;
+                r.alreadyDone.forEach(m => {
+                    txt += `   ${m.espnMatch.homeShort} ${m.localMatch.finalScore.home}-${m.localMatch.finalScore.away} ${m.espnMatch.awayShort}\n`;
+                });
+            }
+
+            if (r.toUpdate && r.toUpdate.length > 0) {
+                txt += `\n🔄 À mettre à jour (${r.toUpdate.length}):\n`;
+                r.toUpdate.forEach(u => {
+                    txt += `   ${u.espnMatch.homeShort} ${u.espnMatch.finalScore.home}-${u.espnMatch.finalScore.away} ${u.espnMatch.awayShort}\n`;
+                    u.goals.forEach(g => {
+                        txt += `      ⚽ ${g.displayTime} ${g.scorer}\n`;
+                    });
+                });
+            }
+
+            if (r.toCreate && r.toCreate.length > 0) {
+                txt += `\n🆕 À CRÉER (${r.toCreate.length}):\n`;
+                r.toCreate.forEach(c => {
+                    txt += `   ${c.espnMatch.homeShort} ${c.espnMatch.finalScore.home}-${c.espnMatch.finalScore.away} ${c.espnMatch.awayShort}  [J${c.matchDay}]\n`;
+                    c.goals.forEach(g => {
+                        txt += `      ⚽ ${g.displayTime} ${g.scorer}\n`;
+                    });
+                });
+            }
+
+            if (r.notFinished && r.notFinished.length > 0) {
+                txt += `\n⏳ En cours / pas encore joués (${r.notFinished.length}):\n`;
+                r.notFinished.forEach(m => {
+                    txt += `   ${m.homeShort} vs ${m.awayShort} [${m.status}]\n`;
+                });
+            }
+
+            if (r.unmapped && r.unmapped.length > 0) {
+                txt += `\n⚠️ Équipes non mappées (${r.unmapped.length}):\n`;
+                r.unmapped.forEach(m => {
+                    txt += `   "${m.homeApi}" vs "${m.awayApi}" → IDs introuvables\n`;
+                });
+            }
+
+            txt += `\n${'─'.repeat(45)}\n`;
+            txt += `📊 ✅ ${r.alreadyDone?.length || 0} faits | 🔄 ${r.toUpdate?.length || 0} à maj | 🆕 ${r.toCreate?.length || 0} à créer | ⏳ ${r.notFinished?.length || 0} en cours | ⚠️ ${r.unmapped?.length || 0} non mappés`;
+
+            results.textContent = txt;
+        } catch (e) {
+            results.textContent = '❌ Erreur: ' + e.message + '\n\n💡 Si CORS bloqué, tape dans la console:\n   ESPN_API.corsProxy = \'https://corsproxy.io/?\';\n   puis réessaie.';
+        }
+    }
+
+    async function runESPNImport() {
+        const date = document.getElementById('espnDate').value;
+        const matchDayInput = document.getElementById('espnMatchDay').value;
+        const forceMatchDay = matchDayInput ? parseInt(matchDayInput) : undefined;
+        const results = document.getElementById('espnResults');
+
+        if (!date) { 
+            results.style.display = 'block';
+            results.textContent = '⚠️ Sélectionne une date'; 
+            return; 
+        }
+
+        if (!confirm(`Importer les matchs ESPN du ${date}${forceMatchDay ? ' (J' + forceMatchDay + ')' : ''} ?`)) return;
+
+        results.style.display = 'block';
+        results.textContent = '🚀 Chargement des données et import en cours...';
+
+        try {
+            // Charger les données Firebase AVANT de lancer l'import
+            await ensureESPNDataLoaded();
+
+            const r = await importESPNDate(date, forceMatchDay);
+
+            if (!r) { 
+                results.textContent = '❌ Aucun match trouvé.\n\n💡 Essaie de renseigner le numéro de journée manuellement.'; 
+                return; 
+            }
+
+            let txt = `✅ Import terminé !\n\n`;
+            txt += `📊 Résultats:\n`;
+            txt += `   🔄 ${r.updated || 0} mis à jour\n`;
+            txt += `   🆕 ${r.created || 0} créés\n`;
+            txt += `   ❌ ${r.errors || 0} erreur(s)\n`;
+            txt += `   ✅ ${r.alreadyDone?.length || 0} déjà enregistrés\n`;
+            txt += `   ⏳ ${r.notFinished?.length || 0} pas encore terminés\n`;
+
+            if ((r.updated || 0) + (r.created || 0) > 0) {
+                txt += `\n💡 Recharge la page (F5) pour voir les résultats dans l'application.`;
+            }
+
+            results.textContent = txt;
+        } catch (e) {
+            results.textContent = '❌ Erreur: ' + e.message;
+        }
+    }
+    </script>
+
     <script>
     function toggleMenu() {
         document.querySelector('.nav-container').classList.toggle('open');
