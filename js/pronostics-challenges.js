@@ -445,6 +445,70 @@ function calculateTotalGoalsPoints(predicted, actual) {
 
 
 // ===============================
+// CALCUL TOTAL DES POINTS DÉFIS + BUTS
+// (Appelé par pronostics-consolidation.js)
+// ===============================
+
+/**
+ * Calcule TOUS les points de défis d'un joueur pour une journée :
+ * - Défis OUI/NON (2-3 pts chacun)
+ * - Prédiction buts totaux (exact +5, ±1 +3, ±2 +1)
+ */
+async function calculateAllChallengePoints(playerId, season, matchDay) {
+    let total = 0;
+    const details = [];
+    
+    // Vérifier qu'il y a des matchs joués cette journée
+    const matchesThisDay = allMatches.filter(m => m.matchDay === matchDay && m.finalScore);
+    if (matchesThisDay.length === 0) return { points: 0, details: [] };
+    
+    // 1. Points des défis OUI/NON
+    try {
+        const challengeResult = await calculateChallengePoints(playerId, season, matchDay);
+        if (challengeResult) {
+            total += challengeResult.points || 0;
+            if (challengeResult.details) {
+                details.push(...challengeResult.details);
+            }
+        }
+    } catch (e) {
+        console.warn('Erreur calcul défis OUI/NON:', e);
+    }
+    
+    // 2. Points des buts totaux de la journée
+    try {
+        const answers = await getPlayerChallengeAnswers(playerId, season, matchDay);
+        if (answers && answers.totalGoalsPrediction !== null && answers.totalGoalsPrediction !== undefined) {
+            const actual = calculateActualTotalGoals(matchDay);
+            const pts = calculateTotalGoalsPoints(answers.totalGoalsPrediction, actual);
+            total += pts;
+            
+            const diff = Math.abs(answers.totalGoalsPrediction - actual);
+            let goalLabel = '❌ Raté';
+            if (diff === 0) goalLabel = '🎯 Exact !';
+            else if (diff === 1) goalLabel = '✅ ±1';
+            else if (diff === 2) goalLabel = '👍 ±2';
+            
+            details.push({
+                label: `Buts totaux: prédit ${answers.totalGoalsPrediction}, réel ${actual}`,
+                emoji: '⚽',
+                playerAnswer: answers.totalGoalsPrediction,
+                correctAnswer: actual,
+                isCorrect: pts > 0,
+                points: pts,
+                difficulty: 'special',
+                resultLabel: goalLabel
+            });
+        }
+    } catch (e) {
+        console.warn('Erreur calcul buts totaux:', e);
+    }
+    
+    return { points: Math.round(total * 10) / 10, details };
+}
+
+
+// ===============================
 // INTERFACE — WIDGET DANS LE FORMULAIRE
 // ===============================
 
@@ -473,7 +537,7 @@ async function renderChallengesWidget(matchDay) {
     const isLocked = firstKickoff ? now >= firstKickoff : allResolved;
     
     let html = `
-        <div class="challenges-widget" style="margin-bottom:1rem;padding:1rem;
+        <div class="challenges-widget" data-matchday="${matchDay}" style="margin-bottom:1rem;padding:1rem;
                     background:linear-gradient(135deg,#ff758c10,#ff7eb310);
                     border:1px solid #ff758c40;border-radius:12px;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;">
@@ -718,45 +782,12 @@ async function addChallengesWidget() {
     container.insertAdjacentHTML('beforebegin', widget);
 }
 
-/**
- * Calcule les points totaux des défis + buts pour une journée
- */
-async function calculateAllChallengePoints(playerId, season, matchDay) {
-    let total = 0;
-    const details = [];
-    
-    // Défis IA
-    const challengeResult = await calculateChallengePoints(playerId, season, matchDay);
-    total += challengeResult.points;
-    details.push(...challengeResult.details);
-    
-    // Buts totaux
-    const answers = await getPlayerChallengeAnswers(playerId, season, matchDay);
-    if (answers && answers.totalGoalsPrediction !== null && answers.totalGoalsPrediction !== undefined) {
-        const actual = calculateActualTotalGoals(matchDay);
-        const matchesThisDay = allMatches.filter(m => m.matchDay === matchDay && m.finalScore);
-        
-        if (matchesThisDay.length > 0) {
-            const pts = calculateTotalGoalsPoints(answers.totalGoalsPrediction, actual);
-            total += pts;
-            details.push({
-                label: `Buts totaux: prédit ${answers.totalGoalsPrediction}, réel ${actual}`,
-                emoji: '⚽',
-                isCorrect: pts > 0,
-                points: pts
-            });
-        }
-    }
-    
-    return { points: total, details };
-}
-
 
 // ===============================
 // AUTO-HOOK : insérer le widget après le rendu du formulaire
 // ===============================
 
-// Utiliser UNIQUEMENT le MutationObserver pour éviter le double affichage
+// MutationObserver qui détecte les changements de journée via data-matchday
 (function setupChallengesObserver() {
     let _challengesPending = false;
     
@@ -766,9 +797,14 @@ async function calculateAllChallengePoints(playerId, season, matchDay) {
         if (!currentPlayer) return;
         if (_challengesPending) return;
         
-        // Vérifier s'il y a déjà un widget
+        // Vérifier s'il y a déjà un widget POUR LA BONNE JOURNÉE
         const existing = document.querySelector('.challenges-widget');
-        if (existing) return;
+        if (existing) {
+            const widgetDay = parseInt(existing.getAttribute('data-matchday'));
+            if (widgetDay === selectedMatchDay) return; // Même journée → rien à faire
+            // Journée différente → supprimer l'ancien widget
+            existing.remove();
+        }
         
         _challengesPending = true;
         try {
@@ -785,7 +821,6 @@ async function calculateAllChallengePoints(playerId, season, matchDay) {
     
     const startObserving = () => {
         observer.observe(document.body, { childList: true, subtree: true });
-        // Aussi vérifier immédiatement
         insertChallengesIfNeeded();
     };
     
