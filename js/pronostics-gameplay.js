@@ -1,4 +1,5 @@
 // pronostics-gameplay.js - Joker, Équipe favorite, Avatar
+// 🔥 Inclut les améliorations UX mobile (ex-pronostics-ux-patch.js §2,3,8)
 
 // ===============================
 // SYSTÈME DE JOKER
@@ -101,6 +102,10 @@ function isJokerOnMatch(jokers, matchDay, homeTeamId, awayTeamId) {
     );
 }
 
+/**
+ * Affiche le bouton joker pour un match
+ * ⚡ UX (ex-ux-patch §3) : masque les jokers individuels si Super Joker actif
+ */
 function renderJokerButton(matchEl, jokers, matchDay, homeTeamId, awayTeamId, isLocked) {
     const hasJoker = isJokerOnMatch(jokers, matchDay, homeTeamId, awayTeamId);
     const canUseJoker = jokers.remaining > 0 && !isLocked;
@@ -108,6 +113,19 @@ function renderJokerButton(matchEl, jokers, matchDay, homeTeamId, awayTeamId, is
     const canAddMore = usedThisDay < JOKER_CONFIG.maxPerMatchDay;
     
     if (isLocked && !hasJoker) return '';
+    
+    // ⚡ Vérifier si le Super Joker est actif sur cette journée
+    if (typeof getSuperJokerCache === 'function') {
+        const sjCache = getSuperJokerCache();
+        if (sjCache && sjCache.used && sjCache.matchDay === matchDay) {
+            // Super Joker actif → masquer les jokers individuels
+            return `
+                <div style="font-size:0.75rem;color:#95a5a6;text-align:center;padding:0.3rem;">
+                    🃏✨ Super Joker actif — joker individuel indisponible
+                </div>
+            `;
+        }
+    }
     
     if (hasJoker) {
         return `
@@ -174,6 +192,197 @@ function updateJokerCounter() {
 function renderJokerCounter() {
     return `<span id="jokerCounter" class="joker-counter">🃏 -/-</span>`;
 }
+
+
+// ===============================
+// UTILITAIRE : JOURNÉE COMMENCÉE ?
+// (ex-pronostics-ux-patch.js §8)
+// ===============================
+
+/**
+ * Vérifie si au moins un match de la journée a commencé ou est terminé
+ */
+function isMatchDayStarted(matchDay) {
+    const now = new Date();
+    const matchesThisDay = allMatches.filter(m => m.matchDay === matchDay);
+    const futureThisDay = (typeof futureMatches !== 'undefined' ? futureMatches : [])
+        .filter(m => m.matchDay === matchDay);
+    
+    const allMatchesThisDay = [...matchesThisDay, ...futureThisDay];
+    
+    return allMatchesThisDay.some(m => {
+        if (m.finalScore) return true; // Match terminé
+        if (m.scheduledAt && new Date(m.scheduledAt) <= now) return true; // Match commencé
+        return false;
+    });
+}
+
+
+// ===============================
+// WRAPPER MOBILE EXTRAS
+// (ex-pronostics-ux-patch.js §2)
+// ===============================
+
+/**
+ * Sur mobile (≤768px), regroupe les extras (buteur, joker, combiné)
+ * dans un conteneur pliable avec bouton toggle
+ */
+function wrapExtrasForMobile() {
+    if (window.innerWidth > 768) {
+        // Desktop : s'assurer que tout est visible, supprimer les wrappers
+        document.querySelectorAll('.extras-mobile-wrapper').forEach(wrapper => {
+            wrapper.style.display = '';
+            wrapper.classList.remove('collapsed');
+        });
+        document.querySelectorAll('.extras-toggle-btn').forEach(btn => btn.remove());
+        return;
+    }
+    
+    // Mobile : wrapper les extras de chaque carte de match
+    document.querySelectorAll('.prediction-match').forEach(card => {
+        // Éviter de re-wrapper si déjà fait
+        if (card.querySelector('.extras-mobile-wrapper')) return;
+        
+        // Collecter les éléments extras
+        const scorerSlot = card.querySelector('.scorer-slot');
+        const jokerSlot = card.querySelector('.joker-slot');
+        const combineSlot = card.querySelector('.combine-slot');
+        
+        const extras = [scorerSlot, jokerSlot, combineSlot].filter(el => el && el.innerHTML.trim());
+        if (extras.length === 0) return;
+        
+        // Créer le wrapper
+        const wrapper = document.createElement('div');
+        wrapper.className = 'extras-mobile-wrapper collapsed';
+        wrapper.style.cssText = 'overflow:hidden;max-height:0;transition:max-height 0.3s ease;';
+        
+        // Déplacer les extras dans le wrapper
+        extras.forEach(el => wrapper.appendChild(el));
+        
+        // Créer le bouton toggle
+        const toggleBtn = document.createElement('button');
+        toggleBtn.className = 'extras-toggle-btn';
+        toggleBtn.type = 'button';
+        
+        // Résumé des options actives
+        const summaryIcons = [];
+        if (jokerSlot && jokerSlot.querySelector('.joker-btn.active')) summaryIcons.push('🃏');
+        if (scorerSlot && scorerSlot.querySelector('.scorer-pick-display')) summaryIcons.push('⚽');
+        if (combineSlot && combineSlot.querySelector('.combine-active')) summaryIcons.push('🎲');
+        
+        const summaryText = summaryIcons.length > 0 ? summaryIcons.join('') + ' ' : '';
+        toggleBtn.textContent = `${summaryText}Options ▼`;
+        
+        toggleBtn.onclick = () => {
+            const isCollapsed = wrapper.classList.contains('collapsed');
+            if (isCollapsed) {
+                wrapper.classList.remove('collapsed');
+                wrapper.style.maxHeight = wrapper.scrollHeight + 'px';
+                toggleBtn.textContent = `${summaryText}Options ▲`;
+            } else {
+                wrapper.classList.add('collapsed');
+                wrapper.style.maxHeight = '0';
+                toggleBtn.textContent = `${summaryText}Options ▼`;
+            }
+        };
+        
+        // Insérer après les résultats ou l'IA
+        const insertAfter = card.querySelector('.actual-result') 
+            || card.querySelector('.ia-suggestion') 
+            || card.querySelector('.prediction-score');
+        
+        if (insertAfter && insertAfter.parentNode === card) {
+            insertAfter.after(toggleBtn);
+            toggleBtn.after(wrapper);
+        } else {
+            card.appendChild(toggleBtn);
+            card.appendChild(wrapper);
+        }
+    });
+}
+
+// Re-appliquer le wrapper quand on resize
+window.addEventListener('resize', () => {
+    if (typeof wrapExtrasForMobile === 'function') {
+        wrapExtrasForMobile();
+    }
+});
+
+
+// ===============================
+// INJECTION CSS MOBILE
+// (ex-pronostics-ux-patch.js §8)
+// ===============================
+
+(function injectGameplayCSS() {
+    const style = document.createElement('style');
+    style.textContent = `
+        /* Badge buteur compact */
+        .scorer-pick-display {
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        /* Mobile (≤768px) */
+        @media (max-width: 768px) {
+            .extras-toggle-btn {
+                display: block;
+                width: 100%;
+                padding: 0.4rem;
+                margin-top: 0.3rem;
+                background: #f0f0f0;
+                border: 1px solid #ddd;
+                border-radius: 6px;
+                font-size: 0.8rem;
+                color: #666;
+                cursor: pointer;
+                text-align: center;
+                animation: fadeIn 0.2s ease;
+            }
+            
+            .extras-toggle-btn:hover {
+                background: #e8e8e8;
+            }
+            
+            .extras-mobile-wrapper > .scorer-slot,
+            .extras-mobile-wrapper > .joker-slot,
+            .extras-mobile-wrapper > .combine-slot {
+                padding: 0.3rem 0;
+            }
+            
+            .scorer-btn {
+                padding: 0.25rem 0.5rem !important;
+                font-size: 0.72rem !important;
+            }
+            
+            .combine-btn, .combine-toggle-btn {
+                width: 100%;
+                text-align: center;
+            }
+            
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(-5px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+        }
+        
+        /* Desktop (≥769px) : cacher le toggle, afficher directement */
+        @media (min-width: 769px) {
+            .extras-toggle-btn {
+                display: none !important;
+            }
+            
+            .extras-mobile-wrapper {
+                max-height: none !important;
+                overflow: visible !important;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+})();
+
 
 // ===============================
 // ÉQUIPE FAVORITE

@@ -1,4 +1,5 @@
 // pronostics-stats.js - Statistiques détaillées des joueurs et graphique d'évolution
+// 🔥 Inclut la consolidation des bonus (Super Joker, Buteur, Combiné, Challenges, MVP)
 
 // ===============================
 // CALCUL DES STATISTIQUES
@@ -37,7 +38,18 @@ async function calculatePlayerDetailedStats(playerId) {
         cumulativePoints: {},
         
         // Journées jouées
-        journeysPlayed: []
+        journeysPlayed: [],
+        
+        // Bonus consolidés
+        bonusPoints: {
+            superJoker: 0,
+            scorer: 0,
+            combine: 0,
+            challenges: 0,
+            mvp: 0,
+            total: 0
+        },
+        bonusByMatchDay: {}
     };
     
     try {
@@ -182,6 +194,130 @@ async function calculatePlayerDetailedStats(playerId) {
         
     } catch (error) {
         console.error('Erreur calculatePlayerDetailedStats:', error);
+    }
+    
+    // ===============================
+    // CONSOLIDATION DES BONUS
+    // (ex-pronostics-consolidation.js §1)
+    // ===============================
+    
+    try {
+        const season = currentSeason;
+        
+        // --- SUPER JOKER ---
+        if (typeof getSuperJoker === 'function') {
+            const sj = await getSuperJoker(playerId, season);
+            if (sj && sj.used && sj.matchDay) {
+                const baseDayPoints = stats.pointsByMatchDay[sj.matchDay] || 0;
+                // Le Super Joker multiplie par 1.5 → le bonus est 0.5 × base
+                const sjBonus = Math.round(baseDayPoints * 0.5 * 10) / 10;
+                stats.bonusPoints.superJoker = sjBonus;
+                
+                if (!stats.bonusByMatchDay[sj.matchDay]) stats.bonusByMatchDay[sj.matchDay] = {};
+                stats.bonusByMatchDay[sj.matchDay].superJoker = sjBonus;
+                
+                // Mettre à jour les points de la journée
+                stats.pointsByMatchDay[sj.matchDay] = Math.round((baseDayPoints + sjBonus) * 10) / 10;
+            }
+        }
+        
+        // --- DÉFI BUTEUR ---
+        if (typeof calculateScorerPointsForMatchDay === 'function') {
+            for (const matchDay of stats.journeysPlayed) {
+                try {
+                    const preds = await getPlayerPredictions(playerId, season, matchDay);
+                    if (preds && preds.predictions) {
+                        const scorerResult = calculateScorerPointsForMatchDay(preds.predictions, matchDay);
+                        const scorerPts = scorerResult?.totalPoints || 0;
+                        if (scorerPts > 0) {
+                            stats.bonusPoints.scorer += scorerPts;
+                            if (!stats.bonusByMatchDay[matchDay]) stats.bonusByMatchDay[matchDay] = {};
+                            stats.bonusByMatchDay[matchDay].scorer = scorerPts;
+                            stats.pointsByMatchDay[matchDay] = Math.round((stats.pointsByMatchDay[matchDay] + scorerPts) * 10) / 10;
+                        }
+                    }
+                } catch (e) {
+                    console.error(`❌ Erreur scorer J${matchDay}:`, e);
+                }
+            }
+        }
+        
+        // --- PARI COMBINÉ ---
+        if (typeof calculateCombineResult === 'function' && typeof getPlayerCombine === 'function') {
+            for (const matchDay of stats.journeysPlayed) {
+                try {
+                    const combine = await getPlayerCombine(playerId, season, matchDay);
+                    if (combine && combine.matches) {
+                        const matchesThisDay = allMatches.filter(m => m.matchDay === matchDay && m.finalScore);
+                        const predictions = await getPlayerPredictions(playerId, season, matchDay);
+                        
+                        if (predictions && predictions.predictions) {
+                            const combineResult = calculateCombineResult(combine, predictions.predictions, matchesThisDay);
+                            if (combineResult && combineResult.bonusPoints > 0) {
+                                stats.bonusPoints.combine += combineResult.bonusPoints;
+                                if (!stats.bonusByMatchDay[matchDay]) stats.bonusByMatchDay[matchDay] = {};
+                                stats.bonusByMatchDay[matchDay].combine = combineResult.bonusPoints;
+                                stats.pointsByMatchDay[matchDay] = Math.round((stats.pointsByMatchDay[matchDay] + combineResult.bonusPoints) * 10) / 10;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error(`❌ Erreur combiné J${matchDay}:`, e);
+                }
+            }
+        }
+        
+        // --- DÉFIS IA + BUTS TOTAUX ---
+        if (typeof calculateAllChallengePoints === 'function') {
+            for (const matchDay of stats.journeysPlayed) {
+                try {
+                    const challengeResult = await calculateAllChallengePoints(playerId, season, matchDay);
+                    if (challengeResult && challengeResult.points > 0) {
+                        stats.bonusPoints.challenges = (stats.bonusPoints.challenges || 0) + challengeResult.points;
+                        if (!stats.bonusByMatchDay[matchDay]) stats.bonusByMatchDay[matchDay] = {};
+                        stats.bonusByMatchDay[matchDay].challenges = challengeResult.points;
+                        stats.pointsByMatchDay[matchDay] = Math.round((stats.pointsByMatchDay[matchDay] + challengeResult.points) * 10) / 10;
+                    }
+                } catch (e) {}
+            }
+        }
+        
+        // --- MVP BONUS ---
+        if (typeof getMVPBonusForPlayer === 'function') {
+            for (const matchDay of stats.journeysPlayed) {
+                try {
+                    const mvpBonus = await getMVPBonusForPlayer(playerId, season, matchDay);
+                    if (mvpBonus && mvpBonus > 0) {
+                        stats.bonusPoints.mvp += mvpBonus;
+                        if (!stats.bonusByMatchDay[matchDay]) stats.bonusByMatchDay[matchDay] = {};
+                        stats.bonusByMatchDay[matchDay].mvp = mvpBonus;
+                        stats.pointsByMatchDay[matchDay] = Math.round((stats.pointsByMatchDay[matchDay] + mvpBonus) * 10) / 10;
+                    }
+                } catch (e) {}
+            }
+        }
+        
+        // --- RECALCUL TOTAL ---
+        stats.bonusPoints.total = Math.round(
+            (stats.bonusPoints.superJoker + stats.bonusPoints.scorer + 
+             stats.bonusPoints.combine + (stats.bonusPoints.challenges || 0) + stats.bonusPoints.mvp) * 10
+        ) / 10;
+        
+        // Recalculer totalPoints et cumulativePoints avec les bonus
+        let cumul = 0;
+        stats.totalPoints = 0;
+        
+        const sortedDays = stats.journeysPlayed.sort((a, b) => a - b);
+        for (const md of sortedDays) {
+            const dayPts = stats.pointsByMatchDay[md] || 0;
+            stats.totalPoints += dayPts;
+            cumul += dayPts;
+            stats.cumulativePoints[md] = Math.round(cumul * 10) / 10;
+        }
+        stats.totalPoints = Math.round(stats.totalPoints * 10) / 10;
+        
+    } catch (e) {
+        console.error('Erreur consolidation bonus:', e);
     }
     
     return stats;
@@ -610,6 +746,7 @@ function filterEvolutionChart(filter) {
 
 // ===============================
 // CLASSEMENT PAR JOURNÉE
+// (avec bonus consolidés — ex-pronostics-consolidation.js §3)
 // ===============================
 
 async function getMatchDayLeaderboard(matchDay) {
@@ -658,7 +795,67 @@ async function getMatchDayLeaderboard(matchDay) {
             });
         }
         
-        // Trier par points
+        // --- AJOUT DES BONUS ---
+        const season = currentSeason;
+        
+        for (const player of leaderboard) {
+            let bonusTotal = 0;
+            
+            // Super Joker
+            if (typeof getSuperJoker === 'function') {
+                try {
+                    const sj = await getSuperJoker(player.playerId, season);
+                    if (sj && sj.used && sj.matchDay === matchDay) {
+                        bonusTotal += Math.round(player.points * 0.5 * 10) / 10;
+                    }
+                } catch (e) {}
+            }
+            
+            // Buteur
+            if (typeof calculateScorerPointsForMatchDay === 'function') {
+                try {
+                    const preds = await getPlayerPredictions(player.playerId, season, matchDay);
+                    if (preds && preds.predictions) {
+                        const scorerResult = calculateScorerPointsForMatchDay(preds.predictions, matchDay);
+                        if (scorerResult?.totalPoints > 0) bonusTotal += scorerResult.totalPoints;
+                    }
+                } catch (e) {}
+            }
+            
+            // Combiné
+            if (typeof calculateCombineResult === 'function' && typeof getPlayerCombine === 'function') {
+                try {
+                    const combine = await getPlayerCombine(player.playerId, season, matchDay);
+                    if (combine && combine.matches) {
+                        const predictions = await getPlayerPredictions(player.playerId, season, matchDay);
+                        if (predictions && predictions.predictions) {
+                            const result = calculateCombineResult(combine, predictions.predictions, matchesThisDay);
+                            if (result && result.bonusPoints > 0) bonusTotal += result.bonusPoints;
+                        }
+                    }
+                } catch (e) {}
+            }
+            
+            // MVP
+            if (typeof getMVPBonusForPlayer === 'function') {
+                try {
+                    const mvpBonus = await getMVPBonusForPlayer(player.playerId, season, matchDay);
+                    if (mvpBonus > 0) bonusTotal += mvpBonus;
+                } catch (e) {}
+            }
+            
+            // Défis IA + buts totaux
+            if (typeof calculateAllChallengePoints === 'function') {
+                try {
+                    const challengeResult = await calculateAllChallengePoints(player.playerId, season, matchDay);
+                    if (challengeResult && challengeResult.points > 0) bonusTotal += challengeResult.points;
+                } catch (e) {}
+            }
+            
+            player.points = Math.round((player.points + bonusTotal) * 10) / 10;
+        }
+        
+        // Trier par points (bonus inclus)
         leaderboard.sort((a, b) => b.points - a.points);
         
         return leaderboard;

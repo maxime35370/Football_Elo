@@ -317,9 +317,24 @@ async function getPseudoWithMVPBadge(playerId, pseudo, matchDay) {
 }
 
 /**
- * Intégration dans le leaderboard global : ajoute les bonus MVP aux points totaux
+ * Intégration dans le leaderboard global : ajoute les bonus MVP aux points
+ * 
+ * ⚡ FIX (ex-pronostics-consolidation.js §8) :
+ * - Si matchDay est fourni : retourne le bonus MVP gagné à la journée PRÉCÉDENTE
+ *   (être MVP à J5 donne le bonus sur J6, pas J5)
+ * - Si matchDay n'est pas fourni : retourne le total saison (rétro-compatible)
  */
-async function getMVPBonusForPlayer(playerId, season) {
+async function getMVPBonusForPlayer(playerId, season, matchDay) {
+    if (matchDay !== undefined) {
+        // Mode par journée : le bonus vient du MVP de la journée PRÉCÉDENTE
+        const prevDay = matchDay - 1;
+        if (prevDay < 1) return 0;
+        
+        const mvp = await getMVP(season, prevDay);
+        return (mvp && mvp.playerId === playerId) ? MVP_BONUS_POINTS : 0;
+    }
+    
+    // Mode saison complète (rétro-compatible)
     const mvps = await getAllMVPs(season);
     const playerMVPs = mvps.filter(m => m.playerId === playerId);
     return playerMVPs.length * MVP_BONUS_POINTS;

@@ -1,6 +1,7 @@
 // =====================================================
 // 🎲 PARI COMBINÉ - Bonus sur matchs combinés
 // Fichier séparé : pronostics-combine.js
+// 🔥 Inclut le verrouillage UX (ex-pronostics-ux-patch.js §6)
 // =====================================================
 
 const COMBINE_CONFIG = {
@@ -99,7 +100,17 @@ function setCombineSelections(matchDay, selections) {
     _combineSelections[matchDay] = selections;
 }
 
+/**
+ * Toggle un match dans le combiné
+ * ⚡ UX (ex-ux-patch §6) : bloque si la journée a commencé
+ */
 function toggleCombineMatch(matchDay, homeTeamId, awayTeamId) {
+    // ⚡ Vérifier si la journée a commencé
+    if (typeof isMatchDayStarted === 'function' && isMatchDayStarted(matchDay)) {
+        alert('La journée a déjà commencé, impossible de modifier le combiné.');
+        return;
+    }
+    
     const selections = getCombineSelections(matchDay);
     const matchKey = `${homeTeamId}_${awayTeamId}`;
     

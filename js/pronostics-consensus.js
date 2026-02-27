@@ -1,4 +1,5 @@
 // pronostics-consensus.js - Consensus joueurs et Suggestions IA
+// 🔥 Inclut le hook mobile (ex-pronostics-ux-patch.js §5)
 
 // ===============================
 // CONSENSUS DES JOUEURS
@@ -276,6 +277,7 @@ function applySuggestion(homeScore, awayScore, button) {
 /**
  * Ajoute le consensus et les suggestions IA aux cartes de match
  * À appeler après displayPredictionsForm()
+ * ⚡ UX (ex-ux-patch §5) : appelle wrapExtrasForMobile() après le rendu
  */
 async function enhanceMatchCardsWithConsensus() {
     const matchCards = document.querySelectorAll('.prediction-match');
@@ -332,6 +334,11 @@ async function enhanceMatchCardsWithConsensus() {
         document.querySelectorAll('.ia-suggestion').forEach(s => {
             s.style.display = 'none';
         });
+    }
+    
+    // ⚡ Appliquer le wrapper mobile après le rendu des cartes
+    if (typeof wrapExtrasForMobile === 'function') {
+        wrapExtrasForMobile();
     }
 }
 

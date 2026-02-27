@@ -1,6 +1,7 @@
 // =====================================================
 // ⚽ DÉFI BUTEUR - Prédiction du premier buteur
 // Fichier séparé : pronostics-scorer.js
+// 🔥 Inclut les améliorations UX (ex-pronostics-ux-patch.js §1)
 // =====================================================
 
 // Points bonus
@@ -89,13 +90,14 @@ function matchScorerNames(pred, actual) {
 
 // ===============================
 // INTERFACE - SÉLECTION DU BUTEUR
+// (UX amélioré — ex-pronostics-ux-patch.js §1)
 // ===============================
 
 /**
  * Génère le HTML du défi buteur pour une carte de match
- * @param homeTeamId, awayTeamId - IDs des équipes
- * @param existingPick - nom du buteur déjà sélectionné (ou null)
- * @param isLocked - match verrouillé ?
+ * - Si buteur sélectionné : badge compact cliquable avec ✏️
+ * - Sinon : checkbox pour activer + picker
+ * - Auto-collapse après sélection
  */
 function renderScorerChallenge(homeTeamId, awayTeamId, existingPick, isLocked) {
     const matchKey = `${homeTeamId}_${awayTeamId}`;
@@ -107,7 +109,6 @@ function renderScorerChallenge(homeTeamId, awayTeamId, existingPick, isLocked) {
     }
     
     const scorers = getMatchTopScorers(homeTeamId, awayTeamId);
-    const isActive = !!existingPick;
     
     let html = `
         <div class="scorer-challenge" data-match="${matchKey}" style="margin-top:0.5rem;">
@@ -123,70 +124,37 @@ function renderScorerChallenge(homeTeamId, awayTeamId, existingPick, isLocked) {
                 <span style="color:#8e44ad;font-weight:600;">1er buteur : ${existingPick}</span>
             </div>
         `;
+    } else if (existingPick) {
+        // ✅ BUTEUR DÉJÀ SÉLECTIONNÉ → Badge compact cliquable
+        html += `
+            <div class="scorer-pick-display" 
+                 onclick="toggleScorerPicker('${matchKey}')"
+                 style="display:inline-flex;align-items:center;gap:0.4rem;padding:0.3rem 0.7rem;
+                        background:linear-gradient(135deg,#8e44ad15,#9b59b620);
+                        border:1px solid #8e44ad60;border-radius:20px;cursor:pointer;
+                        font-size:0.82rem;color:#8e44ad;font-weight:600;
+                        max-width:200px;transition:all 0.2s;">
+                <span>⚽</span>
+                <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${existingPick}</span>
+                <span style="opacity:0.6;font-size:0.75rem;">✏️</span>
+            </div>
+            <div class="scorer-picker" id="scorerPicker_${matchKey}" style="display:none;margin-top:0.3rem;">
+                ${_renderScorerPickerContent(matchKey, homeTeam, awayTeam, scorers, existingPick)}
+            </div>
+        `;
     } else {
-        // Toggle activé/désactivé
+        // ❌ PAS DE BUTEUR → Checkbox + picker
         html += `
             <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.3rem;">
                 <label style="display:flex;align-items:center;gap:0.3rem;cursor:pointer;font-size:0.85rem;color:#8e44ad;">
                     <input type="checkbox" class="scorer-toggle" data-match="${matchKey}" 
-                           ${isActive ? 'checked' : ''}
                            onchange="toggleScorerChallenge('${matchKey}')">
                     ⚽ Défi 1er buteur
                     <span style="font-size:0.75rem;color:#95a5a6;">(+${SCORER_FIRST_EXACT} pts)</span>
                 </label>
             </div>
-            <div class="scorer-picker" id="scorerPicker_${matchKey}" style="display:${isActive ? 'block' : 'none'};">
-                <div style="display:flex;flex-wrap:wrap;gap:0.3rem;margin-bottom:0.3rem;">
-        `;
-        
-        // Buteurs de l'équipe domicile
-        if (scorers.home.length > 0) {
-            html += `<div style="font-size:0.7rem;color:#7f8c8d;width:100%;">🏠 ${homeTeam?.shortName || '?'}</div>`;
-            scorers.home.slice(0, 5).forEach(s => {
-                const selected = existingPick && matchScorerNames(existingPick, s.name);
-                html += `
-                    <button type="button" class="scorer-btn ${selected ? 'selected' : ''}" 
-                            onclick="selectScorer('${matchKey}', '${s.name.replace(/'/g, "\\'")}')"
-                            style="padding:0.2rem 0.5rem;border-radius:12px;font-size:0.75rem;cursor:pointer;
-                                   border:1px solid ${selected ? '#8e44ad' : '#ddd'};
-                                   background:${selected ? '#8e44ad' : '#f8f9fa'};
-                                   color:${selected ? 'white' : '#2c3e50'};">
-                        ${s.name} <span style="opacity:0.6;">(${s.goals})</span>
-                    </button>
-                `;
-            });
-        }
-        
-        // Buteurs de l'équipe extérieur
-        if (scorers.away.length > 0) {
-            html += `<div style="font-size:0.7rem;color:#7f8c8d;width:100%;margin-top:0.2rem;">✈️ ${awayTeam?.shortName || '?'}</div>`;
-            scorers.away.slice(0, 5).forEach(s => {
-                const selected = existingPick && matchScorerNames(existingPick, s.name);
-                html += `
-                    <button type="button" class="scorer-btn ${selected ? 'selected' : ''}" 
-                            onclick="selectScorer('${matchKey}', '${s.name.replace(/'/g, "\\'")}')"
-                            style="padding:0.2rem 0.5rem;border-radius:12px;font-size:0.75rem;cursor:pointer;
-                                   border:1px solid ${selected ? '#8e44ad' : '#ddd'};
-                                   background:${selected ? '#8e44ad' : '#f8f9fa'};
-                                   color:${selected ? 'white' : '#2c3e50'};">
-                        ${s.name} <span style="opacity:0.6;">(${s.goals})</span>
-                    </button>
-                `;
-            });
-        }
-        
-        // Champ "Autre"
-        const isCustom = existingPick && !scorers.home.concat(scorers.away).some(s => matchScorerNames(existingPick, s.name));
-        html += `
-                </div>
-                <div style="display:flex;align-items:center;gap:0.3rem;margin-top:0.3rem;">
-                    <input type="text" class="scorer-custom" id="scorerCustom_${matchKey}" 
-                           placeholder="Autre joueur..." 
-                           value="${isCustom ? existingPick : ''}"
-                           oninput="selectCustomScorer('${matchKey}')"
-                           style="padding:0.3rem 0.5rem;border:1px solid #ddd;border-radius:6px;
-                                  font-size:0.8rem;flex:1;max-width:200px;">
-                </div>
+            <div class="scorer-picker" id="scorerPicker_${matchKey}" style="display:none;">
+                ${_renderScorerPickerContent(matchKey, homeTeam, awayTeam, scorers, null)}
             </div>
         `;
     }
@@ -196,7 +164,86 @@ function renderScorerChallenge(homeTeamId, awayTeamId, existingPick, isLocked) {
 }
 
 /**
- * Toggle le défi buteur pour un match
+ * Génère le contenu interne du picker (boutons buteurs + champ custom)
+ * Utilisé par renderScorerChallenge pour éviter la duplication
+ */
+function _renderScorerPickerContent(matchKey, homeTeam, awayTeam, scorers, existingPick) {
+    let html = `<div style="display:flex;flex-wrap:wrap;gap:0.3rem;margin-bottom:0.3rem;">`;
+    
+    // Buteurs de l'équipe domicile
+    if (scorers.home.length > 0) {
+        html += `<div style="font-size:0.7rem;color:#7f8c8d;width:100%;">🏠 ${homeTeam?.shortName || '?'}</div>`;
+        scorers.home.slice(0, 5).forEach(s => {
+            const selected = existingPick && matchScorerNames(existingPick, s.name);
+            html += `
+                <button type="button" class="scorer-btn ${selected ? 'selected' : ''}" 
+                        onclick="selectScorer('${matchKey}', '${s.name.replace(/'/g, "\\'")}')"
+                        style="padding:0.2rem 0.5rem;border-radius:12px;font-size:0.75rem;cursor:pointer;
+                               border:1px solid ${selected ? '#8e44ad' : '#ddd'};
+                               background:${selected ? '#8e44ad' : '#f8f9fa'};
+                               color:${selected ? 'white' : '#2c3e50'};
+                               transition:all 0.15s;">
+                    ${s.name} <span style="opacity:0.6;">(${s.goals})</span>
+                </button>
+            `;
+        });
+    }
+    
+    // Buteurs de l'équipe extérieur
+    if (scorers.away.length > 0) {
+        html += `<div style="font-size:0.7rem;color:#7f8c8d;width:100%;margin-top:0.2rem;">✈️ ${awayTeam?.shortName || '?'}</div>`;
+        scorers.away.slice(0, 5).forEach(s => {
+            const selected = existingPick && matchScorerNames(existingPick, s.name);
+            html += `
+                <button type="button" class="scorer-btn ${selected ? 'selected' : ''}" 
+                        onclick="selectScorer('${matchKey}', '${s.name.replace(/'/g, "\\'")}')"
+                        style="padding:0.2rem 0.5rem;border-radius:12px;font-size:0.75rem;cursor:pointer;
+                               border:1px solid ${selected ? '#8e44ad' : '#ddd'};
+                               background:${selected ? '#8e44ad' : '#f8f9fa'};
+                               color:${selected ? 'white' : '#2c3e50'};
+                               transition:all 0.15s;">
+                    ${s.name} <span style="opacity:0.6;">(${s.goals})</span>
+                </button>
+            `;
+        });
+    }
+    
+    // Champ "Autre" avec bouton OK
+    const isCustom = existingPick && !scorers.home.concat(scorers.away).some(s => matchScorerNames(existingPick, s.name));
+    html += `
+        </div>
+        <div style="display:flex;align-items:center;gap:0.3rem;margin-top:0.3rem;">
+            <input type="text" class="scorer-custom" id="scorerCustom_${matchKey}" 
+                   placeholder="Autre joueur..." 
+                   value="${isCustom ? existingPick : ''}"
+                   style="padding:0.3rem 0.5rem;border:1px solid ${isCustom ? '#8e44ad' : '#ddd'};
+                          border-radius:6px;font-size:0.8rem;flex:1;max-width:200px;
+                          ${isCustom ? 'background:#8e44ad10;color:#8e44ad;font-weight:600;' : ''}">
+            <button type="button" onclick="selectCustomScorer('${matchKey}')"
+                    style="padding:0.3rem 0.6rem;background:#8e44ad;color:white;
+                           border:none;border-radius:6px;font-size:0.75rem;cursor:pointer;
+                           font-weight:600;">
+                OK
+            </button>
+        </div>
+    `;
+    
+    return html;
+}
+
+/**
+ * Toggle le picker buteur (badge compact ✏️ → ouvre/ferme le picker)
+ */
+function toggleScorerPicker(matchKey) {
+    const picker = document.getElementById(`scorerPicker_${matchKey}`);
+    if (picker) {
+        const isVisible = picker.style.display !== 'none';
+        picker.style.display = isVisible ? 'none' : 'block';
+    }
+}
+
+/**
+ * Toggle le défi buteur pour un match (checkbox mode)
  */
 function toggleScorerChallenge(matchKey) {
     const picker = document.getElementById(`scorerPicker_${matchKey}`);
@@ -214,6 +261,7 @@ function toggleScorerChallenge(matchKey) {
 
 /**
  * Sélectionner un buteur depuis les boutons
+ * Auto-collapse le picker après 200ms et affiche le badge compact
  */
 function selectScorer(matchKey, scorerName) {
     // Désélectionner tous les boutons de ce match
@@ -238,21 +286,33 @@ function selectScorer(matchKey, scorerName) {
         
         // Vider le champ custom
         const customInput = document.getElementById(`scorerCustom_${matchKey}`);
-        if (customInput) customInput.value = '';
+        if (customInput) {
+            customInput.value = '';
+            customInput.style.borderColor = '#ddd';
+            customInput.style.background = '';
+            customInput.style.color = '';
+            customInput.style.fontWeight = '';
+        }
     }
     
     // Stocker la sélection
     storeScorerPick(matchKey, scorerName);
+    
+    // Auto-collapse le picker après 200ms et remplacer par badge compact
+    setTimeout(() => {
+        _collapseScorerToBadge(matchKey, scorerName);
+    }, 200);
 }
 
 /**
- * Sélection via le champ "Autre"
+ * Sélection via le champ "Autre" + bouton OK
  */
 function selectCustomScorer(matchKey) {
     const customInput = document.getElementById(`scorerCustom_${matchKey}`);
     if (!customInput) return;
     
     const name = customInput.value.trim();
+    if (!name) return;
     
     // Désélectionner les boutons
     const container = document.querySelector(`.scorer-challenge[data-match="${matchKey}"]`);
@@ -265,9 +325,55 @@ function selectCustomScorer(matchKey) {
         });
     }
     
-    if (name) {
-        storeScorerPick(matchKey, name);
+    // Highlight le champ custom
+    customInput.style.borderColor = '#8e44ad';
+    customInput.style.background = '#8e44ad10';
+    customInput.style.color = '#8e44ad';
+    customInput.style.fontWeight = '600';
+    
+    storeScorerPick(matchKey, name);
+    
+    // Auto-collapse le picker après 200ms et remplacer par badge compact
+    setTimeout(() => {
+        _collapseScorerToBadge(matchKey, name);
+    }, 200);
+}
+
+/**
+ * Collapse le picker et affiche le badge compact cliquable
+ */
+function _collapseScorerToBadge(matchKey, scorerName) {
+    const container = document.querySelector(`.scorer-challenge[data-match="${matchKey}"]`);
+    if (!container) return;
+    
+    // Cacher le picker
+    const picker = container.querySelector('.scorer-picker');
+    if (picker) picker.style.display = 'none';
+    
+    // Cacher la checkbox si elle existe
+    const checkboxLabel = container.querySelector('label');
+    if (checkboxLabel) checkboxLabel.style.display = 'none';
+    
+    // Vérifier si le badge existe déjà, sinon le créer
+    let badge = container.querySelector('.scorer-pick-display');
+    if (!badge) {
+        badge = document.createElement('div');
+        badge.className = 'scorer-pick-display';
+        badge.onclick = () => toggleScorerPicker(matchKey);
+        badge.style.cssText = `display:inline-flex;align-items:center;gap:0.4rem;padding:0.3rem 0.7rem;
+            background:linear-gradient(135deg,#8e44ad15,#9b59b620);
+            border:1px solid #8e44ad60;border-radius:20px;cursor:pointer;
+            font-size:0.82rem;color:#8e44ad;font-weight:600;
+            max-width:200px;transition:all 0.2s;`;
+        container.insertBefore(badge, container.firstChild);
     }
+    
+    badge.innerHTML = `
+        <span>⚽</span>
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${scorerName}</span>
+        <span style="opacity:0.6;font-size:0.75rem;">✏️</span>
+    `;
+    badge.style.display = 'inline-flex';
 }
 
 /**

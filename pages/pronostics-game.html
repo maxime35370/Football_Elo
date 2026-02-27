@@ -396,41 +396,14 @@
             <p>&copy; 2025 Football Elo - Pronostics Multijoueur</p>
         </footer>
 
-        <!-- Firebase SDK -->
+        <!-- CDN externes -->
         <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
         <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-        <!-- Scripts -->
-        <script src="../js/firebase-config.js"></script>
-        <script src="../js/firebase-service.js"></script>
-        <script src="../js/seasons.js"></script>
-        <script src="../js/teams-loader.js"></script>
-        <script src="../js/storage.js"></script>
-        <script src="../js/elo.js"></script>
-        <script src="../js/elo-system.js"></script>
-        <script src="../js/pronostics-toast.js"></script>
-        <script src="../js/pronostics-game.js"></script>
-        <script src="../js/pronostics-chat.js"></script>
-        <script src="../js/pronostics-stats.js"></script>
-        <script src="../js/pronostics-ia.js"></script>
-        <script src="../js/pronostics-badges.js"></script>
-        <script src="../js/pronostics-odds.js"></script>
-        <script src="../js/pronostics-matchday-ranking.js"></script>
-        <script src="../js/pronostics-consensus.js"></script>
-        <script src="../js/pronostics-analysis.js"></script>
-        <script src="../js/pronostics-gamification.js"></script>
-        <script src="../js/pronostics-gameplay.js"></script>
-        <script src="../js/shareable-card.js"></script>
-        <script src="../js/pronostics-mvp.js"></script>
-        <script src="../js/pronostics-scorer.js"></script>
-        <script src="../js/pronostics-super-joker.js"></script>
-        <script src="../js/pronostics-combine.js"></script>
-        <script src="../js/pronostics-ranking-bet.js"></script>
-        <script src="../js/pronostics-challenges.js"></script>
-        <script src="../js/match-auto-update.js"></script>
-        <script src="../js/pronostics-ux-patch.js"></script>
-        <script src="../js/pronostics-consolidation.js"></script>
+        <!-- ⚡ Loader centralisé (remplace les 27 balises <script>) -->
+        <script src="../js/pronostics-loader.js"></script>
+
     <script>
     function toggleMenu() {
         document.querySelector('.nav-container').classList.toggle('open');

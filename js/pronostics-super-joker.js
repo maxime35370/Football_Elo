@@ -1,12 +1,16 @@
 // =====================================================
 // 🃏✨ SUPER JOKER - x1.5 sur toute la journée
 // Fichier séparé : pronostics-super-joker.js
+// 🔥 Inclut les améliorations UX (ex-pronostics-ux-patch.js §4,7)
 // =====================================================
 
 const SUPER_JOKER_CONFIG = {
     multiplier: 1.5,        // x1.5 sur tous les matchs de la journée
     maxPerSeason: 1          // 1 seul par saison
 };
+
+// Cache local pour accès synchrone depuis renderJokerButton
+let _superJokerCache = null;
 
 // ===============================
 // STOCKAGE
@@ -20,28 +24,44 @@ async function getSuperJoker(playerId, season) {
         if (typeof db !== 'undefined') {
             const doc = await db.collection('pronostiqueurs').doc(playerId).get();
             if (doc.exists && doc.data()[`superJoker_${season}`] !== undefined) {
-                return doc.data()[`superJoker_${season}`];
+                const data = doc.data()[`superJoker_${season}`];
+                _superJokerCache = data;
+                return data;
             }
         }
         
         // Fallback localStorage
         const stored = localStorage.getItem(storageKey);
-        if (stored) return JSON.parse(stored);
+        if (stored) {
+            const data = JSON.parse(stored);
+            _superJokerCache = data;
+            return data;
+        }
     } catch (e) {
         console.warn('Erreur getSuperJoker:', e);
     }
     
     // Défaut : pas encore utilisé
-    return {
+    const defaultData = {
         used: false,
         matchDay: null,
         usedAt: null
     };
+    _superJokerCache = defaultData;
+    return defaultData;
+}
+
+/**
+ * Accès synchrone au cache Super Joker (pour renderJokerButton dans gameplay.js)
+ */
+function getSuperJokerCache() {
+    return _superJokerCache;
 }
 
 async function saveSuperJoker(playerId, season, data) {
     const storageKey = `footballEloSuperJoker_${playerId}_${season}`;
     localStorage.setItem(storageKey, JSON.stringify(data));
+    _superJokerCache = data;
     
     // Sync Firebase
     if (typeof db !== 'undefined') {
@@ -91,6 +111,11 @@ async function activateSuperJoker(playerId, season, matchDay) {
         return { success: false, error: 'Super Joker déjà utilisé cette saison' };
     }
     
+    // ⚡ Vérifier si la journée a commencé
+    if (typeof isMatchDayStarted === 'function' && isMatchDayStarted(matchDay)) {
+        return { success: false, error: 'Impossible : la journée a déjà commencé' };
+    }
+    
     // Vérifier qu'il n'y a pas de joker individuel sur cette journée
     if (typeof getPlayerJokers === 'function') {
         const jokers = await getPlayerJokers(playerId, season);
@@ -120,14 +145,7 @@ async function deactivateSuperJoker(playerId, season, matchDay) {
     }
     
     // Vérifier si des matchs ont déjà commencé
-    const matchesThisDay = [...allMatches, ...futureMatches].filter(m => m.matchDay === matchDay);
-    const anyStarted = matchesThisDay.some(m => {
-        if (m.finalScore) return true;
-        if (m.scheduledAt && new Date() >= new Date(m.scheduledAt)) return true;
-        return false;
-    });
-    
-    if (anyStarted) {
+    if (typeof isMatchDayStarted === 'function' && isMatchDayStarted(matchDay)) {
         return { success: false, error: 'Impossible de retirer le Super Joker : des matchs ont déjà commencé' };
     }
     
@@ -156,26 +174,29 @@ async function isIndividualJokerBlocked(playerId, season, matchDay) {
 
 /**
  * Génère le bandeau Super Joker à afficher en haut de la journée
+ * ⚡ UX (ex-ux-patch §4) : masque le bandeau si un joker individuel est actif sur la journée
  */
 async function renderSuperJokerBanner(playerId, season, matchDay) {
     const superJoker = await getSuperJoker(playerId, season);
     const isActive = isSuperJokerActive(superJoker, matchDay);
     const isAvailable = isSuperJokerAvailable(superJoker);
     
-    // Vérifier si des matchs ont commencé (pour bloquer le toggle)
-    const matchesThisDay = [...allMatches, ...futureMatches].filter(m => m.matchDay === matchDay);
-    const anyStarted = matchesThisDay.some(m => {
-        if (m.finalScore) return true;
-        if (m.scheduledAt && new Date() >= new Date(m.scheduledAt)) return true;
-        return false;
-    });
-    
-    // Vérifier si un joker individuel bloque
+    // ⚡ Vérifier si un joker individuel est déjà posé → masquer entièrement le bandeau
     let hasIndividualJoker = false;
     if (typeof getPlayerJokers === 'function') {
         const jokers = await getPlayerJokers(playerId, season);
         hasIndividualJoker = hasIndividualJokerOnMatchDay(jokers, matchDay);
     }
+    
+    if (!isActive && hasIndividualJoker) {
+        // Joker individuel actif → Super Joker indisponible, ne pas afficher
+        return '';
+    }
+    
+    // Vérifier si la journée a commencé (pour bloquer le toggle)
+    const anyStarted = typeof isMatchDayStarted === 'function' 
+        ? isMatchDayStarted(matchDay) 
+        : false;
     
     if (isActive) {
         // Super Joker activé sur cette journée
@@ -221,8 +242,6 @@ async function renderSuperJokerBanner(playerId, season, matchDay) {
     }
     
     // Disponible mais pas activé
-    const blocked = hasIndividualJoker;
-    
     return `
         <div class="super-joker-banner available" style="
             margin-bottom:1rem;padding:0.75rem 1rem;border-radius:12px;
@@ -237,25 +256,28 @@ async function renderSuperJokerBanner(playerId, season, matchDay) {
                     <div style="font-size:0.8rem;color:#7f8c8d;">×${SUPER_JOKER_CONFIG.multiplier} sur TOUS les matchs · 1 seul par saison</div>
                 </div>
             </div>
-            ${blocked ? `
-                <span style="font-size:0.8rem;color:#e67e22;">⚠️ Retirez le joker individuel d'abord</span>
-            ` : `
-                <button onclick="handleToggleSuperJoker(${matchDay})" style="
-                    padding:0.4rem 0.8rem;
-                    background:linear-gradient(135deg,#9b59b6,#8e44ad);
-                    color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.85rem;">
-                    ✨ Activer
-                </button>
-            `}
+            <button onclick="handleToggleSuperJoker(${matchDay})" style="
+                padding:0.4rem 0.8rem;
+                background:linear-gradient(135deg,#9b59b6,#8e44ad);
+                color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.85rem;">
+                ✨ Activer
+            </button>
         </div>
     `;
 }
 
 /**
  * Handler pour le toggle Super Joker
+ * ⚡ UX (ex-ux-patch §7) : bloque si journée commencée
  */
 async function handleToggleSuperJoker(matchDay) {
     if (!currentPlayer || !currentSeason) return;
+    
+    // ⚡ Vérifier si la journée a commencé
+    if (typeof isMatchDayStarted === 'function' && isMatchDayStarted(matchDay)) {
+        alert('La journée a déjà commencé, impossible de modifier le Super Joker.');
+        return;
+    }
     
     const superJoker = await getSuperJoker(currentPlayer.id, currentSeason);
     const isActive = isSuperJokerActive(superJoker, matchDay);

@@ -14,7 +14,7 @@ let selectedMatchDay = null;
 // INITIALISATION
 // ===============================
 
-document.addEventListener('DOMContentLoaded', async () => {
+async function initPronosticsApp() {
     // Charger la saison en cours
     currentSeason = getCurrentSeason();
     
@@ -27,7 +27,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initialiser les événements
     initAuthEvents();
     initGameEvents();
-});
+}
+
+// Compatible avec chargement direct (<script>) ET dynamique (loader)
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPronosticsApp);
+} else {
+    // DOM déjà prêt (chargé via pronostics-loader.js)
+    // Attendre que tous les modules features soient chargés
+    document.addEventListener('pronostics:ready', initPronosticsApp);
+    // Fallback si chargé directement (pas de loader)
+    if (!document.querySelector('script[src*="pronostics-loader"]')) {
+        initPronosticsApp();
+    }
+}
 
 async function loadGameData() {
     try {
@@ -610,6 +623,14 @@ async function displayPredictionsForm() {
         }
     }
     
+    // ⚡ Charger le combiné sauvegardé
+    if (currentPlayer && typeof getPlayerCombine === 'function') {
+        const savedCombine = await getPlayerCombine(currentPlayer.id, currentSeason, selectedMatchDay);
+        if (typeof loadCombineFromSaved === 'function') {
+            loadCombineFromSaved(savedCombine, selectedMatchDay);
+        }
+    }
+    
     // Mettre à jour le statut
     if (existingPredictions) {
         statusEl.className = 'predictions-status saved';
@@ -639,8 +660,21 @@ async function displayPredictionsForm() {
         await Promise.all(oddsPromises);
     }
 
+    // ⚡ Déterminer si la journée est verrouillée (pour le combiné/super joker)
+    const isMatchDayLocked = openMatches === 0;
+
     // Générer le HTML des matchs
     let html = '';
+    
+    // ⚡ Bandeau Super Joker (au-dessus des matchs)
+    if (typeof renderSuperJokerBanner === 'function' && currentPlayer) {
+        html += await renderSuperJokerBanner(currentPlayer.id, currentSeason, selectedMatchDay);
+    }
+    
+    // ⚡ Panneau Combiné (au-dessus des matchs)
+    if (typeof renderCombinePanel === 'function') {
+        html += renderCombinePanel(selectedMatchDay, isMatchDayLocked);
+    }
     
     matchesThisDay.forEach(match => {
         const homeTeam = allTeams.find(t => t.id == match.homeTeamId);
@@ -716,6 +750,11 @@ async function displayPredictionsForm() {
             drawMultText = `×${drawMult.toFixed(2)}`;
         }
 
+        // ⚡ Bouton Combiné pour ce match
+        const combineButtonHtml = typeof renderCombineButton === 'function'
+            ? renderCombineButton(selectedMatchDay, match.homeTeamId, match.awayTeamId, isMatchLocked)
+            : '';
+
         html += `
             <div class="prediction-match ${isMatchLocked ? 'locked' : ''} ${resultHtml ? 'has-result' : ''}" 
                  data-home="${match.homeTeamId}" 
@@ -747,6 +786,7 @@ async function displayPredictionsForm() {
                 ${resultHtml}
                 ${!isMatchLocked ? `<div class="joker-slot" data-home="${match.homeTeamId}" data-away="${match.awayTeamId}"></div>` : ''}
                 <div class="scorer-slot" data-home="${match.homeTeamId}" data-away="${match.awayTeamId}"></div>
+                ${combineButtonHtml ? `<div class="combine-slot">${combineButtonHtml}</div>` : ''}
             </div>
         `;
     });
@@ -857,10 +897,7 @@ function calculatePredictionResult(predHome, predAway, realHome, realAway, saved
     // Appliquer le multiplicateur de cote si disponible
     let oddsMultiplier = 1;
     if (odds && odds[predResult]) {
-        // Normaliser le multiplicateur (cote / 2 pour équilibrer)
-        // Une cote de 2.0 = x1.0, cote de 4.0 = x2.0, cote de 1.5 = x0.75
         oddsMultiplier = Math.round((odds[predResult] / 2) * 100) / 100;
-        // Limiter entre 0.5 et 3.0
         oddsMultiplier = Math.max(0.5, Math.min(3.0, oddsMultiplier));
     }
     
@@ -999,6 +1036,11 @@ async function handleSavePredictions() {
         predictions
     );
     
+    // ⚡ Sauvegarder le combiné avec les pronostics
+    if (success && typeof saveCombineWithPredictions === 'function') {
+        await saveCombineWithPredictions(currentPlayer.id, currentSeason, selectedMatchDay);
+    }
+    
     if (success) {
         alert(`✅ ${predictions.length} pronostic(s) sauvegardé(s) !`);
         displayPredictionsForm();
@@ -1007,9 +1049,35 @@ async function handleSavePredictions() {
     }
 }
 
+/**
+ * Affiche le résumé de fin de journée
+ * Utilise le système de récap consolidé (ex-pronostics-consolidation.js §6)
+ */
 async function displayPredictionsSummary(predictionsData, matches) {
     const container = document.getElementById('predictionsSummary');
     
+    // Utiliser le récap consolidé si disponible (inclut tous les bonus)
+    if (typeof getMatchDayRecap === 'function' && typeof renderMatchDayRecap === 'function' && currentPlayer) {
+        try {
+            const recap = await getMatchDayRecap(currentPlayer.id, selectedMatchDay);
+            if (recap) {
+                container.innerHTML = renderMatchDayRecap(recap);
+                
+                // Ajouter la comparaison IA en dessous
+                if (typeof calculateIAComparison === 'function') {
+                    const iaComparison = await calculateIAComparison(currentPlayer.id, selectedMatchDay);
+                    if (iaComparison) {
+                        container.innerHTML += renderIAComparisonSummary(iaComparison);
+                    }
+                }
+                return;
+            }
+        } catch (e) {
+            console.error('Erreur récap consolidé:', e);
+        }
+    }
+    
+    // Fallback : calcul simple sans bonus (si récap non disponible)
     let totalPoints = 0;
     let exact = 0, close = 0, good = 0, correct = 0, wrong = 0;
     
@@ -1038,7 +1106,6 @@ async function displayPredictionsSummary(predictionsData, matches) {
         }
     });
     
-    // Arrondir pour l'affichage
     const displayPoints = Math.round(totalPoints * 10) / 10;
 
     container.innerHTML = `
@@ -1069,8 +1136,7 @@ async function displayPredictionsSummary(predictionsData, matches) {
     if (currentPlayer && typeof calculateIAComparison === 'function') {
         const iaComparison = await calculateIAComparison(currentPlayer.id, selectedMatchDay);
         if (iaComparison) {
-            const summaryDiv = document.getElementById('predictionsSummary');
-            summaryDiv.innerHTML += renderIAComparisonSummary(iaComparison);
+            container.innerHTML += renderIAComparisonSummary(iaComparison);
         }
     }
 }
