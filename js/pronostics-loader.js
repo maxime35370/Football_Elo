@@ -23,8 +23,10 @@
         // --- Pronostics : utilitaires ---
         'pronostics-toast.js',
 
-        // --- Pronostics : module principal ---
-        'pronostics-game.js',
+        // --- Pronostics : MVC (Model → View → Controller) ---
+        'pronostics-model.js',
+        'pronostics-view.js',
+        'pronostics-controller.js',
 
         // --- Pronostics : features ---
         'pronostics-chat.js',
@@ -42,7 +44,9 @@
         'pronostics-scorer.js',
         'pronostics-super-joker.js',
         'pronostics-combine.js',
-        'pronostics-ranking-bet.js',
+        'ranking-bet-model.js',
+        'ranking-bet-view.js',
+        'ranking-bet-controller.js',
         'pronostics-challenges.js',
 
         // --- Auto-update (en dernier) ---
