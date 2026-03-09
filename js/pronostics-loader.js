@@ -35,6 +35,7 @@
         'pronostics-badges.js',
         'pronostics-odds.js',
         'pronostics-matchday-ranking.js',
+        'pronostics-monthly-ranking.js',
         'pronostics-consensus.js',
         'pronostics-analysis.js',
         'pronostics-gamification.js',
