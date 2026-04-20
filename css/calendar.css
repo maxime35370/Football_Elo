@@ -234,6 +234,16 @@
     white-space: nowrap;
 }
 
+/* Quand une équipe est filtrée, on masque le gros bandeau "Journée X"
+   (redondant avec le badge Jxx déjà présent dans chaque carte) et on
+   retire le fond de la section pour gagner de la place. */
+.schedule-grid.team-filtered .matchday-header {
+    display: none;
+}
+.schedule-grid.team-filtered .matchday-section {
+    border: none;
+}
+
 .match-teams {
     flex: 1;
     display: flex;
