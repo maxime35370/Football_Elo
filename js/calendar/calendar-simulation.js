@@ -1712,7 +1712,8 @@ function generateMonteCarloDisplay(results) {
             
             ${statsComparisonHtml}
             ${scenariosHtml}
-            
+
+            <div class="monte-carlo-table-wrapper">
             <table class="monte-carlo-table" style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
                 <thead>
                     <tr style="background: linear-gradient(135deg, #2c3e50, #34495e); color: white;">
@@ -1767,7 +1768,8 @@ function generateMonteCarloDisplay(results) {
     html += `
                 </tbody>
             </table>
-            
+            </div>
+
             <div style="margin-top: 1rem; display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap; font-size: 0.85rem; color: #7f8c8d;">
                 <span><span style="display: inline-block; width: 12px; height: 12px; background: #f39c12; border-radius: 2px; margin-right: 4px;"></span> Champion</span>
                 <span><span style="display: inline-block; width: 12px; height: 12px; background: #3498db; border-radius: 2px; margin-right: 4px;"></span> Europe</span>

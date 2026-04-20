@@ -1049,19 +1049,63 @@
         grid-template-columns: 1fr !important;
         gap: 0.5rem !important;
     }
-    /* Tableau "Projection fin de saison" : scrollable horizontalement
-       plutôt que de forcer le débordement de la page. */
-    .monte-carlo-table {
-        display: block;
-        overflow-x: auto;
+    /* Tableau "Projection fin de saison" : wrapper scrollable 2 axes +
+       première ligne (en-têtes) et première colonne (Proj.) figées. */
+    .monte-carlo-table-wrapper {
+        max-height: 75vh;
+        overflow: auto;
         -webkit-overflow-scrolling: touch;
-        white-space: nowrap;
-        max-width: 100%;
+        position: relative;
+        border-radius: 8px;
+        background: white;
+    }
+    .monte-carlo-table {
+        border-collapse: separate !important;
+        border-spacing: 0;
         font-size: 0.78rem !important;
+        width: max-content;
+        min-width: 100%;
     }
     .monte-carlo-table th,
     .monte-carlo-table td {
-        padding: 0.4rem 0.35rem !important;
+        padding: 0.4rem 0.5rem !important;
+        background: white;
+    }
+    /* 1ère ligne : en-têtes figés en haut */
+    .monte-carlo-table thead th {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 10 !important;
+        background: linear-gradient(135deg, #2c3e50, #34495e) !important;
+        color: white !important;
+    }
+    /* 1ère colonne : "Proj." figée à gauche */
+    .monte-carlo-table tbody td:first-child,
+    .monte-carlo-table tbody th:first-child {
+        position: sticky !important;
+        left: 0 !important;
+        z-index: 5 !important;
+        font-weight: bold;
+        box-shadow: 2px 0 4px rgba(0,0,0,0.05);
+    }
+    /* Coin supérieur-gauche : sticky sur les deux axes */
+    .monte-carlo-table thead th:first-child {
+        position: sticky !important;
+        left: 0 !important;
+        top: 0 !important;
+        z-index: 20 !important;
+    }
+    /* Les lignes colorées (champion/europe/relégation) doivent conserver
+       leur couleur dans la colonne figée aussi. On force le bg des
+       cellules pour qu'aucune scroll cell ne transparaisse derrière. */
+    .monte-carlo-table tbody tr[style*="241, 196, 15"] td:first-child {
+        background: #faf0c8 !important;
+    }
+    .monte-carlo-table tbody tr[style*="52, 152, 219"] td:first-child {
+        background: #dfeefb !important;
+    }
+    .monte-carlo-table tbody tr[style*="231, 76, 60"] td:first-child {
+        background: #fbdedc !important;
     }
 
     /* Contrôles Monte Carlo : empilés verticalement pour ne pas déborder.
