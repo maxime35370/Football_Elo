@@ -118,7 +118,6 @@
     }
 
     /* ------------------ SÉLECTEURS DE JOURNÉE / SAISON ------------------ */
-    .matchday-selector,
     .season-selector {
         flex-direction: column !important;
         align-items: stretch !important;
@@ -131,9 +130,92 @@
         min-width: 0 !important;
     }
 
-    /* Bloc "période" de rankings */
+    /* --- Header des classements compact ---
+       Grille 2 colonnes :
+         Ligne 1-2  : Saison (label + select, pleine largeur)
+         Ligne 3-4  : De J / à J côte à côte
+         Ligne 5    : info (Après X journées)
+    */
+    .rankings-header {
+        padding: 0.9rem !important;
+    }
+    .rankings-header h2 {
+        font-size: 1.2rem !important;
+        margin-bottom: 0.75rem !important;
+    }
+
+    /* Période : label inline, select pleine largeur */
     .ranking-mode-selector {
         text-align: center;
+        margin-bottom: 0.6rem !important;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.2rem;
+    }
+    .ranking-mode-selector label {
+        margin: 0 !important;
+        font-size: 0.85rem;
+    }
+    .ranking-mode-selector select {
+        padding: 0.45rem 0.6rem !important;
+        font-size: 0.9rem !important;
+    }
+
+    /* Matchday-selector en grille compacte 2 colonnes */
+    .matchday-selector {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        column-gap: 0.6rem !important;
+        row-gap: 0.2rem !important;
+        align-items: center;
+        padding: 0 !important;
+    }
+    .matchday-selector > label {
+        font-size: 0.85rem;
+        text-align: center;
+        margin: 0 !important;
+    }
+    .matchday-selector > select {
+        padding: 0.45rem 0.5rem !important;
+        font-size: 0.9rem !important;
+        width: 100% !important;
+    }
+    /* Saison : label + select sur la pleine largeur */
+    .matchday-selector > label[for="seasonSelect"] {
+        grid-column: 1 / -1;
+        grid-row: 1;
+    }
+    .matchday-selector > #seasonSelect {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        margin-bottom: 0.35rem;
+    }
+    /* "De J:" */
+    .matchday-selector > label[for="fromMatchDaySelect"] {
+        grid-column: 1;
+        grid-row: 3;
+    }
+    .matchday-selector > #fromMatchDaySelect {
+        grid-column: 1;
+        grid-row: 4;
+    }
+    /* "à J:" */
+    .matchday-selector > label[for="matchDaySelect"] {
+        grid-column: 2;
+        grid-row: 3;
+    }
+    .matchday-selector > #matchDaySelect {
+        grid-column: 2;
+        grid-row: 4;
+    }
+    /* Info "Après X journées" sur une ligne centrée */
+    .matchday-selector > .matchday-info,
+    .matchday-selector > #matchDayInfo {
+        grid-column: 1 / -1;
+        grid-row: 5;
+        text-align: center;
+        font-size: 0.78rem;
+        margin-top: 0.35rem;
     }
 
     /* ------------------ TABLEAUX GÉNÉRAUX ------------------ */
