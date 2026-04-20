@@ -352,11 +352,11 @@
     .results-table td {
         height: 40px !important;
     }
-    .match-score {
+    .results-table .match-score {
         font-size: 0.72rem !important;
     }
-    .match-date {
-        display: none; /* Gain d'espace */
+    .results-table .match-date {
+        display: none; /* Gain d'espace dans le tableau croisé */
     }
     .legend {
         flex-direction: column;
@@ -393,23 +393,102 @@
         align-items: center;
     }
     .match-card {
-        padding: 1rem !important;
+        padding: 0.9rem !important;
     }
     .match-header {
-        flex-direction: column;
-        align-items: flex-start;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
         gap: 0.5rem;
+        flex-wrap: wrap;
     }
-    .match-score {
-        gap: 1rem;
+    .matches-container .match-date {
+        font-size: 0.8rem;
     }
-    .match-score .team {
+
+    /* --- SCORE SUR UNE SEULE LIGNE ---
+       Disposition horizontale : [PSG] [1] - [2] [OL]
+       On annule le flex-direction: column imposé par matches.css @768px */
+    .matches-container .match-score,
+    .match-card .match-score {
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        justify-content: center;
+        align-items: center;
+        gap: 0.6rem !important;
+        margin: 0.75rem 0 0.25rem !important;
+    }
+    .matches-container .match-card .team,
+    .match-card .match-score .team {
+        flex-direction: row !important;
+        align-items: center;
+        gap: 0.4rem;
         min-width: 0;
+        flex: 0 1 auto;
     }
-    .match-score .score {
-        width: 48px;
-        height: 48px;
-        font-size: 1.6rem;
+    .match-card .match-score .team-name {
+        font-size: 0.95rem;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 90px;
+    }
+    .match-card .match-score .score {
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 1.15rem !important;
+        border-width: 2px !important;
+        flex: 0 0 auto;
+    }
+    .match-card .match-score .score-separator {
+        font-size: 1.1rem;
+        order: 0 !important; /* annule order:2 défini par matches.css mobile */
+        color: #7f8c8d;
+    }
+
+    /* --- MI-TEMPS PLUS DISCRET, JUSTE SOUS LE SCORE --- */
+    .match-card .match-halftime {
+        margin: 0 auto 0.75rem !important;
+        padding: 0.2rem 0.5rem !important;
+        font-size: 0.75rem !important;
+        background: transparent !important;
+        text-align: center;
+        max-width: fit-content;
+    }
+
+    /* --- BUTEURS SUR UNE SEULE LIGNE : minute | buteur | équipe --- */
+    .match-card .goals-list {
+        padding: 0.75rem !important;
+    }
+    .match-card .goals-list h4 {
+        font-size: 0.95rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+    .match-card .goal-item {
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 0.5rem !important;
+        padding: 0.35rem 0 !important;
+        flex-wrap: nowrap;
+    }
+    .match-card .goal-item .goal-time {
+        flex: 0 0 auto;
+        min-width: 42px;
+        font-size: 0.75rem !important;
+        padding: 0.2rem 0.45rem !important;
+    }
+    .match-card .goal-item .goal-scorer {
+        flex: 1 1 auto;
+        font-size: 0.85rem !important;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .match-card .goal-item .goal-team {
+        flex: 0 0 auto;
+        font-size: 0.78rem !important;
+        color: #7f8c8d;
     }
 
     /* ------------------ AJOUT DE MATCH (formulaire) ------------------ */
@@ -683,6 +762,39 @@
     .prediction-match > .odds-multipliers-row {
         grid-column: 1 / -1 !important;
         flex: unset !important;
+    }
+
+    /* ORDRE EXPLICITE : évite que actual-result (order:11 défini dans
+       pronostics-odds.css) s'intercale entre score (11) et away (12)
+       et casse la rangée [home | score | away]. */
+    .prediction-match > .match-time {
+        order: 0 !important;
+    }
+    .prediction-match > .prediction-team.home {
+        order: 10 !important;
+    }
+    .prediction-match > .prediction-score {
+        order: 11 !important;
+    }
+    .prediction-match > .prediction-team.away {
+        order: 12 !important;
+    }
+    .prediction-match > .match-enhancements,
+    .prediction-match > .ia-suggestion,
+    .prediction-match > .consensus-display,
+    .prediction-match > .match-odds-container,
+    .prediction-match > .odds-multipliers-row,
+    .prediction-match > .actual-result {
+        order: 20 !important;
+    }
+    .prediction-match > .extras-toggle-btn {
+        order: 25 !important;
+    }
+    .prediction-match > .extras-mobile-wrapper,
+    .prediction-match > .scorer-slot,
+    .prediction-match > .joker-slot,
+    .prediction-match > .combine-slot {
+        order: 30 !important;
     }
 
     /* Les trois colonnes principales restent alignées sur la même rangée */
