@@ -885,6 +885,27 @@
     .stats-container select {
         max-width: 100%;
     }
+    /* Analyse offensive/défensive : si le bloc contient un multi-select,
+       le label passe AU-DESSUS et le select en dessous (sinon le label
+       "Équipes à afficher" se casse sur 3 lignes et le select déborde). */
+    .stat-section .chart-controls > div:has(select[multiple]) {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        width: 100%;
+        gap: 0.3rem !important;
+    }
+    .stat-section .chart-controls > div:has(select[multiple]) label {
+        white-space: normal;
+        text-align: left;
+    }
+    /* Fallback pour navigateurs sans :has() : cible directement le div
+       contenant le performanceTeamFilter via sélecteur d'attribut. */
+    .stat-section #performanceTeamFilter {
+        display: block;
+        width: 100% !important;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
     /* Tableaux stats */
     .stats-table {
         font-size: 0.78rem;
