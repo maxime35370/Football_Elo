@@ -449,10 +449,11 @@
         gap: 0.75rem;
         padding: 0.75rem;
     }
-    .control-group {
+    /* H2H (rankings) : select pleine largeur sous son label */
+    .controls-container .control-group {
         width: 100%;
     }
-    .control-group select {
+    .controls-container .control-group select {
         width: 100% !important;
         min-width: 0 !important;
     }
@@ -763,6 +764,33 @@
         flex-direction: column;
         gap: 0.6rem;
         padding: 0.75rem;
+    }
+    /* Contrôles du calendrier (Saison, Journée, etc.) :
+       label ET select sur la MÊME ligne, avec select de taille minimale
+       pour ne pas s'étirer sur toute la largeur. */
+    .calendar-container .control-group,
+    .calendar-container .header-controls .control-group,
+    .calendar-container .schedule-controls .control-group,
+    .calendar-container .manual-controls .control-group {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center;
+        flex-wrap: nowrap;
+        gap: 0.5rem;
+        width: auto;
+        justify-content: center;
+    }
+    .calendar-container .control-group label {
+        white-space: nowrap;
+        margin: 0;
+        flex: 0 0 auto;
+    }
+    .calendar-container .control-group select {
+        width: auto !important;
+        min-width: 0 !important;
+        max-width: 70%;
+        padding: 0.4rem 0.6rem !important;
+        font-size: 0.9rem !important;
     }
 
     .matchday-matches {
