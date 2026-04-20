@@ -7,6 +7,10 @@
    reste strictement identique.
    ===================================================================== */
 
+/* Labels de tableau : version courte cachée par défaut (desktop) */
+.th-short { display: none; }
+.th-full  { display: inline; }
+
 /* ============ TABLETTE & MOBILE (≤ 900px) ============ */
 @media (max-width: 900px) {
 
@@ -144,78 +148,86 @@
         margin-bottom: 0.75rem !important;
     }
 
-    /* Période : label inline, select pleine largeur */
+    /* Période : label + select sur la MÊME ligne */
     .ranking-mode-selector {
-        text-align: center;
-        margin-bottom: 0.6rem !important;
+        margin-bottom: 0.5rem !important;
         display: grid;
-        grid-template-columns: 1fr;
-        gap: 0.2rem;
+        grid-template-columns: auto 1fr;
+        align-items: center;
+        column-gap: 0.5rem;
+        text-align: left;
     }
     .ranking-mode-selector label {
         margin: 0 !important;
         font-size: 0.85rem;
+        white-space: nowrap;
     }
     .ranking-mode-selector select {
-        padding: 0.45rem 0.6rem !important;
-        font-size: 0.9rem !important;
+        padding: 0.4rem 0.5rem !important;
+        font-size: 0.88rem !important;
+        width: 100% !important;
     }
 
-    /* Matchday-selector en grille compacte 2 colonnes */
+    /* Matchday-selector en grille 4 colonnes compacte :
+       - Ligne 1 : [Saison :] [select pleine largeur]
+       - Ligne 2 : [De J:] [sel.] [à J:] [sel.]
+       - Ligne 3 : info pleine largeur
+       Les labels et selects sont sur la MÊME ligne (pas de retour). */
     .matchday-selector {
         display: grid !important;
-        grid-template-columns: 1fr 1fr !important;
-        column-gap: 0.6rem !important;
-        row-gap: 0.2rem !important;
+        grid-template-columns: auto 1fr auto 1fr !important;
+        column-gap: 0.4rem !important;
+        row-gap: 0.4rem !important;
         align-items: center;
         padding: 0 !important;
     }
     .matchday-selector > label {
         font-size: 0.85rem;
-        text-align: center;
         margin: 0 !important;
+        white-space: nowrap;
+        justify-self: start;
     }
     .matchday-selector > select {
-        padding: 0.45rem 0.5rem !important;
-        font-size: 0.9rem !important;
+        padding: 0.4rem 0.5rem !important;
+        font-size: 0.88rem !important;
         width: 100% !important;
+        min-width: 0 !important;
     }
-    /* Saison : label + select sur la pleine largeur */
+    /* Saison : label + select pleine largeur sur la ligne 1 */
     .matchday-selector > label[for="seasonSelect"] {
-        grid-column: 1 / -1;
+        grid-column: 1;
         grid-row: 1;
     }
     .matchday-selector > #seasonSelect {
-        grid-column: 1 / -1;
-        grid-row: 2;
-        margin-bottom: 0.35rem;
+        grid-column: 2 / -1;
+        grid-row: 1;
     }
-    /* "De J:" */
+    /* Ligne 2 : De J à gauche, à J à droite */
     .matchday-selector > label[for="fromMatchDaySelect"] {
         grid-column: 1;
-        grid-row: 3;
+        grid-row: 2;
     }
     .matchday-selector > #fromMatchDaySelect {
-        grid-column: 1;
-        grid-row: 4;
-    }
-    /* "à J:" */
-    .matchday-selector > label[for="matchDaySelect"] {
         grid-column: 2;
-        grid-row: 3;
+        grid-row: 2;
+    }
+    .matchday-selector > label[for="matchDaySelect"] {
+        grid-column: 3;
+        grid-row: 2;
+        padding-left: 0.2rem;
     }
     .matchday-selector > #matchDaySelect {
-        grid-column: 2;
-        grid-row: 4;
+        grid-column: 4;
+        grid-row: 2;
     }
-    /* Info "Après X journées" sur une ligne centrée */
+    /* Info "Après X journées" centrée sur une ligne */
     .matchday-selector > .matchday-info,
     .matchday-selector > #matchDayInfo {
         grid-column: 1 / -1;
-        grid-row: 5;
+        grid-row: 3;
         text-align: center;
         font-size: 0.78rem;
-        margin-top: 0.35rem;
+        margin-top: 0.25rem;
     }
 
     /* ------------------ TABLEAUX GÉNÉRAUX ------------------ */
@@ -280,6 +292,10 @@
         padding: 0.45rem 0.25rem;
         white-space: nowrap;
     }
+
+    /* Labels courts des en-têtes de tableau (Pos. Trad, Diff, Pts, Elo…) */
+    .ranking-table .th-full { display: none; }
+    .ranking-table .th-short { display: inline; }
 
     /* Colonnes peu essentielles masquées pour gagner en lisibilité */
     #traditionalRanking th:nth-child(3),  /* J */
