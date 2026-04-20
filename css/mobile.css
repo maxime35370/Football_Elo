@@ -1,0 +1,793 @@
+/* =====================================================================
+   mobile.css
+   Feuille de style dédiée à l'affichage mobile / tablette.
+   Ce fichier doit être chargé APRÈS toutes les autres feuilles de style
+   afin de surcharger les règles propres à chaque page sur petits écrans.
+   Aucune règle n'est appliquée au-dessus de 900px : le rendu desktop
+   reste strictement identique.
+   ===================================================================== */
+
+/* ============ TABLETTE & MOBILE (≤ 900px) ============ */
+@media (max-width: 900px) {
+
+    /* Évite tout scroll horizontal parasite dû à des éléments larges */
+    html,
+    body {
+        overflow-x: hidden;
+        max-width: 100%;
+    }
+
+    /* Main toujours en pleine largeur, sans marges latérales qui rétrécissent */
+    main {
+        max-width: 100% !important;
+        margin: 0.75rem 0 !important;
+        padding: 0 0.5rem !important;
+    }
+
+    /* Conteneurs principaux des pages : plein écran */
+    .rankings-container,
+    .results-container,
+    .matches-container,
+    .form-container,
+    .calendar-container,
+    .stats-container,
+    .prono-container,
+    .pronostics-container,
+    .game-container,
+    .admin-container {
+        max-width: 100% !important;
+        margin: 0.5rem 0 !important;
+        padding: 0 0.4rem !important;
+    }
+
+    /* Sections / cartes : padding allégé, coins arrondis homogènes */
+    .rankings-header,
+    .results-header,
+    .matches-header,
+    .calendar-header,
+    .stats-header,
+    .ranking-section,
+    .championship-stats,
+    .tab-content,
+    .table-wrapper,
+    .filters-section,
+    .form-container,
+    .form-section {
+        padding: 1rem !important;
+        border-radius: 10px !important;
+        margin-bottom: 1rem !important;
+    }
+
+    /* Header des pages */
+    header {
+        padding: 1rem 0 !important;
+    }
+    header h1 {
+        font-size: 1.6rem !important;
+    }
+    header p {
+        font-size: 0.95rem !important;
+    }
+
+    /* Titres de section */
+    .rankings-header h2,
+    .results-header h2,
+    .matches-header h2,
+    .calendar-header h2,
+    .stats-header h2,
+    .form-container h2 {
+        font-size: 1.4rem !important;
+        margin-bottom: 0.75rem !important;
+    }
+
+    .ranking-section h3,
+    .championship-stats h3,
+    .stat-section h3,
+    .stat-card h3 {
+        font-size: 1.1rem !important;
+    }
+
+    /* ------------------ NAVIGATION ------------------ */
+    nav {
+        padding: 0.5rem 0;
+    }
+    .burger-menu {
+        display: block;
+        font-size: 1.8rem;
+        padding: 0.3rem 1rem;
+    }
+    .nav-container {
+        display: none;
+        flex-direction: column;
+        gap: 0.3rem;
+        padding: 0.75rem;
+        max-width: 100%;
+        max-height: 75vh;
+        overflow-y: auto;
+    }
+    .nav-container.open {
+        display: flex;
+    }
+    .nav-btn {
+        width: 100%;
+        text-align: center;
+        padding: 0.7rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        min-width: 0;
+    }
+
+    /* ------------------ SÉLECTEURS DE JOURNÉE / SAISON ------------------ */
+    .matchday-selector,
+    .season-selector {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0.5rem !important;
+    }
+    .matchday-selector select,
+    .season-selector select,
+    .ranking-mode-selector select {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    /* Bloc "période" de rankings */
+    .ranking-mode-selector {
+        text-align: center;
+    }
+
+    /* ------------------ TABLEAUX GÉNÉRAUX ------------------ */
+    /* Wrapper horizontal permettant un scroll sans déborder de la page */
+    .table-wrapper,
+    .leaderboard-table-wrapper,
+    .scorers-table-wrapper,
+    .objectives-table-wrapper,
+    .final-ranking-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        max-width: 100%;
+    }
+
+    /* Indicateur visuel "scrollable" */
+    .table-wrapper::after,
+    .leaderboard-table-wrapper::after {
+        content: "";
+        display: block;
+        height: 0;
+    }
+
+    table {
+        width: 100%;
+    }
+}
+
+/* ============ MOBILE (≤ 600px) ============ */
+@media (max-width: 600px) {
+
+    /* --- FEATURES (page d'accueil) --- */
+    .features {
+        grid-template-columns: 1fr !important;
+        gap: 1rem !important;
+    }
+    .feature-card {
+        padding: 1.25rem !important;
+    }
+    .feature-card h3 {
+        font-size: 1.15rem !important;
+    }
+    .welcome-section {
+        padding: 1.25rem !important;
+        margin: 0 !important;
+    }
+
+    /* ------------------ CLASSEMENTS (rankings) ------------------ */
+    .ranking-section {
+        overflow-x: hidden;
+    }
+    .ranking-section .table-wrapper {
+        margin: 0 -0.5rem;
+        padding: 0 0.5rem;
+    }
+
+    .ranking-table {
+        font-size: 0.78rem;
+        width: 100%;
+    }
+    .ranking-table th,
+    .ranking-table td {
+        padding: 0.45rem 0.25rem;
+        white-space: nowrap;
+    }
+
+    /* Colonnes peu essentielles masquées pour gagner en lisibilité */
+    #traditionalRanking th:nth-child(3),  /* J */
+    #traditionalRanking td:nth-child(3),
+    #traditionalRanking th:nth-child(7),  /* BP */
+    #traditionalRanking td:nth-child(7),
+    #traditionalRanking th:nth-child(8),  /* BC */
+    #traditionalRanking td:nth-child(8),
+    #traditionalRanking th:nth-child(11), /* Forme */
+    #traditionalRanking td:nth-child(11),
+    #traditionalRanking th:nth-child(12), /* Série */
+    #traditionalRanking td:nth-child(12),
+    .form-cell,
+    .streak-cell {
+        display: none !important;
+    }
+
+    /* Colonne équipe : texte tronqué si trop long */
+    .ranking-table .team-name {
+        max-width: 110px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        text-align: left;
+        font-size: 0.8rem;
+    }
+
+    /* Onglets Domicile / Extérieur / Général */
+    .ranking-tabs {
+        flex-wrap: wrap;
+        gap: 0.35rem;
+    }
+    .ranking-tab {
+        padding: 0.45rem 0.8rem;
+        font-size: 0.8rem;
+        flex: 1 1 auto;
+    }
+
+    /* Positions spéciales : positions redevenues visibles */
+    .ranking-table .position {
+        font-size: 0.95rem;
+    }
+
+    /* Statistiques du championnat */
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 0.5rem !important;
+    }
+    .stat-item {
+        padding: 0.8rem !important;
+    }
+    .stat-item .stat-value,
+    .stat-value {
+        font-size: 1.3rem !important;
+    }
+    .stat-item .stat-label,
+    .stat-label {
+        font-size: 0.75rem !important;
+    }
+
+    /* Graphiques */
+    .chart-container {
+        height: 260px !important;
+        padding: 0.25rem !important;
+    }
+    .chart-controls {
+        flex-direction: column !important;
+        gap: 0.75rem !important;
+        padding: 0.75rem !important;
+    }
+    .chart-controls select[multiple],
+    .chart-controls .control-group {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+    .chart-controls select[multiple] {
+        min-width: 100% !important;
+        max-width: 100% !important;
+    }
+    .control-buttons {
+        justify-content: center;
+    }
+    .btn-small {
+        font-size: 0.75rem;
+        padding: 0.35rem 0.7rem;
+    }
+
+    /* H2H : sélecteurs empilés, pleine largeur */
+    .controls-container {
+        flex-direction: column;
+        gap: 0.75rem;
+        padding: 0.75rem;
+    }
+    .control-group {
+        width: 100%;
+    }
+    .control-group select {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    /* Table H2H */
+    .h2h-table {
+        font-size: 0.72rem;
+    }
+    .h2h-table th,
+    .h2h-table td {
+        padding: 0.4rem 0.25rem;
+    }
+    .h2h-table .rank-column {
+        width: 30px;
+    }
+    .h2h-table .team-column {
+        padding-left: 0.4rem;
+        max-width: 90px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .h2h-table .result-cell {
+        min-width: 42px;
+        font-size: 0.72rem;
+    }
+
+    /* ------------------ TABLEAU CROISÉ (résultats) ------------------ */
+    .results-table {
+        min-width: 0 !important;   /* Retire la min-width de 800px */
+        font-size: 0.7rem;
+    }
+    .results-table th,
+    .results-table td {
+        padding: 0.25rem 0.15rem !important;
+        font-size: 0.7rem !important;
+    }
+    .team-header {
+        min-width: 90px !important;
+        font-size: 0.75rem !important;
+    }
+    .team-column-header {
+        min-width: 34px !important;
+        padding: 0.3rem 0.1rem !important;
+        font-size: 0.68rem;
+    }
+    .team-row-header {
+        padding: 0.4rem !important;
+        font-size: 0.72rem;
+        max-width: 90px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .results-table td {
+        height: 40px !important;
+    }
+    .match-score {
+        font-size: 0.72rem !important;
+    }
+    .match-date {
+        display: none; /* Gain d'espace */
+    }
+    .legend {
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: left;
+        align-items: flex-start;
+        padding-left: 1rem;
+    }
+
+    /* Stats grid (results-table / rankings) : 1 colonne en dessous de 600px */
+    .results-container .stats-grid,
+    .stats-section .stats-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* ------------------ HISTORIQUE DES MATCHS ------------------ */
+    .filters-section {
+        flex-direction: column !important;
+        gap: 0.7rem !important;
+        align-items: stretch !important;
+        padding: 1rem !important;
+    }
+    .filter-group {
+        min-width: 0 !important;
+        width: 100%;
+    }
+    .filter-group select,
+    .filter-group input {
+        width: 100% !important;
+    }
+    .matches-stats {
+        flex-direction: column !important;
+        gap: 0.5rem !important;
+        align-items: center;
+    }
+    .match-card {
+        padding: 1rem !important;
+    }
+    .match-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    .match-score {
+        gap: 1rem;
+    }
+    .match-score .team {
+        min-width: 0;
+    }
+    .match-score .score {
+        width: 48px;
+        height: 48px;
+        font-size: 1.6rem;
+    }
+
+    /* ------------------ AJOUT DE MATCH (formulaire) ------------------ */
+    .form-container {
+        padding: 1rem !important;
+    }
+    .form-section {
+        padding: 1rem !important;
+    }
+    .form-row {
+        flex-direction: column !important;
+        gap: 0.75rem !important;
+    }
+    .form-row .form-group {
+        width: 100%;
+    }
+    .vs-divider {
+        align-self: center;
+    }
+    .score-display {
+        flex-direction: column !important;
+        gap: 0.75rem !important;
+        padding: 1rem !important;
+    }
+    .score-number {
+        width: 64px !important;
+        height: 64px !important;
+        font-size: 2rem !important;
+    }
+    .goal-details {
+        grid-template-columns: 1fr !important;
+        gap: 0.6rem !important;
+    }
+    .form-actions {
+        flex-direction: column !important;
+    }
+    .form-actions .btn {
+        width: 100%;
+    }
+    .elo-team-info {
+        flex-direction: column !important;
+        gap: 0.75rem !important;
+    }
+    .vs-divider-elo {
+        align-self: center;
+    }
+    #matchDateTime {
+        max-width: 100%;
+    }
+
+    /* ------------------ CALENDRIER ------------------ */
+    /* Onglets scrollables horizontalement pour éviter le wrap sauvage */
+    .calendar-tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        justify-content: flex-start;
+        padding-bottom: 0.25rem;
+        margin: 0 -0.4rem 1rem;
+        padding-left: 0.4rem;
+        padding-right: 0.4rem;
+        scrollbar-width: thin;
+    }
+    .calendar-tab {
+        padding: 0.55rem 0.9rem;
+        font-size: 0.82rem;
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+
+    .header-controls,
+    .schedule-controls,
+    .simulation-controls {
+        flex-direction: column;
+        gap: 0.6rem;
+        padding: 0.75rem;
+    }
+
+    .matchday-matches {
+        grid-template-columns: 1fr !important;
+        padding: 0.6rem !important;
+        gap: 0.6rem !important;
+    }
+    .match-card.played,
+    .match-card.upcoming {
+        padding: 0.75rem !important;
+    }
+    .match-team {
+        font-size: 0.88rem;
+    }
+
+    /* Difficulté */
+    .difficulty-row {
+        grid-template-columns: 30px 1fr !important;
+        gap: 0.4rem !important;
+        padding: 0.75rem !important;
+    }
+    .difficulty-bar-container {
+        grid-column: 1 / -1;
+    }
+    .difficulty-matches {
+        grid-column: 1 / -1;
+        font-size: 0.8rem;
+    }
+
+    /* Objectifs */
+    .objectives-summary {
+        grid-template-columns: 1fr !important;
+        gap: 0.75rem !important;
+    }
+    .objective-target {
+        padding: 1rem !important;
+    }
+    .target-icon {
+        font-size: 2rem !important;
+    }
+    .target-value {
+        font-size: 1.3rem !important;
+    }
+    .objectives-table {
+        font-size: 0.75rem;
+    }
+    .objectives-table th,
+    .objectives-table td {
+        padding: 0.4rem 0.25rem;
+    }
+
+    /* Simulation */
+    .simulation-grid,
+    .manual-content {
+        grid-template-columns: 1fr !important;
+        gap: 1rem !important;
+    }
+    .simulation-match {
+        grid-template-columns: 1fr auto 1fr !important;
+        gap: 0.4rem !important;
+        padding: 0.75rem !important;
+    }
+    .simulation-match .team-home {
+        text-align: right !important;
+    }
+    .simulation-match .team-away {
+        text-align: left !important;
+    }
+    .simulation-match input {
+        width: 38px !important;
+        padding: 0.35rem !important;
+    }
+    .teams-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 0.5rem !important;
+    }
+    .team-btn {
+        padding: 0.6rem !important;
+        font-size: 0.8rem;
+    }
+    .team-btn .team-icon {
+        font-size: 1.2rem !important;
+    }
+
+    /* Final ranking (classement projeté) */
+    .final-ranking-table {
+        font-size: 0.75rem;
+    }
+    .final-stats {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 0.5rem !important;
+    }
+
+    /* Pronostics dans calendrier */
+    .predictions-grid {
+        grid-template-columns: 1fr !important;
+        gap: 0.75rem !important;
+    }
+
+    /* Modal */
+    .modal-content {
+        padding: 1rem !important;
+        width: 95% !important;
+        max-height: 85vh !important;
+    }
+
+    /* ------------------ STATISTIQUES ------------------ */
+    /* Section Heatmap & grilles diverses */
+    .stat-section {
+        padding: 1rem !important;
+        margin-bottom: 1rem !important;
+    }
+    /* Multi-select "Comparer les performances" : largeur 100% au lieu de 200px inline */
+    #performanceTeamFilter,
+    .stats-container select[multiple] {
+        min-width: 100% !important;
+        width: 100% !important;
+        font-size: 0.9rem;
+    }
+    .stats-container select {
+        max-width: 100%;
+    }
+    /* Tableaux stats */
+    .stats-table {
+        font-size: 0.78rem;
+    }
+    .stats-table th,
+    .stats-table td {
+        padding: 0.4rem 0.3rem !important;
+    }
+
+    /* ------------------ PRONOSTICS ------------------ */
+    /* Onglets scrollables */
+    .game-tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .game-tab {
+        flex: 0 0 auto;
+        padding: 0.7rem 0.9rem;
+        font-size: 0.82rem;
+        white-space: nowrap;
+    }
+    .game-tab-content {
+        padding: 0.8rem !important;
+    }
+
+    /* Entête prédictions */
+    .predictions-header {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+    }
+    .matchday-selector {
+        justify-content: center;
+    }
+    .deadline-info {
+        justify-content: center;
+        font-size: 0.85rem;
+        padding: 0.5rem 0.75rem;
+    }
+
+    /* Grille de prédictions : une colonne, inputs plus petits */
+    .predictions-list {
+        grid-template-columns: 1fr !important;
+        gap: 0.6rem !important;
+    }
+    .prediction-match {
+        grid-template-columns: 1fr auto 1fr !important;
+        gap: 0.3rem 0.4rem !important;
+        padding: 0.6rem !important;
+    }
+    .prediction-score input {
+        width: 38px !important;
+        height: 38px !important;
+        font-size: 1.1rem !important;
+        border-radius: 8px !important;
+    }
+    .prediction-team .team-name {
+        font-size: 0.82rem !important;
+    }
+    .prediction-team .team-badge {
+        font-size: 0.65rem !important;
+    }
+
+    /* Leaderboard : scrollable + première colonne sticky */
+    .leaderboard-table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .leaderboard-table {
+        font-size: 0.75rem;
+        min-width: 560px;  /* Force le scroll plutôt que d'écraser les colonnes */
+    }
+    .leaderboard-table th,
+    .leaderboard-table td {
+        padding: 0.45rem 0.3rem !important;
+        white-space: nowrap;
+    }
+    .leaderboard-table td:nth-child(2),
+    .leaderboard-table th:nth-child(2) {
+        position: sticky;
+        left: 0;
+        background: inherit;
+        z-index: 2;
+    }
+
+    .leaderboard-header {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+    }
+
+    /* Auth card */
+    .auth-card {
+        margin: 0.5rem !important;
+        padding: 1rem !important;
+    }
+    .auth-card input,
+    .auth-card button {
+        width: 100%;
+    }
+
+    /* ------------------ ADMIN ------------------ */
+    .admin-container,
+    .admin-section {
+        padding: 0.75rem !important;
+    }
+    .teams-grid,
+    .admin-teams-grid {
+        grid-template-columns: 1fr !important;
+        gap: 0.6rem !important;
+    }
+
+    /* ------------------ FOOTER ------------------ */
+    footer {
+        padding: 1rem 0;
+        margin-top: 1rem;
+        font-size: 0.85rem;
+    }
+}
+
+/* ============ TRÈS PETIT MOBILE (≤ 400px) ============ */
+@media (max-width: 400px) {
+
+    header h1 {
+        font-size: 1.35rem !important;
+    }
+    header p {
+        font-size: 0.8rem !important;
+    }
+
+    /* Classement encore plus compact */
+    .ranking-table {
+        font-size: 0.72rem;
+    }
+    .ranking-table th,
+    .ranking-table td {
+        padding: 0.35rem 0.2rem;
+    }
+    .ranking-table .team-name {
+        max-width: 85px;
+        font-size: 0.74rem;
+    }
+
+    /* Tableau croisé : masquer la date restante ; réduire encore */
+    .results-table th,
+    .results-table td {
+        font-size: 0.62rem !important;
+        padding: 0.2rem 0.1rem !important;
+    }
+    .team-header {
+        min-width: 72px !important;
+        font-size: 0.68rem !important;
+    }
+    .team-column-header {
+        min-width: 28px !important;
+        font-size: 0.6rem !important;
+    }
+
+    /* Statistiques en 1 colonne si vraiment très étroit */
+    .stats-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Teams grid calendrier : 2 colonnes */
+    .teams-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+
+    /* Inputs de prédiction encore plus petits */
+    .prediction-score input {
+        width: 34px !important;
+        height: 34px !important;
+        font-size: 1rem !important;
+    }
+}
+
+/* ============ UTILITAIRES MOBILE (≤ 600px) ============ */
+@media (max-width: 600px) {
+    .hide-on-mobile {
+        display: none !important;
+    }
+}
