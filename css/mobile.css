@@ -449,10 +449,11 @@
         gap: 0.75rem;
         padding: 0.75rem;
     }
-    .control-group {
+    /* H2H (rankings) : select pleine largeur sous son label */
+    .controls-container .control-group {
         width: 100%;
     }
-    .control-group select {
+    .controls-container .control-group select {
         width: 100% !important;
         min-width: 0 !important;
     }
@@ -738,23 +739,26 @@
     }
 
     /* ------------------ CALENDRIER ------------------ */
-    /* Onglets scrollables horizontalement pour éviter le wrap sauvage */
+    /* Onglets répartis sur plusieurs lignes (tous visibles, sans scroll caché).
+       6 onglets → 3 par ligne sur 2 rangées. */
     .calendar-tabs {
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        justify-content: flex-start;
-        padding-bottom: 0.25rem;
-        margin: 0 -0.4rem 1rem;
-        padding-left: 0.4rem;
-        padding-right: 0.4rem;
-        scrollbar-width: thin;
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 0.35rem !important;
+        overflow: visible !important;
+        padding: 0 0.2rem !important;
+        margin-bottom: 0.75rem !important;
     }
     .calendar-tab {
-        padding: 0.55rem 0.9rem;
-        font-size: 0.82rem;
-        flex: 0 0 auto;
+        padding: 0.5rem 0.4rem !important;
+        font-size: 0.78rem !important;
+        border-width: 2px;
+        border-radius: 20px !important;
         white-space: nowrap;
+        text-align: center;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
     }
 
     .header-controls,
@@ -764,47 +768,223 @@
         gap: 0.6rem;
         padding: 0.75rem;
     }
-
-    .matchday-matches {
-        grid-template-columns: 1fr !important;
-        padding: 0.6rem !important;
-        gap: 0.6rem !important;
+    /* Contrôles du calendrier (Saison, Journée, etc.) :
+       label ET select sur la MÊME ligne, avec select de taille minimale
+       pour ne pas s'étirer sur toute la largeur. */
+    .calendar-container .control-group,
+    .calendar-container .header-controls .control-group,
+    .calendar-container .schedule-controls .control-group,
+    .calendar-container .manual-controls .control-group {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center;
+        flex-wrap: nowrap;
+        gap: 0.5rem;
+        width: auto;
+        justify-content: center;
     }
+    .calendar-container .control-group label {
+        white-space: nowrap;
+        margin: 0;
+        flex: 0 0 auto;
+    }
+    .calendar-container .control-group select {
+        width: auto !important;
+        min-width: 0 !important;
+        max-width: 70%;
+        padding: 0.4rem 0.6rem !important;
+        font-size: 0.9rem !important;
+    }
+
+    /* Grille des matchs du calendrier : 3 cartes par ligne sur mobile */
+    .matchday-matches {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        padding: 0.4rem !important;
+        gap: 0.4rem !important;
+    }
+
+    /* Quand une équipe est sélectionnée : 2 journées côte à côte et
+       chaque journée contient un seul match qui occupe toute la largeur. */
+    .schedule-grid.team-filtered {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 0.5rem !important;
+    }
+    .schedule-grid.team-filtered .matchday-section {
+        min-width: 0;
+    }
+    .schedule-grid.team-filtered .matchday-header {
+        padding: 0.55rem 0.6rem !important;
+        font-size: 0.95rem !important;
+    }
+    .schedule-grid.team-filtered .matchday-matches {
+        grid-template-columns: 1fr !important;
+        padding: 0.4rem !important;
+        gap: 0.4rem !important;
+    }
+
+    /* Badge Jxx : plus compact sur mobile */
+    .match-matchday-badge {
+        font-size: 0.7rem !important;
+        padding: 0.15rem 0.4rem !important;
+    }
+    .matchday-matches .match-card,
     .match-card.played,
     .match-card.upcoming {
-        padding: 0.75rem !important;
+        flex-direction: column !important;
+        padding: 0.5rem 0.35rem !important;
+        gap: 0.3rem !important;
+        align-items: stretch !important;
+        border-left-width: 3px !important;
     }
-    .match-team {
-        font-size: 0.88rem;
+    .matchday-matches .match-card .match-teams {
+        width: 100%;
+        gap: 0.1rem !important;
+    }
+    .matchday-matches .match-card .match-team {
+        font-size: 0.72rem !important;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        justify-content: center;
+    }
+    .matchday-matches .match-card .match-team.home::before,
+    .matchday-matches .match-card .match-team.away::before {
+        font-size: 0.62rem;
+    }
+    .matchday-matches .match-card .match-score {
+        font-size: 0.95rem !important;
+        min-width: 0 !important;
+        text-align: center;
+        padding: 0;
+    }
+    .matchday-matches .match-card .match-score.upcoming {
+        font-size: 0.78rem !important;
+    }
+    /* Évite la duplication "À venir" / "Joué" : on masque le badge
+       statut sur mobile. La couleur du border-left indique déjà le
+       statut (vert = joué, orange = à venir). */
+    .matchday-matches .match-card .match-status {
+        display: none !important;
     }
 
-    /* Difficulté */
-    .difficulty-row {
-        grid-template-columns: 30px 1fr !important;
+    /* Filtres du calendrier plus compacts : moins de padding/gap */
+    .schedule-controls,
+    .calendar-container .schedule-controls {
+        padding: 0.5rem !important;
         gap: 0.4rem !important;
-        padding: 0.75rem !important;
+    }
+    .schedule-controls .control-group,
+    .calendar-container .schedule-controls .control-group {
+        gap: 0.4rem !important;
+        justify-content: flex-start !important;
+    }
+    .schedule-controls .control-group label,
+    .calendar-container .schedule-controls .control-group label {
+        font-size: 0.85rem;
+        min-width: 60px;
+    }
+    .schedule-controls .control-group select,
+    .calendar-container .schedule-controls .control-group select {
+        flex: 1 1 auto !important;
+        max-width: none !important;
+    }
+
+    /* Difficulté : tout sur une seule ligne (rang | équipe | barre | matchs)
+       pour diviser la hauteur d'environ ×3 et voir plus d'équipes. */
+    .difficulty-intro {
+        padding: 0.5rem 0.75rem !important;
+        font-size: 0.8rem !important;
+        margin-bottom: 0.5rem !important;
+        line-height: 1.35;
+    }
+    .difficulty-grid {
+        gap: 0.35rem !important;
+    }
+    .difficulty-row {
+        display: grid !important;
+        grid-template-columns: 22px minmax(56px, auto) 1fr auto !important;
+        gap: 0.45rem !important;
+        padding: 0.45rem 0.55rem !important;
+        align-items: center !important;
+        border-left-width: 3px !important;
+    }
+    .difficulty-rank {
+        font-size: 0.85rem !important;
+        text-align: center;
+        grid-column: auto !important;
+    }
+    .difficulty-team {
+        font-size: 0.82rem !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        grid-column: auto !important;
+    }
+    .difficulty-team small {
+        display: none; /* masque "(Elo: 1522)" : info déjà présente dans la barre */
     }
     .difficulty-bar-container {
-        grid-column: 1 / -1;
+        grid-column: auto !important;
+        height: 18px !important;
+        border-radius: 9px;
+    }
+    .difficulty-bar {
+        height: 100% !important;
+        font-size: 0.65rem !important;
+        padding-right: 0.35rem !important;
+        border-radius: 9px !important;
     }
     .difficulty-matches {
-        grid-column: 1 / -1;
-        font-size: 0.8rem;
+        grid-column: auto !important;
+        font-size: 0.68rem !important;
+        white-space: nowrap;
+        color: #7f8c8d;
     }
 
-    /* Objectifs */
+    /* Objectifs : 3 cartes côte à côte sur mobile, format compact
+       (icône + label + valeur stackés, petite projection en dessous) */
+    .objectives-intro,
+    .objectives-method {
+        padding: 0.55rem 0.75rem !important;
+        font-size: 0.78rem !important;
+        margin-bottom: 0.5rem !important;
+        line-height: 1.35;
+    }
     .objectives-summary {
-        grid-template-columns: 1fr !important;
-        gap: 0.75rem !important;
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 0.4rem !important;
+        margin-bottom: 0.75rem !important;
     }
     .objective-target {
-        padding: 1rem !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 0.15rem !important;
+        padding: 0.5rem 0.35rem !important;
+        border-left-width: 3px !important;
+        border-radius: 8px !important;
+        text-align: center;
     }
     .target-icon {
-        font-size: 2rem !important;
+        font-size: 1.4rem !important;
+    }
+    .target-info {
+        width: 100%;
+    }
+    .target-label {
+        font-size: 0.6rem !important;
+        letter-spacing: 0 !important;
+        line-height: 1.1;
     }
     .target-value {
-        font-size: 1.3rem !important;
+        font-size: 1rem !important;
+    }
+    .target-hint {
+        font-size: 0.65rem !important;
+        line-height: 1.1;
     }
     .objectives-table {
         font-size: 0.75rem;
@@ -820,10 +1000,25 @@
         grid-template-columns: 1fr !important;
         gap: 1rem !important;
     }
+    /* Match de simulation : TOUT sur une seule ligne, en compact.
+       5 éléments : [home] [input] [-] [input] [away] → flex nowrap. */
     .simulation-match {
-        grid-template-columns: 1fr auto 1fr !important;
-        gap: 0.4rem !important;
-        padding: 0.75rem !important;
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+        justify-content: center;
+        grid-template-columns: none !important;
+        gap: 0.35rem !important;
+        padding: 0.5rem 0.55rem !important;
+    }
+    .simulation-match .team-home,
+    .simulation-match .team-away {
+        flex: 1 1 0;
+        min-width: 0;
+        font-size: 0.8rem !important;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
     .simulation-match .team-home {
         text-align: right !important;
@@ -832,8 +1027,113 @@
         text-align: left !important;
     }
     .simulation-match input {
-        width: 38px !important;
-        padding: 0.35rem !important;
+        flex: 0 0 auto;
+        width: 34px !important;
+        height: 32px !important;
+        padding: 0 !important;
+        font-size: 0.9rem !important;
+        text-align: center;
+    }
+    .simulation-match .vs {
+        flex: 0 0 auto;
+        font-size: 0.9rem;
+    }
+
+    /* Résultats Monte Carlo : stacker tous les blocs 3-colonnes en 1 colonne
+       pour qu'ils ne débordent plus de l'écran. */
+    .monte-carlo-section {
+        padding: 0.75rem !important;
+    }
+    .validation-stats-grid,
+    .scenarios-races-grid {
+        grid-template-columns: 1fr !important;
+        gap: 0.5rem !important;
+    }
+    /* Tableau "Projection fin de saison" : wrapper scrollable 2 axes +
+       première ligne (en-têtes) et première colonne (Proj.) figées. */
+    .monte-carlo-table-wrapper {
+        max-height: 75vh;
+        overflow: auto;
+        -webkit-overflow-scrolling: touch;
+        position: relative;
+        border-radius: 8px;
+        background: white;
+    }
+    .monte-carlo-table {
+        border-collapse: separate !important;
+        border-spacing: 0;
+        font-size: 0.78rem !important;
+        width: max-content;
+        min-width: 100%;
+    }
+    .monte-carlo-table th,
+    .monte-carlo-table td {
+        padding: 0.4rem 0.5rem !important;
+        background: white;
+    }
+    /* 1ère ligne : en-têtes figés en haut */
+    .monte-carlo-table thead th {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 10 !important;
+        background: linear-gradient(135deg, #2c3e50, #34495e) !important;
+        color: white !important;
+    }
+    /* 1ère colonne : "Proj." figée à gauche */
+    .monte-carlo-table tbody td:first-child,
+    .monte-carlo-table tbody th:first-child {
+        position: sticky !important;
+        left: 0 !important;
+        z-index: 5 !important;
+        font-weight: bold;
+        box-shadow: 2px 0 4px rgba(0,0,0,0.05);
+    }
+    /* Coin supérieur-gauche : sticky sur les deux axes */
+    .monte-carlo-table thead th:first-child {
+        position: sticky !important;
+        left: 0 !important;
+        top: 0 !important;
+        z-index: 20 !important;
+    }
+    /* Les lignes colorées (champion/europe/relégation) doivent conserver
+       leur couleur dans la colonne figée aussi. On force le bg des
+       cellules pour qu'aucune scroll cell ne transparaisse derrière. */
+    .monte-carlo-table tbody tr[style*="241, 196, 15"] td:first-child {
+        background: #faf0c8 !important;
+    }
+    .monte-carlo-table tbody tr[style*="52, 152, 219"] td:first-child {
+        background: #dfeefb !important;
+    }
+    .monte-carlo-table tbody tr[style*="231, 76, 60"] td:first-child {
+        background: #fbdedc !important;
+    }
+
+    /* Contrôles Monte Carlo : empilés verticalement pour ne pas déborder.
+       Le bouton "Lancer la projection" était coupé à droite sur mobile. */
+    .monte-carlo-controls {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0.5rem !important;
+        padding: 0.75rem !important;
+    }
+    .monte-carlo-controls label {
+        text-align: center;
+        font-size: 0.85rem !important;
+    }
+    .monte-carlo-controls select,
+    .monte-carlo-controls button {
+        width: 100% !important;
+        font-size: 0.9rem !important;
+    }
+
+    /* Boutons de simulation : full width, empilés */
+    .simulation-controls {
+        flex-direction: column !important;
+        gap: 0.4rem !important;
+        padding: 0.5rem !important;
+    }
+    .simulation-controls .btn {
+        width: 100%;
     }
     .teams-grid {
         grid-template-columns: repeat(3, 1fr) !important;
@@ -847,13 +1147,83 @@
         font-size: 1.2rem !important;
     }
 
-    /* Final ranking (classement projeté) */
-    .final-ranking-table {
-        font-size: 0.75rem;
+    /* Classement final projeté : condensé + 1ère ligne/colonne figées */
+    .final-ranking-wrapper {
+        max-height: 75vh;
+        overflow: auto;
+        -webkit-overflow-scrolling: touch;
+        position: relative;
+        border-radius: 8px;
+        background: white;
     }
+    .final-ranking-table {
+        border-collapse: separate !important;
+        border-spacing: 0;
+        font-size: 0.75rem !important;
+        width: max-content;
+        min-width: 100%;
+    }
+    .final-ranking-table th,
+    .final-ranking-table td {
+        padding: 0.4rem 0.45rem !important;
+        background: white;
+        white-space: nowrap;
+    }
+    /* La cellule "Pos." reste compacte : position + évolution sur la MÊME
+       ligne (nowrap empêche le retour entre "1" et "="). */
+    .final-ranking-table .position {
+        font-size: 0.85rem !important;
+        white-space: nowrap !important;
+    }
+    .final-ranking-table .position-change {
+        font-size: 0.65rem !important;
+        margin-left: 0.2rem !important;
+    }
+    /* 1ère ligne sticky top */
+    .final-ranking-table thead th {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 10 !important;
+        background: #2c3e50 !important;
+        color: white !important;
+    }
+    /* 1ère colonne (Pos.) sticky left */
+    .final-ranking-table tbody td:first-child {
+        position: sticky !important;
+        left: 0 !important;
+        z-index: 5 !important;
+        box-shadow: 2px 0 4px rgba(0,0,0,0.05);
+    }
+    .final-ranking-table thead th:first-child {
+        left: 0 !important;
+        z-index: 20 !important;
+    }
+    /* Backgrounds solides pour les lignes colorées */
+    .final-ranking-table tr.champion-row td {
+        background: #fbf2cd !important;
+    }
+    .final-ranking-table tr.europe-row td {
+        background: #e2effa !important;
+    }
+    .final-ranking-table tr.relegation-row td {
+        background: #fbdedc !important;
+    }
+
     .final-stats {
-        grid-template-columns: repeat(2, 1fr) !important;
-        gap: 0.5rem !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 0.4rem !important;
+    }
+    .final-stat-card {
+        padding: 0.6rem 0.35rem !important;
+    }
+    .final-stat-card .stat-icon {
+        font-size: 1.2rem !important;
+    }
+    .final-stat-card .stat-value {
+        font-size: 0.95rem !important;
+    }
+    .final-stat-card .stat-label {
+        font-size: 0.68rem !important;
     }
 
     /* Pronostics dans calendrier */

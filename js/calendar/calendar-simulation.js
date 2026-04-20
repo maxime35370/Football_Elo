@@ -424,11 +424,11 @@ function createSimulationMatchRow(match) {
     
     return `
         <div class="simulation-match" data-match-key="${matchKey}">
-            <span class="team-home">${homeTeam ? homeTeam.name : '?'}</span>
+            <span class="team-home" title="${homeTeam ? homeTeam.name : '?'}">${homeTeam ? (homeTeam.shortName || homeTeam.name) : '?'}</span>
             <input type="number" min="0" max="20" class="score-home" value="${homeScore}" data-match-key="${matchKey}" data-type="home">
             <span class="vs">-</span>
             <input type="number" min="0" max="20" class="score-away" value="${awayScore}" data-match-key="${matchKey}" data-type="away">
-            <span class="team-away">${awayTeam ? awayTeam.name : '?'}</span>
+            <span class="team-away" title="${awayTeam ? awayTeam.name : '?'}">${awayTeam ? (awayTeam.shortName || awayTeam.name) : '?'}</span>
         </div>
     `;
 }
@@ -1632,7 +1632,7 @@ function generateMonteCarloDisplay(results) {
                     <small style="color: #7f8c8d; font-weight: normal;">(comparaison avec les ${real.totalMatches} matchs joués)</small>
                 </h5>
                 
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+                <div class="validation-stats-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
                     <!-- Victoires domicile -->
                     <div style="background: white; border-radius: 10px; padding: 1rem; text-align: center; border-left: 4px solid #27ae60;">
                         <div style="font-size: 0.85rem; color: #7f8c8d; margin-bottom: 0.5rem;">🏠 Victoires domicile</div>
@@ -1712,7 +1712,8 @@ function generateMonteCarloDisplay(results) {
             
             ${statsComparisonHtml}
             ${scenariosHtml}
-            
+
+            <div class="monte-carlo-table-wrapper">
             <table class="monte-carlo-table" style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
                 <thead>
                     <tr style="background: linear-gradient(135deg, #2c3e50, #34495e); color: white;">
@@ -1767,7 +1768,8 @@ function generateMonteCarloDisplay(results) {
     html += `
                 </tbody>
             </table>
-            
+            </div>
+
             <div style="margin-top: 1rem; display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap; font-size: 0.85rem; color: #7f8c8d;">
                 <span><span style="display: inline-block; width: 12px; height: 12px; background: #f39c12; border-radius: 2px; margin-right: 4px;"></span> Champion</span>
                 <span><span style="display: inline-block; width: 12px; height: 12px; background: #3498db; border-radius: 2px; margin-right: 4px;"></span> Europe</span>
@@ -1797,13 +1799,13 @@ function generateScenariosDisplay(scenarios, config) {
             ${generateKeyMatchesDisplay(scenarios.keyMatches)}
             
             <!-- Grille des 3 sections -->
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1rem;">
+            <div class="scenarios-races-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1rem;">
                 <!-- Course au titre -->
                 ${generateTitleRaceDisplay(scenarios.title)}
-                
+
                 <!-- Course à l'Europe -->
                 ${generateEuropeRaceDisplay(scenarios.europe, config)}
-                
+
                 <!-- Lutte pour le maintien -->
                 ${generateRelegationBattleDisplay(scenarios.relegation, config)}
             </div>

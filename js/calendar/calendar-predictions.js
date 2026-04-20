@@ -943,6 +943,7 @@ function displayFinalRanking() {
     
     // Générer le HTML
     let html = `
+        <div class="final-ranking-wrapper">
         <table class="final-ranking-table">
             <thead>
                 <tr>
@@ -1017,8 +1018,9 @@ function displayFinalRanking() {
     html += `
             </tbody>
         </table>
+        </div>
     `;
-    
+
     // Statistiques récapitulatives
     const champion = finalRanking[0];
     const relegated = finalRanking.slice(-config.relegationPlaces);
