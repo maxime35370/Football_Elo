@@ -112,22 +112,29 @@ function displaySchedule() {
                     ${countHtml}
                 </div>
                 <div class="matchday-matches">
-                    ${matches.map(match => createMatchCard(match)).join('')}
+                    ${matches.map(match => createMatchCard(match, isTeamFiltered)).join('')}
                 </div>
             </div>
         `;
     }).join('');
 }
 
-function createMatchCard(match) {
+function createMatchCard(match, showMatchday = false) {
     const homeTeam = allTeams.find(t => t.id == match.homeTeamId);
     const awayTeam = allTeams.find(t => t.id == match.awayTeamId);
-    
+
     const isPlayed = match.status === 'played';
     const score = isPlayed ? `${match.finalScore.home} - ${match.finalScore.away}` : 'À venir';
-    
+
+    // Badge "Jxx" affiché uniquement quand une équipe est filtrée,
+    // pour voir la journée d'un coup d'œil dans chaque carte.
+    const matchdayBadge = showMatchday && match.matchDay
+        ? `<span class="match-matchday-badge">J${match.matchDay}</span>`
+        : '';
+
     return `
         <div class="match-card ${match.status}">
+            ${matchdayBadge}
             <div class="match-teams">
                 <div class="match-team home">${homeTeam ? homeTeam.shortName : '?'}</div>
                 <div class="match-team away">${awayTeam ? awayTeam.shortName : '?'}</div>
