@@ -1147,13 +1147,83 @@
         font-size: 1.2rem !important;
     }
 
-    /* Final ranking (classement projeté) */
-    .final-ranking-table {
-        font-size: 0.75rem;
+    /* Classement final projeté : condensé + 1ère ligne/colonne figées */
+    .final-ranking-wrapper {
+        max-height: 75vh;
+        overflow: auto;
+        -webkit-overflow-scrolling: touch;
+        position: relative;
+        border-radius: 8px;
+        background: white;
     }
+    .final-ranking-table {
+        border-collapse: separate !important;
+        border-spacing: 0;
+        font-size: 0.75rem !important;
+        width: max-content;
+        min-width: 100%;
+    }
+    .final-ranking-table th,
+    .final-ranking-table td {
+        padding: 0.4rem 0.45rem !important;
+        background: white;
+        white-space: nowrap;
+    }
+    /* La cellule "Pos." reste compacte : position + évolution sur la MÊME
+       ligne (nowrap empêche le retour entre "1" et "="). */
+    .final-ranking-table .position {
+        font-size: 0.85rem !important;
+        white-space: nowrap !important;
+    }
+    .final-ranking-table .position-change {
+        font-size: 0.65rem !important;
+        margin-left: 0.2rem !important;
+    }
+    /* 1ère ligne sticky top */
+    .final-ranking-table thead th {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 10 !important;
+        background: #2c3e50 !important;
+        color: white !important;
+    }
+    /* 1ère colonne (Pos.) sticky left */
+    .final-ranking-table tbody td:first-child {
+        position: sticky !important;
+        left: 0 !important;
+        z-index: 5 !important;
+        box-shadow: 2px 0 4px rgba(0,0,0,0.05);
+    }
+    .final-ranking-table thead th:first-child {
+        left: 0 !important;
+        z-index: 20 !important;
+    }
+    /* Backgrounds solides pour les lignes colorées */
+    .final-ranking-table tr.champion-row td {
+        background: #fbf2cd !important;
+    }
+    .final-ranking-table tr.europe-row td {
+        background: #e2effa !important;
+    }
+    .final-ranking-table tr.relegation-row td {
+        background: #fbdedc !important;
+    }
+
     .final-stats {
-        grid-template-columns: repeat(2, 1fr) !important;
-        gap: 0.5rem !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 0.4rem !important;
+    }
+    .final-stat-card {
+        padding: 0.6rem 0.35rem !important;
+    }
+    .final-stat-card .stat-icon {
+        font-size: 1.2rem !important;
+    }
+    .final-stat-card .stat-value {
+        font-size: 0.95rem !important;
+    }
+    .final-stat-card .stat-label {
+        font-size: 0.68rem !important;
     }
 
     /* Pronostics dans calendrier */
