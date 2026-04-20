@@ -482,12 +482,14 @@
     }
 
     /* ------------------ TABLEAU CROISÉ (résultats) ------------------ */
-    /* Wrapper : hauteur max + scroll 2 axes pour que sticky fonctionne */
+    /* Wrapper : hauteur max + scroll 2 axes pour que sticky fonctionne.
+       PAS de padding : sinon la colonne figée (left:0) laisse la zone
+       de padding visible, et le contenu scrollé derrière transparaît. */
     .results-container .table-wrapper {
         max-height: 75vh;
         overflow: auto !important;
         -webkit-overflow-scrolling: touch;
-        padding: 0.5rem !important;
+        padding: 0 !important;
         position: relative;
     }
 
