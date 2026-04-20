@@ -424,11 +424,11 @@ function createSimulationMatchRow(match) {
     
     return `
         <div class="simulation-match" data-match-key="${matchKey}">
-            <span class="team-home">${homeTeam ? homeTeam.name : '?'}</span>
+            <span class="team-home" title="${homeTeam ? homeTeam.name : '?'}">${homeTeam ? (homeTeam.shortName || homeTeam.name) : '?'}</span>
             <input type="number" min="0" max="20" class="score-home" value="${homeScore}" data-match-key="${matchKey}" data-type="home">
             <span class="vs">-</span>
             <input type="number" min="0" max="20" class="score-away" value="${awayScore}" data-match-key="${matchKey}" data-type="away">
-            <span class="team-away">${awayTeam ? awayTeam.name : '?'}</span>
+            <span class="team-away" title="${awayTeam ? awayTeam.name : '?'}">${awayTeam ? (awayTeam.shortName || awayTeam.name) : '?'}</span>
         </div>
     `;
 }

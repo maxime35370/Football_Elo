@@ -1000,10 +1000,25 @@
         grid-template-columns: 1fr !important;
         gap: 1rem !important;
     }
+    /* Match de simulation : TOUT sur une seule ligne, en compact.
+       5 éléments : [home] [input] [-] [input] [away] → flex nowrap. */
     .simulation-match {
-        grid-template-columns: 1fr auto 1fr !important;
-        gap: 0.4rem !important;
-        padding: 0.75rem !important;
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+        justify-content: center;
+        grid-template-columns: none !important;
+        gap: 0.35rem !important;
+        padding: 0.5rem 0.55rem !important;
+    }
+    .simulation-match .team-home,
+    .simulation-match .team-away {
+        flex: 1 1 0;
+        min-width: 0;
+        font-size: 0.8rem !important;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
     .simulation-match .team-home {
         text-align: right !important;
@@ -1012,8 +1027,44 @@
         text-align: left !important;
     }
     .simulation-match input {
-        width: 38px !important;
-        padding: 0.35rem !important;
+        flex: 0 0 auto;
+        width: 34px !important;
+        height: 32px !important;
+        padding: 0 !important;
+        font-size: 0.9rem !important;
+        text-align: center;
+    }
+    .simulation-match .vs {
+        flex: 0 0 auto;
+        font-size: 0.9rem;
+    }
+
+    /* Contrôles Monte Carlo : empilés verticalement pour ne pas déborder.
+       Le bouton "Lancer la projection" était coupé à droite sur mobile. */
+    .monte-carlo-controls {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0.5rem !important;
+        padding: 0.75rem !important;
+    }
+    .monte-carlo-controls label {
+        text-align: center;
+        font-size: 0.85rem !important;
+    }
+    .monte-carlo-controls select,
+    .monte-carlo-controls button {
+        width: 100% !important;
+        font-size: 0.9rem !important;
+    }
+
+    /* Boutons de simulation : full width, empilés */
+    .simulation-controls {
+        flex-direction: column !important;
+        gap: 0.4rem !important;
+        padding: 0.5rem !important;
+    }
+    .simulation-controls .btn {
+        width: 100%;
     }
     .teams-grid {
         grid-template-columns: repeat(3, 1fr) !important;
