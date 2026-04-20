@@ -1039,6 +1039,31 @@
         font-size: 0.9rem;
     }
 
+    /* Résultats Monte Carlo : stacker tous les blocs 3-colonnes en 1 colonne
+       pour qu'ils ne débordent plus de l'écran. */
+    .monte-carlo-section {
+        padding: 0.75rem !important;
+    }
+    .validation-stats-grid,
+    .scenarios-races-grid {
+        grid-template-columns: 1fr !important;
+        gap: 0.5rem !important;
+    }
+    /* Tableau "Projection fin de saison" : scrollable horizontalement
+       plutôt que de forcer le débordement de la page. */
+    .monte-carlo-table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        white-space: nowrap;
+        max-width: 100%;
+        font-size: 0.78rem !important;
+    }
+    .monte-carlo-table th,
+    .monte-carlo-table td {
+        padding: 0.4rem 0.35rem !important;
+    }
+
     /* Contrôles Monte Carlo : empilés verticalement pour ne pas déborder.
        Le bouton "Lancer la projection" était coupé à droite sur mobile. */
     .monte-carlo-controls {

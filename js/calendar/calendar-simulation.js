@@ -1632,7 +1632,7 @@ function generateMonteCarloDisplay(results) {
                     <small style="color: #7f8c8d; font-weight: normal;">(comparaison avec les ${real.totalMatches} matchs joués)</small>
                 </h5>
                 
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+                <div class="validation-stats-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
                     <!-- Victoires domicile -->
                     <div style="background: white; border-radius: 10px; padding: 1rem; text-align: center; border-left: 4px solid #27ae60;">
                         <div style="font-size: 0.85rem; color: #7f8c8d; margin-bottom: 0.5rem;">🏠 Victoires domicile</div>
@@ -1797,13 +1797,13 @@ function generateScenariosDisplay(scenarios, config) {
             ${generateKeyMatchesDisplay(scenarios.keyMatches)}
             
             <!-- Grille des 3 sections -->
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1rem;">
+            <div class="scenarios-races-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1rem;">
                 <!-- Course au titre -->
                 ${generateTitleRaceDisplay(scenarios.title)}
-                
+
                 <!-- Course à l'Europe -->
                 ${generateEuropeRaceDisplay(scenarios.europe, config)}
-                
+
                 <!-- Lutte pour le maintien -->
                 ${generateRelegationBattleDisplay(scenarios.relegation, config)}
             </div>
