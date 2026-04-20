@@ -889,18 +889,56 @@
         max-width: none !important;
     }
 
-    /* Difficulté */
+    /* Difficulté : tout sur une seule ligne (rang | équipe | barre | matchs)
+       pour diviser la hauteur d'environ ×3 et voir plus d'équipes. */
+    .difficulty-intro {
+        padding: 0.5rem 0.75rem !important;
+        font-size: 0.8rem !important;
+        margin-bottom: 0.5rem !important;
+        line-height: 1.35;
+    }
+    .difficulty-grid {
+        gap: 0.35rem !important;
+    }
     .difficulty-row {
-        grid-template-columns: 30px 1fr !important;
-        gap: 0.4rem !important;
-        padding: 0.75rem !important;
+        display: grid !important;
+        grid-template-columns: 22px minmax(56px, auto) 1fr auto !important;
+        gap: 0.45rem !important;
+        padding: 0.45rem 0.55rem !important;
+        align-items: center !important;
+        border-left-width: 3px !important;
+    }
+    .difficulty-rank {
+        font-size: 0.85rem !important;
+        text-align: center;
+        grid-column: auto !important;
+    }
+    .difficulty-team {
+        font-size: 0.82rem !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        grid-column: auto !important;
+    }
+    .difficulty-team small {
+        display: none; /* masque "(Elo: 1522)" : info déjà présente dans la barre */
     }
     .difficulty-bar-container {
-        grid-column: 1 / -1;
+        grid-column: auto !important;
+        height: 18px !important;
+        border-radius: 9px;
+    }
+    .difficulty-bar {
+        height: 100% !important;
+        font-size: 0.65rem !important;
+        padding-right: 0.35rem !important;
+        border-radius: 9px !important;
     }
     .difficulty-matches {
-        grid-column: 1 / -1;
-        font-size: 0.8rem;
+        grid-column: auto !important;
+        font-size: 0.68rem !important;
+        white-space: nowrap;
+        color: #7f8c8d;
     }
 
     /* Objectifs */
