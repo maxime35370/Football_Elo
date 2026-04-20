@@ -793,17 +793,74 @@
         font-size: 0.9rem !important;
     }
 
+    /* Grille des matchs du calendrier : 3 cartes par ligne sur mobile */
     .matchday-matches {
-        grid-template-columns: 1fr !important;
-        padding: 0.6rem !important;
-        gap: 0.6rem !important;
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        padding: 0.4rem !important;
+        gap: 0.4rem !important;
     }
+    .matchday-matches .match-card,
     .match-card.played,
     .match-card.upcoming {
-        padding: 0.75rem !important;
+        flex-direction: column !important;
+        padding: 0.5rem 0.35rem !important;
+        gap: 0.3rem !important;
+        align-items: stretch !important;
+        border-left-width: 3px !important;
     }
-    .match-team {
-        font-size: 0.88rem;
+    .matchday-matches .match-card .match-teams {
+        width: 100%;
+        gap: 0.1rem !important;
+    }
+    .matchday-matches .match-card .match-team {
+        font-size: 0.72rem !important;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        justify-content: center;
+    }
+    .matchday-matches .match-card .match-team.home::before,
+    .matchday-matches .match-card .match-team.away::before {
+        font-size: 0.62rem;
+    }
+    .matchday-matches .match-card .match-score {
+        font-size: 0.95rem !important;
+        min-width: 0 !important;
+        text-align: center;
+        padding: 0;
+    }
+    .matchday-matches .match-card .match-score.upcoming {
+        font-size: 0.78rem !important;
+    }
+    /* Évite la duplication "À venir" / "Joué" : on masque le badge
+       statut sur mobile. La couleur du border-left indique déjà le
+       statut (vert = joué, orange = à venir). */
+    .matchday-matches .match-card .match-status {
+        display: none !important;
+    }
+
+    /* Filtres du calendrier plus compacts : moins de padding/gap */
+    .schedule-controls,
+    .calendar-container .schedule-controls {
+        padding: 0.5rem !important;
+        gap: 0.4rem !important;
+    }
+    .schedule-controls .control-group,
+    .calendar-container .schedule-controls .control-group {
+        gap: 0.4rem !important;
+        justify-content: flex-start !important;
+    }
+    .schedule-controls .control-group label,
+    .calendar-container .schedule-controls .control-group label {
+        font-size: 0.85rem;
+        min-width: 60px;
+    }
+    .schedule-controls .control-group select,
+    .calendar-container .schedule-controls .control-group select {
+        flex: 1 1 auto !important;
+        max-width: none !important;
     }
 
     /* Difficulté */
