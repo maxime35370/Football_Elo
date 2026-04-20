@@ -125,13 +125,40 @@
     .season-selector {
         flex-direction: column !important;
         align-items: stretch !important;
-        gap: 0.5rem !important;
+        gap: 0.4rem !important;
     }
     .matchday-selector select,
     .season-selector select,
     .ranking-mode-selector select {
         width: 100% !important;
         min-width: 0 !important;
+    }
+
+    /* Stats page : chaque paire label + select dans son propre div.
+       On transforme en grille [label | select] sur la même ligne. */
+    .stats-header .season-selector {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 0.4rem !important;
+    }
+    .stats-header .season-selector > div {
+        display: grid !important;
+        grid-template-columns: auto 1fr !important;
+        column-gap: 0.6rem !important;
+        align-items: center;
+        width: 100%;
+    }
+    .stats-header .season-selector label {
+        margin: 0 !important;
+        font-size: 0.88rem;
+        font-weight: 600;
+        white-space: nowrap;
+        justify-self: start;
+    }
+    .stats-header .season-selector select {
+        padding: 0.4rem 0.5rem !important;
+        font-size: 0.9rem !important;
+        width: 100% !important;
     }
 
     /* --- Header des classements compact ---
