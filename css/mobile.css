@@ -941,19 +941,47 @@
         color: #7f8c8d;
     }
 
-    /* Objectifs */
+    /* Objectifs : 3 cartes côte à côte sur mobile, format compact
+       (icône + label + valeur stackés, petite projection en dessous) */
+    .objectives-intro,
+    .objectives-method {
+        padding: 0.55rem 0.75rem !important;
+        font-size: 0.78rem !important;
+        margin-bottom: 0.5rem !important;
+        line-height: 1.35;
+    }
     .objectives-summary {
-        grid-template-columns: 1fr !important;
-        gap: 0.75rem !important;
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 0.4rem !important;
+        margin-bottom: 0.75rem !important;
     }
     .objective-target {
-        padding: 1rem !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 0.15rem !important;
+        padding: 0.5rem 0.35rem !important;
+        border-left-width: 3px !important;
+        border-radius: 8px !important;
+        text-align: center;
     }
     .target-icon {
-        font-size: 2rem !important;
+        font-size: 1.4rem !important;
+    }
+    .target-info {
+        width: 100%;
+    }
+    .target-label {
+        font-size: 0.6rem !important;
+        letter-spacing: 0 !important;
+        line-height: 1.1;
     }
     .target-value {
-        font-size: 1.3rem !important;
+        font-size: 1rem !important;
+    }
+    .target-hint {
+        font-size: 0.65rem !important;
+        line-height: 1.1;
     }
     .objectives-table {
         font-size: 0.75rem;
