@@ -323,15 +323,55 @@
     }
 
     /* ------------------ TABLEAU CROISÉ (résultats) ------------------ */
+    /* Wrapper : hauteur max + scroll 2 axes pour que sticky fonctionne */
+    .results-container .table-wrapper {
+        max-height: 75vh;
+        overflow: auto !important;
+        -webkit-overflow-scrolling: touch;
+        padding: 0.5rem !important;
+        position: relative;
+    }
+
     .results-table {
         min-width: 0 !important;   /* Retire la min-width de 800px */
         font-size: 0.7rem;
+        border-collapse: separate !important; /* requis pour sticky propre */
+        border-spacing: 0;
     }
     .results-table th,
     .results-table td {
         padding: 0.25rem 0.15rem !important;
         font-size: 0.7rem !important;
     }
+
+    /* Première ligne : figée en haut */
+    .results-table thead th {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 10 !important;
+        background: linear-gradient(135deg, #2c3e50, #34495e);
+    }
+
+    /* Coin supérieur-gauche : figé en haut ET à gauche (top + left) */
+    .results-table thead th.team-header {
+        position: sticky !important;
+        top: 0 !important;
+        left: 0 !important;
+        z-index: 20 !important;
+        background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
+    }
+
+    /* Première colonne : figée à gauche dans chaque ligne */
+    .results-table tbody th.team-row-header,
+    .results-table tbody tr > th:first-child,
+    .results-table tbody tr > td:first-child.team-row-header {
+        position: sticky !important;
+        left: 0 !important;
+        z-index: 5 !important;
+        background: linear-gradient(135deg, #95a5a6, #7f8c8d) !important;
+        color: white;
+    }
+
     .team-header {
         min-width: 90px !important;
         font-size: 0.75rem !important;
