@@ -62,14 +62,21 @@ function displaySchedule() {
     if (matchdayFilter !== 'all') {
         combinedMatches = combinedMatches.filter(m => m.matchDay == matchdayFilter);
     }
-    if (teamFilter !== 'all') {
-        combinedMatches = combinedMatches.filter(m => 
+    const isTeamFiltered = teamFilter !== 'all';
+    if (isTeamFiltered) {
+        combinedMatches = combinedMatches.filter(m =>
             m.homeTeamId == teamFilter || m.awayTeamId == teamFilter
         );
     }
     if (statusFilter !== 'all') {
         combinedMatches = combinedMatches.filter(m => m.status === statusFilter);
     }
+
+    // Classe conditionnelle : quand une équipe est sélectionnée, on
+    // compresse l'affichage (2 journées côte à côte sur mobile) et on
+    // masque le compteur "X joués, Y à venir" puisqu'il ne reste qu'un
+    // match par journée et la couleur du border-left indique le statut.
+    container.classList.toggle('team-filtered', isTeamFiltered);
     
     // Grouper par journée
     const matchesByDay = {};
@@ -91,12 +98,18 @@ function displaySchedule() {
         const matches = matchesByDay[day];
         const playedCount = matches.filter(m => m.status === 'played').length;
         const upcomingCount = matches.filter(m => m.status === 'upcoming').length;
-        
+
+        // Quand une équipe est sélectionnée, on n'affiche pas le compteur
+        // (1 seul match par journée et statut déjà indiqué par la couleur).
+        const countHtml = isTeamFiltered
+            ? ''
+            : `<span class="match-count">${playedCount} joués, ${upcomingCount} à venir</span>`;
+
         return `
             <div class="matchday-section">
                 <div class="matchday-header">
                     <span>Journée ${day}</span>
-                    <span class="match-count">${playedCount} joués, ${upcomingCount} à venir</span>
+                    ${countHtml}
                 </div>
                 <div class="matchday-matches">
                     ${matches.map(match => createMatchCard(match)).join('')}

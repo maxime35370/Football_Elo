@@ -800,6 +800,26 @@
         padding: 0.4rem !important;
         gap: 0.4rem !important;
     }
+
+    /* Quand une équipe est sélectionnée : 2 journées côte à côte et
+       chaque journée contient un seul match qui occupe toute la largeur. */
+    .schedule-grid.team-filtered {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 0.5rem !important;
+    }
+    .schedule-grid.team-filtered .matchday-section {
+        min-width: 0;
+    }
+    .schedule-grid.team-filtered .matchday-header {
+        padding: 0.55rem 0.6rem !important;
+        font-size: 0.95rem !important;
+    }
+    .schedule-grid.team-filtered .matchday-matches {
+        grid-template-columns: 1fr !important;
+        padding: 0.4rem !important;
+        gap: 0.4rem !important;
+    }
     .matchday-matches .match-card,
     .match-card.played,
     .match-card.upcoming {
