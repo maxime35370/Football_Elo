@@ -16,26 +16,39 @@ const CURRENT_SEASON_KEY = 'footballEloCurrentSeason';
 // Initialiser le système de saisons
 function initializeSeasons() {
     const seasons = getStoredSeasons();
-    
-    // Si aucune saison n'existe, créer la saison actuelle par défaut
-    if (seasons.length === 0) {
-        // Récupérer toutes les équipes disponibles
-        const teams = getStoredTeams();
-        const allTeamIds = teams.map(t => t.id);
-        
-        const defaultSeason = {
-            name: "2025-2026",
-            startDate: new Date().toISOString().split('T')[0],
-            endDate: null,
-            isActive: true,
-            teamIds: allTeamIds, // Toutes les équipes par défaut
-            createdAt: new Date().toISOString()
-        };
-        
-        saveSeasons([defaultSeason]);
-        setCurrentSeason("2025-2026");
-        console.log('✅ Saison par défaut créée : 2025-2026');
+
+    if (seasons.length > 0) return;
+
+    // Si Firebase est disponible et qu'on est en ligne, attendre la synchronisation
+    // plutôt que d'écrire localement une saison par défaut bâtie sur des équipes par
+    // défaut (8 équipes codées en dur), qui écrase ensuite les vraies données.
+    // L'évènement `firebaseSyncComplete` (storage.js) déclenchera un fallback si Firebase n'a rien.
+    if (typeof db !== 'undefined' && navigator.onLine && typeof firebaseService !== 'undefined') {
+        console.log('⏳ Saisons : attente de la synchronisation Firebase avant création éventuelle d\'une saison par défaut');
+        return;
     }
+
+    createDefaultSeasonFromLocalTeams();
+}
+
+// Crée une saison "2025-2026" avec les équipes actuellement en local.
+// Utilisé en fallback (hors ligne, ou si Firebase n'a aucune saison).
+function createDefaultSeasonFromLocalTeams() {
+    const teams = getStoredTeams();
+    const allTeamIds = teams.map(t => t.id);
+
+    const defaultSeason = {
+        name: "2025-2026",
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: null,
+        isActive: true,
+        teamIds: allTeamIds,
+        createdAt: new Date().toISOString()
+    };
+
+    saveSeasons([defaultSeason]);
+    setCurrentSeason("2025-2026");
+    console.log(`✅ Saison par défaut créée : 2025-2026 avec ${allTeamIds.length} équipes locales`);
 }
 
 // Récupérer toutes les saisons
@@ -49,10 +62,18 @@ function getStoredSeasons() {
     }
 }
 
-// Sauvegarder les saisons
+// Sauvegarder les saisons (local + Firebase en arrière-plan)
 function saveSeasons(seasons) {
     try {
         localStorage.setItem(SEASONS_STORAGE_KEY, JSON.stringify(seasons));
+
+        // Pousser également vers Firebase pour que les autres joueurs récupèrent la même configuration.
+        if (typeof firebaseService !== 'undefined' && navigator.onLine) {
+            firebaseService.saveSeasons(seasons).catch(err => {
+                console.log('Erreur Firebase saveSeasons (saison conservée en local):', err);
+            });
+        }
+
         return true;
     } catch (error) {
         console.error('Erreur sauvegarde saisons:', error);
@@ -309,5 +330,18 @@ if (typeof document !== 'undefined') {
         initializeSeasons();
         console.log('🗓️ Système de saisons initialisé');
         console.log('📅 Saison en cours :', getCurrentSeason());
+    });
+
+    // Après une synchronisation Firebase, vérifier l'état des saisons.
+    // - Si Firebase a fourni des saisons : elles ont déjà été écrites en localStorage par storage.js.
+    // - Sinon, créer une saison par défaut à partir des équipes désormais disponibles.
+    document.addEventListener('firebaseSyncComplete', function(e) {
+        const seasons = getStoredSeasons();
+        if (seasons.length === 0) {
+            console.log('🆕 Firebase ne contient aucune saison — création de la saison par défaut');
+            createDefaultSeasonFromLocalTeams();
+        } else {
+            console.log(`✅ ${seasons.length} saison(s) synchronisée(s) depuis Firebase`);
+        }
     });
 }

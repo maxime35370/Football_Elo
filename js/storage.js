@@ -550,22 +550,48 @@ async function syncFromFirebase() {
             console.log('Firebase Service non disponible');
             return false;
         }
-        
+
         console.log('Synchronisation depuis Firebase...');
-        
+
+        // Récupérer et sauvegarder les saisons EN PREMIER (avant les équipes)
+        // pour éviter qu'une saison par défaut locale incomplète n'écrase les vraies données.
+        let firebaseSeasons = [];
+        try {
+            firebaseSeasons = await firebaseService.getSeasons();
+            if (firebaseSeasons.length > 0) {
+                localStorage.setItem('footballEloSeasons', JSON.stringify(firebaseSeasons));
+                const activeSeason = firebaseSeasons.find(s => s.isActive) || firebaseSeasons[0];
+                if (activeSeason) {
+                    localStorage.setItem('footballEloCurrentSeason', activeSeason.name);
+                }
+            }
+        } catch (e) {
+            console.warn('Erreur sync saisons Firebase:', e);
+        }
+
         // Récupérer et sauvegarder les équipes
         const firebaseTeams = await firebaseService.getTeams();
         if (firebaseTeams.length > 0) {
             localStorage.setItem(TEAMS_STORAGE_KEY, JSON.stringify(firebaseTeams));
         }
-        
+
         // Récupérer et sauvegarder les matchs
         const firebaseMatches = await firebaseService.getMatches();
         if (firebaseMatches.length > 0) {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(firebaseMatches));
         }
-        
+
         console.log('Synchronisation depuis Firebase terminée');
+
+        // Notifier les autres modules que la sync est terminée afin qu'ils rechargent leurs données.
+        document.dispatchEvent(new CustomEvent('firebaseSyncComplete', {
+            detail: {
+                seasonsCount: firebaseSeasons.length,
+                teamsCount: firebaseTeams.length,
+                matchesCount: firebaseMatches.length
+            }
+        }));
+
         showSyncMessage('Données récupérées depuis Firebase', 'success');
         return true;
     } catch (error) {
