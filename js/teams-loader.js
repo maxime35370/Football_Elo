@@ -159,6 +159,18 @@ document.addEventListener('DOMContentLoaded', function() {
     setupTeamValidation();
 });
 
+// Recharger les équipes une fois que Firebase a synchronisé saisons + équipes :
+// au premier chargement d'un nouveau joueur, le DOMContentLoaded peut s'exécuter avec un
+// localStorage vide, ce qui retombe sur les 8 équipes par défaut. Cet évènement permet de
+// remplacer la liste par les vraies équipes de la saison en cours dès qu'elles arrivent.
+document.addEventListener('firebaseSyncComplete', function() {
+    console.log('🔄 Firebase synchronisé : rechargement des équipes');
+    loadTeams();
+    if (typeof updateMatchDayLimits === 'function') {
+        updateMatchDayLimits();
+    }
+});
+
 function getStoredTeams() {
     try {
         const stored = localStorage.getItem(TEAMS_STORAGE_KEY);
