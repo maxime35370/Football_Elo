@@ -211,11 +211,16 @@ if (typeof window.EloSystem !== 'undefined') { console.log('⚠️ EloSystem dé
      * @param {Array} matches - Tableau des matchs (triés par date/journée)
      * @returns {Array} - Équipes avec ratings mis à jour
      */
-    function recalculateAllEloRatings(teams, matches) {
-        // Réinitialiser tous les ratings à la valeur initiale
+    function recalculateAllEloRatings(teams, matches, startingElo = {}) {
+        // startingElo : { idÉquipe: ratingDeDépart }. Permet de reporter les Elo
+        // de fin de saison précédente comme point de départ de la saison en cours.
+        // Une équipe absente de cette table démarre à INITIAL_RATING (1500) :
+        // c'est le cas des promus et de la toute première saison.
         const updatedTeams = teams.map(team => ({
             ...team,
-            eloRating: ELO_CONFIG.INITIAL_RATING,
+            eloRating: (startingElo && startingElo[team.id] != null)
+                ? startingElo[team.id]
+                : ELO_CONFIG.INITIAL_RATING,
             eloHistory: []
         }));
         

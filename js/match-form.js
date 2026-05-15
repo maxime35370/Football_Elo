@@ -453,10 +453,18 @@ function updateEloPrediction() {
         return;
     }
     
-    // Récupérer les équipes avec leurs ratings Elo actuels
+    // Récupérer les équipes avec leurs ratings Elo actuels.
+    // On se limite aux matchs de la saison en cours et on repart de l'Elo
+    // de fin de saison précédente, comme le classement et les pronostics.
     const teams = getStoredTeams();
-    const matches = getStoredMatches();
-    const teamsWithElo = EloSystem.recalculateAllEloRatings(teams, matches);
+    const currentSeason = (typeof getCurrentSeason === 'function') ? getCurrentSeason() : null;
+    const matches = (currentSeason && typeof getMatchesBySeason === 'function')
+        ? getMatchesBySeason(currentSeason)
+        : getStoredMatches();
+    const startingElo = (currentSeason && typeof getSeasonStartingElo === 'function')
+        ? getSeasonStartingElo(currentSeason)
+        : {};
+    const teamsWithElo = EloSystem.recalculateAllEloRatings(teams, matches, startingElo);
     
     const homeTeam = teamsWithElo.find(t => t.id == homeTeamSelect.value);
     const awayTeam = teamsWithElo.find(t => t.id == awayTeamSelect.value);

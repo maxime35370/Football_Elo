@@ -101,8 +101,8 @@ function recalculateEloRatings() {
     });
     console.log('========================');
     
-    teamsWithElo = EloSystem.recalculateAllEloRatings(teams, matches);
-    
+    teamsWithElo = EloSystem.recalculateAllEloRatings(teams, matches, getSeasonStartingElo(season));
+
     console.log('✅ Ratings Elo recalculés pour', teamsWithElo.length, 'équipes');
 }
 

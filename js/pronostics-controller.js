@@ -264,7 +264,7 @@ async function displayPredictionsForm() {
     // Calculer les cotes Elo
     let teamsWithElo = [];
     if (typeof EloSystem !== 'undefined') {
-        teamsWithElo = EloSystem.recalculateAllEloRatings(allTeams, allMatches);
+        teamsWithElo = EloSystem.recalculateAllEloRatings(allTeams, allMatches, getSeasonStartingElo(getCurrentSeason()));
     }
     const oddsMap = await preloadMatchOdds(matchesThisDay, teamsWithElo);
     
@@ -321,7 +321,7 @@ async function handleSavePredictions() {
     
     let teamsWithElo = [];
     if (typeof EloSystem !== 'undefined') {
-        teamsWithElo = EloSystem.recalculateAllEloRatings(allTeams, allMatches);
+        teamsWithElo = EloSystem.recalculateAllEloRatings(allTeams, allMatches, getSeasonStartingElo(getCurrentSeason()));
     }
     
     const matchesThisDay = getMatchDayMatches(selectedMatchDay, allMatches, futureMatches);

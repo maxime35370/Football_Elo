@@ -152,6 +152,16 @@ function createNewSeason(seasonName, resetElo = false, teamIds = []) {
             currentSeason.endDate = new Date().toISOString().split('T')[0];
         }
         
+        // Reporter les Elo de fin de saison précédente comme Elo de départ
+        // de la nouvelle saison. Sauf réinitialisation explicite, la nouvelle
+        // saison rejouera donc ses matchs à partir de la force réelle des
+        // équipes en fin de saison passée (1500 pour les promus).
+        let startingElo = {};
+        if (!resetElo && currentSeasonName) {
+            startingElo = computeSeasonFinalElo(currentSeasonName);
+            console.log(`📊 Elo de départ de "${seasonName}" reportés depuis "${currentSeasonName}" (${Object.keys(startingElo).length} équipes)`);
+        }
+
         // Créer la nouvelle saison
         const newSeason = {
             name: seasonName,
@@ -159,6 +169,7 @@ function createNewSeason(seasonName, resetElo = false, teamIds = []) {
             endDate: null,
             isActive: true,
             teamIds: teamIds, // Équipes participantes
+            startingElo: startingElo, // Elo de départ reporté de la saison précédente
             createdAt: new Date().toISOString()
         };
         
@@ -194,6 +205,37 @@ function resetTeamsElo() {
         console.error('Erreur resetTeamsElo:', error);
         return false;
     }
+}
+
+// Obtenir l'Elo de départ d'une saison (report de la saison précédente).
+// Retourne { idÉquipe: rating } ; {} si la saison démarre à 1500 partout
+// (première saison, ou nouvelle saison créée avec réinitialisation des Elo).
+function getSeasonStartingElo(seasonName) {
+    const seasons = getStoredSeasons();
+    const season = seasons.find(s => s.name === seasonName);
+    return (season && season.startingElo) ? season.startingElo : {};
+}
+
+// Calculer l'Elo final d'une saison en rejouant tous ses matchs à partir
+// de son propre Elo de départ. Sert à figer le point de départ de la
+// saison suivante au moment de sa création.
+function computeSeasonFinalElo(seasonName) {
+    if (typeof EloSystem === 'undefined' || !EloSystem.recalculateAllEloRatings) {
+        console.warn('EloSystem indisponible : Elo de fin de saison non reporté');
+        return {};
+    }
+
+    const teams = getTeamsBySeason(seasonName);
+    const matches = getMatchesBySeason(seasonName).filter(m => m.finalScore);
+    const baseline = getSeasonStartingElo(seasonName);
+
+    const finalTeams = EloSystem.recalculateAllEloRatings(teams, matches, baseline);
+
+    const eloMap = {};
+    finalTeams.forEach(team => {
+        eloMap[team.id] = Math.round(team.eloRating);
+    });
+    return eloMap;
 }
 
 // Obtenir les matchs d'une saison spécifique
