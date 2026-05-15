@@ -141,7 +141,7 @@ function renderMatchCard(data) {
             <div class="prediction-team home">
                 <span class="team-name">${homeTeam?.shortName || '?'}</span>
                 ${homeMultHtml}
-                <span class="team-badge">🏠 Domicile</span>
+                <span class="team-badge">🏠 <span class="team-badge-label">Domicile</span></span>
             </div>
             <div class="prediction-score">
                 <input type="number" min="0" max="20" class="home-score" 
@@ -159,7 +159,7 @@ function renderMatchCard(data) {
             <div class="prediction-team away">
                 ${awayMultHtml}
                 <span class="team-name">${awayTeam?.shortName || '?'}</span>
-                <span class="team-badge">✈️ Extérieur</span>
+                <span class="team-badge">✈️ <span class="team-badge-label">Extérieur</span></span>
             </div>
             ${resultHtml}
             ${!isMatchLocked ? `<div class="joker-slot" data-home="${match.homeTeamId}" data-away="${match.awayTeamId}"></div>` : ''}
