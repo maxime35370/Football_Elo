@@ -224,11 +224,15 @@ function isMatchDayStarted(matchDay) {
 // ===============================
 
 /**
- * Sur mobile (≤768px), regroupe les extras (buteur, joker, combiné)
- * dans un conteneur pliable avec bouton toggle
+ * Sur mobile (≤600px), regroupe les extras (buteur, joker, combiné)
+ * dans un conteneur pliable avec bouton toggle.
+ * Le seuil est aligné sur la mise en page compacte de la carte de match
+ * (grille [Domicile | Score | Extérieur] définie en @media max-width:600px) :
+ * au-dessus de 600px, le bouton pleine largeur s'insérait au milieu de la
+ * rangée flex et cassait la ligne.
  */
 function wrapExtrasForMobile() {
-    if (window.innerWidth > 768) {
+    if (window.innerWidth > 600) {
         // Desktop : s'assurer que tout est visible, supprimer les wrappers
         document.querySelectorAll('.extras-mobile-wrapper').forEach(wrapper => {
             wrapper.style.display = '';
@@ -344,8 +348,8 @@ window.addEventListener('resize', () => {
             white-space: nowrap;
         }
         
-        /* Mobile (≤768px) */
-        @media (max-width: 768px) {
+        /* Mobile (≤600px) — aligné sur la grille compacte de la carte de match */
+        @media (max-width: 600px) {
             .extras-toggle-btn {
                 display: block;
                 width: 100%;
@@ -387,8 +391,8 @@ window.addEventListener('resize', () => {
             }
         }
         
-        /* Desktop (≥769px) : cacher le toggle, afficher directement */
-        @media (min-width: 769px) {
+        /* Desktop / tablette (≥601px) : cacher le toggle, afficher directement */
+        @media (min-width: 601px) {
             .extras-toggle-btn {
                 display: none !important;
             }
