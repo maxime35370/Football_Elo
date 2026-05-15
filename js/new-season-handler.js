@@ -93,7 +93,8 @@ function showNewSeasonDialog(currentSeason, teamCount, matchCount) {
                     <div>
                         <strong style="color: #27ae60;">✅ Conserver les Elo actuels</strong>
                         <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: #555;">
-                            Recommandé : reflète la force actuelle des équipes
+                            Recommandé : l'Elo de fin de saison devient l'Elo de départ
+                            de la nouvelle saison (les promus démarrent à 1500)
                         </p>
                     </div>
                 </label>
@@ -211,9 +212,9 @@ function processNewSeason(overlay) {
         document.body.removeChild(overlay);
         
         // Message de succès
-        const eloMessage = resetElo 
-            ? 'Tous les ratings Elo ont été remis à 1500.' 
-            : 'Les ratings Elo ont été conservés.';
+        const eloMessage = resetElo
+            ? 'Tous les ratings Elo ont été remis à 1500.'
+            : 'Les Elo de fin de saison ont été reportés comme Elo de départ de la nouvelle saison.';
         
         showMessage(`🎉 Nouvelle saison "${newSeasonName}" créée avec succès !\n\n${eloMessage}`, 'success');
         
