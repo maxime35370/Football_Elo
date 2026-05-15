@@ -276,10 +276,29 @@ function wrapExtrasForMobile() {
         toggleBtn.onclick = () => {
             const isCollapsed = wrapper.classList.contains('collapsed');
             if (isCollapsed) {
+                // Ouvrir : déplier directement les listes de buteurs des 2 équipes
+                // pour qu'elles soient visibles sans avoir à refermer puis rouvrir.
+                wrapper.querySelectorAll('.scorer-picker').forEach(picker => {
+                    picker.style.display = 'block';
+                });
                 wrapper.classList.remove('collapsed');
                 wrapper.style.maxHeight = wrapper.scrollHeight + 'px';
                 toggleBtn.textContent = `${summaryText}Options ▲`;
+                // Une fois l'animation terminée, libérer la hauteur : déplier ou
+                // replier un picker ensuite ne sera pas rogné par un max-height figé.
+                const onOpenEnd = (ev) => {
+                    if (ev.target !== wrapper || ev.propertyName !== 'max-height') return;
+                    if (!wrapper.classList.contains('collapsed')) {
+                        wrapper.style.maxHeight = 'none';
+                    }
+                    wrapper.removeEventListener('transitionend', onOpenEnd);
+                };
+                wrapper.addEventListener('transitionend', onOpenEnd);
             } else {
+                // Fermer : repartir d'une hauteur fixe en pixels (max-height peut
+                // valoir 'none') pour que la transition vers 0 s'anime correctement.
+                wrapper.style.maxHeight = wrapper.scrollHeight + 'px';
+                void wrapper.offsetHeight; // forcer un reflow
                 wrapper.classList.add('collapsed');
                 wrapper.style.maxHeight = '0';
                 toggleBtn.textContent = `${summaryText}Options ▼`;

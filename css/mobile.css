@@ -1430,8 +1430,14 @@
         max-width: 100%;
     }
     .prediction-match .prediction-team .team-badge {
-        font-size: 0.62rem !important;
+        font-size: 0.72rem !important;
         white-space: nowrap;
+    }
+    /* Sur mobile, le badge rôle se limite à l'icône (🏠 / ✈️) :
+       la position gauche/droite suffit à indiquer domicile/extérieur,
+       et le texte « Domicile »/« Extérieur » faisait passer la tuile sur 2 lignes. */
+    .prediction-match .prediction-team .team-badge .team-badge-label {
+        display: none;
     }
     .prediction-match .prediction-team .team-odds {
         font-size: 0.68rem !important;
