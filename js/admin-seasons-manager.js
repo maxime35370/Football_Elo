@@ -33,20 +33,12 @@ async function createSeasonAdminCard(season) {
         transition: all 0.3s ease;
     `;
     
-    // Compter les équipes depuis Firebase
-    let teamsCount = 0;
-    try {
-        const snapshot = await db.collection('teams').get();
-        snapshot.forEach(doc => {
-            const team = doc.data();
-            if (team.seasons && team.seasons.includes(season.name)) {
-                teamsCount++;
-            }
-        });
-    } catch (error) {
-        console.error('Erreur comptage équipes:', error);
-        teamsCount = season.teamIds ? season.teamIds.length : 0;
-    }
+    // Compter les équipes réellement inscrites à la saison.
+    // La participation fait foi via season.teamIds (source lue par le moteur :
+    // classement, calendrier, report d'Elo), et non via une collection Firebase
+    // séparée qui n'est pas tenue à jour lors de l'ajout d'une équipe.
+    const seasonTeamIds = new Set((season.teamIds || []).map(String));
+    const teamsCount = getStoredTeams().filter(t => seasonTeamIds.has(String(t.id))).length;
     
     const matches = getMatchesBySeason(season.name);
     
@@ -208,42 +200,38 @@ async function showEditSeasonDialog(seasonName) {
     overlay.appendChild(popup);
     document.body.appendChild(overlay);
     
-    // Charger les équipes depuis Firebase
+    // Lister les équipes depuis la source de référence (la même que l'ajout
+    // d'équipe : localStorage 'footballEloTeams', synchronisé avec Firebase
+    // 'data/teams'). Auparavant le dialog lisait la collection 'teams', non mise
+    // à jour lors d'un ajout : les promus restaient donc invisibles ici.
+    // Les cases cochées reflètent les inscrits réels de la saison (season.teamIds).
     let teamsCheckboxes = '';
-    
-    try {
-        const snapshot = await db.collection('teams').get();
-        
-        if (snapshot.empty) {
-            teamsCheckboxes = '<p style="color: #e74c3c;">Aucune équipe trouvée dans Firebase</p>';
-        } else {
-            snapshot.forEach(doc => {
-                const team = doc.data();
-                const teamId = doc.id;
-                
-                // ✅ Vérifier si l'équipe a cette saison dans son champ "seasons"
-                const isChecked = team.seasons && team.seasons.includes(seasonName);
-                
-                teamsCheckboxes += `
-                    <label style="display: flex; align-items: center; padding: 0.8rem; background: ${isChecked ? '#e8f5e8' : '#f8f9fa'}; border: 2px solid ${isChecked ? '#27ae60' : '#e9ecef'}; border-radius: 8px; cursor: pointer; margin-bottom: 0.5rem;">
-                        <input 
-                            type="checkbox" 
-                            name="teamSelect" 
-                            value="${teamId}"
-                            ${isChecked ? 'checked' : ''}
-                            style="margin-right: 0.8rem; width: 20px; height: 20px; cursor: pointer;"
-                            onchange="this.parentElement.style.background = this.checked ? '#e8f5e8' : '#f8f9fa'; this.parentElement.style.borderColor = this.checked ? '#27ae60' : '#e9ecef';"
-                        >
-                        <div style="flex: 1;">
-                            <strong>${team.shortName || '?'}</strong> - ${team.name || 'Sans nom'}
-                        </div>
-                    </label>
-                `;
-            });
-        }
-    } catch (error) {
-        console.error('Erreur chargement équipes Firebase:', error);
-        teamsCheckboxes = `<p style="color: #e74c3c;">Erreur: ${error.message}</p>`;
+    const allTeams = getStoredTeams();
+    const seasonTeamIds = new Set((season.teamIds || []).map(String));
+
+    if (allTeams.length === 0) {
+        teamsCheckboxes = '<p style="color: #e74c3c;">Aucune équipe trouvée</p>';
+    } else {
+        allTeams.forEach(team => {
+            const teamId = team.id;
+            const isChecked = seasonTeamIds.has(String(teamId));
+
+            teamsCheckboxes += `
+                <label style="display: flex; align-items: center; padding: 0.8rem; background: ${isChecked ? '#e8f5e8' : '#f8f9fa'}; border: 2px solid ${isChecked ? '#27ae60' : '#e9ecef'}; border-radius: 8px; cursor: pointer; margin-bottom: 0.5rem;">
+                    <input
+                        type="checkbox"
+                        name="teamSelect"
+                        value="${teamId}"
+                        ${isChecked ? 'checked' : ''}
+                        style="margin-right: 0.8rem; width: 20px; height: 20px; cursor: pointer;"
+                        onchange="this.parentElement.style.background = this.checked ? '#e8f5e8' : '#f8f9fa'; this.parentElement.style.borderColor = this.checked ? '#27ae60' : '#e9ecef';"
+                    >
+                    <div style="flex: 1;">
+                        <strong>${team.shortName || '?'}</strong> - ${team.name || 'Sans nom'}
+                    </div>
+                </label>
+            `;
+        });
     }
     
     // Mettre à jour le contenu de la popup
@@ -323,8 +311,6 @@ function deselectAllTeams() {
 // Sauvegarder l'édition de saison (VERSION FIREBASE)
 async function saveSeasonEdition(oldSeasonName) {
     const newSeasonName = document.getElementById('editSeasonName').value.trim();
-    const checkboxes = document.querySelectorAll('input[name="teamSelect"]');
-    const allTeamIds = Array.from(checkboxes).map(cb => cb.value);
     const selectedTeamIds = Array.from(document.querySelectorAll('input[name="teamSelect"]:checked')).map(cb => cb.value);
     
     // Validation
@@ -355,38 +341,9 @@ async function saveSeasonEdition(oldSeasonName) {
     }
     
     try {
-        // ✅ METTRE À JOUR LES ÉQUIPES DANS FIREBASE
-        for (const teamId of allTeamIds) {
-            const teamRef = db.collection('teams').doc(teamId);
-            const teamDoc = await teamRef.get();
-            
-            if (teamDoc.exists) {
-                const teamData = teamDoc.data();
-                let seasons = teamData.seasons || [];
-                
-                // Retirer l'ancienne saison si le nom change
-                if (newSeasonName !== oldSeasonName) {
-                    seasons = seasons.filter(s => s !== oldSeasonName);
-                }
-                
-                if (selectedTeamIds.includes(teamId)) {
-                    // Ajouter la nouvelle saison si pas déjà présente
-                    if (!seasons.includes(newSeasonName)) {
-                        seasons.push(newSeasonName);
-                    }
-                } else {
-                    // Retirer la saison si l'équipe est décochée
-                    seasons = seasons.filter(s => s !== newSeasonName && s !== oldSeasonName);
-                }
-                
-                // Mettre à jour Firebase
-                await teamRef.update({ seasons: seasons });
-            }
-        }
-        
-        console.log(`✅ ${selectedTeamIds.length} équipes mises à jour dans Firebase`);
-        
-        // Mettre à jour localStorage aussi (pour compatibilité)
+        // La participation à une saison est stockée dans season.teamIds : c'est
+        // la source lue par le moteur (classement, calendrier, report d'Elo).
+        // On l'enregistre via updateSeason, qui synchronise aussi Firebase.
         const updates = {
             name: newSeasonName,
             teamIds: selectedTeamIds.map(id => parseInt(id) || id)
@@ -422,7 +379,7 @@ async function saveSeasonEdition(oldSeasonName) {
         }
         
     } catch (error) {
-        console.error('Erreur sauvegarde Firebase:', error);
+        console.error('Erreur sauvegarde saison:', error);
         showMessage('Erreur: ' + error.message, 'error');
         
         if (saveBtn) {
