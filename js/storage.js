@@ -361,8 +361,10 @@ async function getStoredMatchesAsync() {
         // Essayer Firebase d'abord si disponible et en ligne
         if (typeof firebaseService !== 'undefined' && navigator.onLine) {
             const firebaseMatches = await firebaseService.getMatches();
-            if (firebaseMatches && firebaseMatches.length >= 0) {
-                // Synchroniser avec le localStorage
+            // Ne synchroniser que si Firebase a réellement renvoyé des matchs.
+            // Sinon (réponse vide ou requête bloquée/échouée → []), on conserve
+            // le localStorage existant au lieu de l'écraser avec un tableau vide.
+            if (firebaseMatches && firebaseMatches.length > 0) {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(firebaseMatches));
                 return firebaseMatches;
             }
@@ -383,8 +385,10 @@ async function getStoredTeamsAsync() {
         // Essayer Firebase d'abord si disponible et en ligne
         if (typeof firebaseService !== 'undefined' && navigator.onLine) {
             const firebaseTeams = await firebaseService.getTeams();
-            if (firebaseTeams && firebaseTeams.length >= 0) {
-                // Synchroniser avec le localStorage
+            // Ne synchroniser que si Firebase a réellement renvoyé des équipes.
+            // Sinon (réponse vide ou requête bloquée/échouée → []), on conserve
+            // le localStorage existant au lieu de l'écraser avec un tableau vide.
+            if (firebaseTeams && firebaseTeams.length > 0) {
                 localStorage.setItem(TEAMS_STORAGE_KEY, JSON.stringify(firebaseTeams));
                 return firebaseTeams;
             }
