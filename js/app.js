@@ -289,7 +289,12 @@ function calculateTeamStatsNoExtraTime(teamId, upToMatchDay, season, fromMatchDa
 // Générer le classement complet jusqu'à une journée donnée
 function generateRanking(upToMatchDay, season, fromMatchDay, rankingMode, locationFilter) {
     season = season || getCurrentSeason();
-    const teams = getStoredTeams();
+    // Ne classer que les équipes inscrites à la saison. Sinon getStoredTeams()
+    // ramène TOUTES les équipes existantes (dont les relégués des saisons
+    // passées), qui apparaissent à 0 pt — polluant le classement et la zone de
+    // relégation de la simulation. Fallback sur toutes les équipes pour les
+    // anciennes saisons sans teamIds défini.
+    const teams = (typeof getTeamsBySeason === 'function') ? getTeamsBySeason(season) : getStoredTeams();
     const ranking = [];
     
     teams.forEach(team => {
