@@ -304,16 +304,12 @@ function getTeamEloStats(team) {
     };
 }
 
-// Export des fonctions
-if (typeof window !== 'undefined') {
-    window.EloSystem = {
-        calculateEloChange,
-        recalculateAllEloRatings,
-        generateEloRanking,
-        compareRankings,
-        predictMatch,
-        getTeamEloStats,
-        calculateExpectedScore,
-        ELO_CONFIG
-    };
-}
+// ⚠️ EloSystem n'est volontairement PLUS exporté ici.
+// La version canonique — celle qui applique le report d'Elo de début de saison
+// (3e paramètre startingElo de recalculateAllEloRatings) — est fournie par
+// elo-system.js. Sur les pages qui chargent les deux fichiers (rankings.html,
+// add-match.html), elo.js était chargé en premier et son ancien EloSystem
+// (sans support du report) prenait la place : elo-system.js se voyait alors
+// « déjà chargé » et s'effaçait, d'où des classements remis à 1500 qui
+// ignoraient les Elo reportés. Les fonctions définies ci-dessus restent
+// disponibles globalement pour la compatibilité du code existant.
