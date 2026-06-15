@@ -122,13 +122,15 @@ async function loadSeasonData() {
     // Calculer les Elo
     teamsWithElo = [];
     
-    if (typeof EloSystem !== 'undefined' && allTeams.length > 0) {
-        teamsWithElo = EloSystem.initializeTeamsElo(allTeams);
-        const sortedMatches = [...allMatches].sort((a, b) => (a.matchDay || 0) - (b.matchDay || 0));
-        sortedMatches.forEach(match => {
-            EloSystem.processMatch(match, teamsWithElo);
-        });
-        console.log('Elo calculé via EloSystem:', teamsWithElo.length);
+    if (typeof EloSystem !== 'undefined' && EloSystem.recalculateAllEloRatings && allTeams.length > 0) {
+        // Partir du report d'Elo de début de saison (Elo de fin de saison
+        // précédente), comme le classement, puis appliquer les matchs joués.
+        // Sans ce report, une nouvelle saison sans match afficherait tout à 1500.
+        const startingElo = (typeof getSeasonStartingElo === 'function')
+            ? getSeasonStartingElo(currentSeason)
+            : {};
+        teamsWithElo = EloSystem.recalculateAllEloRatings(allTeams, allMatches, startingElo);
+        console.log('Elo calculé via EloSystem (report appliqué):', teamsWithElo.length);
     } else {
         console.log('Calcul manuel des Elo...');
         teamsWithElo = calculateEloManually();
@@ -151,9 +153,14 @@ function calculateEloManually() {
     const HOME_ADVANTAGE = 50;
     const INITIAL_RATING = 1500;
     
+    // Initialiser avec le report d'Elo de début de saison (1500 pour les promus
+    // et la 1re saison), comme le fait le calcul principal via EloSystem.
+    const startingElo = (typeof getSeasonStartingElo === 'function')
+        ? getSeasonStartingElo(currentSeason)
+        : {};
     const teams = allTeams.map(team => ({
         ...team,
-        eloRating: INITIAL_RATING
+        eloRating: (startingElo && startingElo[team.id] != null) ? startingElo[team.id] : INITIAL_RATING
     }));
     
     const teamMap = {};
