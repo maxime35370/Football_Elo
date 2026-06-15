@@ -94,9 +94,12 @@ function calculateEloAtDate(targetDate, allMatchesData, teamsData) {
             return true;
         });
     
-    // Utiliser recalculateAllEloRatings de elo.js
-    const teamsWithElo = EloSystem.recalculateAllEloRatings(teamsData, playedMatchesBefore);
-    
+    // Partir du report d'Elo de début de saison (Elo de fin de saison
+    // précédente), comme le classement, puis appliquer les matchs joués.
+    const startingElo = (typeof currentSeason !== 'undefined' && currentSeason && typeof getSeasonStartingElo === 'function')
+        ? getSeasonStartingElo(currentSeason) : {};
+    const teamsWithElo = EloSystem.recalculateAllEloRatings(teamsData, playedMatchesBefore, startingElo);
+
     return teamsWithElo;
 }
 
@@ -107,10 +110,12 @@ function calculateCurrentElo(allMatchesData, teamsData) {
     
     // Tous les matchs joués
     const playedMatches = allMatchesData.filter(m => m.finalScore);
-    
-    // Utiliser recalculateAllEloRatings de elo.js
-    const teamsWithElo = EloSystem.recalculateAllEloRatings(teamsData, playedMatches);
-    
+
+    // Partir du report d'Elo de début de saison, comme le classement.
+    const startingElo = (typeof currentSeason !== 'undefined' && currentSeason && typeof getSeasonStartingElo === 'function')
+        ? getSeasonStartingElo(currentSeason) : {};
+    const teamsWithElo = EloSystem.recalculateAllEloRatings(teamsData, playedMatches, startingElo);
+
     return teamsWithElo;
 }
 

@@ -67,8 +67,13 @@ function generateRankingForBet() {
 
     if (typeof EloSystem !== 'undefined') {
         try {
-            const eloResults = EloSystem.recalculateAllEloRatings(allTeams, allMatches);
-            eloResults.forEach(t => { if (stats[t.id]) stats[t.id].elo = t.elo; });
+            // Partir du report d'Elo de début de saison (comme le classement),
+            // sinon tout resterait à 1500 tant qu'aucun match n'est joué.
+            const startingElo = (typeof currentSeason !== 'undefined' && currentSeason && typeof getSeasonStartingElo === 'function')
+                ? getSeasonStartingElo(currentSeason) : {};
+            const eloResults = EloSystem.recalculateAllEloRatings(allTeams, allMatches, startingElo);
+            // recalculateAllEloRatings expose eloRating (et non elo).
+            eloResults.forEach(t => { if (stats[t.id]) stats[t.id].elo = t.eloRating; });
         } catch (e) {
             console.warn('Elo non disponible pour ranking bet:', e);
         }

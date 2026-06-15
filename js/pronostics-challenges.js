@@ -146,7 +146,11 @@ function _generateChallengesLocal(matchDay) {
     let cachedRatings = null;
     if (typeof EloSystem !== 'undefined') {
         try {
-            cachedRatings = EloSystem.recalculateAllEloRatings(allTeams, matchesBeforeThisDay);
+            // Partir du report d'Elo de début de saison (sinon, sans match joué,
+            // tout resterait à 1500).
+            const startingElo = (typeof currentSeason !== 'undefined' && currentSeason && typeof getSeasonStartingElo === 'function')
+                ? getSeasonStartingElo(currentSeason) : {};
+            cachedRatings = EloSystem.recalculateAllEloRatings(allTeams, matchesBeforeThisDay, startingElo);
         } catch (e) {}
     }
     
@@ -156,8 +160,9 @@ function _generateChallengesLocal(matchDay) {
         
         let homeElo = 1500, awayElo = 1500;
         if (cachedRatings) {
-            homeElo = cachedRatings.find(r => r.id == m.homeTeamId)?.elo || 1500;
-            awayElo = cachedRatings.find(r => r.id == m.awayTeamId)?.elo || 1500;
+            // recalculateAllEloRatings expose eloRating (et non elo).
+            homeElo = cachedRatings.find(r => r.id == m.homeTeamId)?.eloRating || 1500;
+            awayElo = cachedRatings.find(r => r.id == m.awayTeamId)?.eloRating || 1500;
         }
         
         return {
