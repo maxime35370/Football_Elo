@@ -227,6 +227,9 @@ function computeSeasonFinalElo(seasonName) {
 
     const teams = getTeamsBySeason(seasonName);
     const matches = getMatchesBySeason(seasonName).filter(m => m.finalScore);
+    if (matches.length === 0) {
+        console.warn(`⚠️ Report Elo : aucun match joué chargé pour "${seasonName}" — les équipes repartiraient à 1500.`);
+    }
     const baseline = getSeasonStartingElo(seasonName);
 
     const finalTeams = EloSystem.recalculateAllEloRatings(teams, matches, baseline);

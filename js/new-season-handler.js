@@ -179,7 +179,7 @@ function generateNextSeasonName(currentSeason) {
 }
 
 // Traiter la création de la nouvelle saison
-function processNewSeason(overlay) {
+async function processNewSeason(overlay) {
     const newSeasonName = document.getElementById('newSeasonName').value.trim();
     const eloChoice = document.querySelector('input[name="eloChoice"]:checked').value;
     const resetElo = (eloChoice === 'reset');
@@ -204,6 +204,42 @@ function processNewSeason(overlay) {
         }
     }
     
+    // Conserver les Elo : garantir que les matchs de la saison écoulée sont
+    // bien chargés AVANT de figer le report d'Elo. La page admin ne charge pas
+    // forcément les matchs au démarrage ; sans cette étape, le report se
+    // calculerait sur 0 match et toutes les équipes repartiraient à 1500.
+    if (!resetElo) {
+        const confirmBtn = document.getElementById('confirmNewSeason');
+        const previousLabel = confirmBtn ? confirmBtn.textContent : '';
+        if (confirmBtn) {
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = '⏳ Chargement des matchs...';
+        }
+
+        try {
+            if (typeof getStoredMatchesAsync === 'function') {
+                await getStoredMatchesAsync();
+            }
+        } catch (e) {
+            console.warn('Chargement des matchs avant report Elo échoué:', e);
+        }
+
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = previousLabel;
+        }
+
+        // Garde-fou : sans match joué chargé pour la saison écoulée, le report
+        // repartirait à 1500. On prévient au lieu de figer des Elo erronés.
+        const currentSeason = getCurrentSeason();
+        const playedMatches = getMatchesBySeason(currentSeason).filter(m => m.finalScore);
+        if (playedMatches.length === 0) {
+            if (!confirm(`⚠️ Aucun match joué n'est chargé pour la saison "${currentSeason}".\n\nLe report d'Elo repartirait de 1500 pour toutes les équipes.\nVérifie ta connexion (et désactive un éventuel bloqueur de pub), puis réessaie.\n\nCréer quand même la saison avec des Elo à 1500 ?`)) {
+                return;
+            }
+        }
+    }
+
     // Créer la nouvelle saison
     const success = createNewSeason(newSeasonName, resetElo);
     
