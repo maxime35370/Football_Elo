@@ -143,6 +143,21 @@
     border-color: var(--dm-border);
 }
 
+[data-theme="dark"] .message.success {
+    background: rgba(39, 174, 96, 0.18);
+    color: #7dcea0;
+}
+
+[data-theme="dark"] .message.error {
+    background: rgba(231, 76, 60, 0.18);
+    color: #f1948a;
+}
+
+[data-theme="dark"] .message.warning {
+    background: rgba(241, 196, 15, 0.16);
+    color: #f7dc6f;
+}
+
 /* ---- dérivé de calendar.css ---- */
 [data-theme="dark"] .calendar-header {
     background: var(--dm-surface-1);
@@ -192,8 +207,19 @@
     color: var(--dm-ink);
 }
 
+[data-theme="dark"] .match-status.played {
+    background: rgba(39, 174, 96, 0.18);
+    color: #7dcea0;
+}
+
+[data-theme="dark"] .match-status.upcoming {
+    background: rgba(241, 196, 15, 0.16);
+    color: #f7dc6f;
+}
+
 [data-theme="dark"] .difficulty-intro, [data-theme="dark"] .objectives-intro, [data-theme="dark"] .simulation-intro {
     background: var(--dm-surface-2);
+    color: var(--dm-ink-muted);
 }
 
 [data-theme="dark"] .difficulty-row {
@@ -222,6 +248,21 @@
 
 [data-theme="dark"] .objectives-header {
     color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .objective-cell.achieved {
+    background: rgba(39, 174, 96, 0.18);
+    color: #7dcea0;
+}
+
+[data-theme="dark"] .objective-cell.possible {
+    background: rgba(241, 196, 15, 0.16);
+    color: #f7dc6f;
+}
+
+[data-theme="dark"] .objective-cell.impossible {
+    background: rgba(231, 76, 60, 0.18);
+    color: #f1948a;
 }
 
 [data-theme="dark"] .simulation-match {
@@ -266,6 +307,10 @@
 
 [data-theme="dark"] .teams-selection h4, [data-theme="dark"] .created-matches h4 {
     color: var(--dm-ink);
+}
+
+[data-theme="dark"] .selection-hint {
+    background: rgba(52, 152, 219, 0.16);
 }
 
 [data-theme="dark"] .team-btn {
@@ -323,17 +368,48 @@
     color: var(--dm-ink);
 }
 
+[data-theme="dark"] .objective-cell.achieved {
+    background: rgba(39, 174, 96, 0.18);
+    color: #7dcea0;
+}
+
+[data-theme="dark"] .objective-cell.on-track {
+    background: rgba(52, 152, 219, 0.16);
+    color: #85c1e9;
+}
+
+[data-theme="dark"] .objective-cell.behind {
+    background: rgba(241, 196, 15, 0.16);
+    color: #f7dc6f;
+}
+
+[data-theme="dark"] .objective-cell.impossible {
+    background: rgba(231, 76, 60, 0.18);
+    color: #f1948a;
+}
+
 [data-theme="dark"] .objectives-legend {
     background: var(--dm-surface-2);
     color: var(--dm-ink-muted);
 }
 
 [data-theme="dark"] .objectives-method {
+    background: rgba(52, 152, 219, 0.16);
     color: var(--dm-ink);
 }
 
 [data-theme="dark"] .objectives-table .team-elo {
     color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .objective-cell.close {
+    background: rgba(52, 152, 219, 0.16);
+    color: #85c1e9;
+}
+
+[data-theme="dark"] .objective-cell.far-behind {
+    background: rgba(231, 76, 60, 0.18);
+    color: #f1948a;
 }
 
 [data-theme="dark"] .btn-details {
@@ -374,6 +450,7 @@
 
 [data-theme="dark"] .predictions-intro {
     background: var(--dm-surface-2);
+    color: var(--dm-ink-muted);
 }
 
 [data-theme="dark"] .prediction-card {
@@ -422,6 +499,22 @@
 
 [data-theme="dark"] .factor-tag {
     background: var(--dm-surface-2);
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .factor-tag.positive {
+    background: rgba(39, 174, 96, 0.18);
+    color: #7dcea0;
+}
+
+[data-theme="dark"] .factor-tag.negative {
+    background: rgba(231, 76, 60, 0.18);
+    color: #f1948a;
+}
+
+[data-theme="dark"] .factor-tag.neutral {
+    background: rgba(241, 196, 15, 0.16);
+    color: #f7dc6f;
 }
 
 [data-theme="dark"] .predictions-end {
@@ -430,6 +523,10 @@
 
 [data-theme="dark"] .actual-score {
     color: var(--dm-ink);
+}
+
+[data-theme="dark"] .prediction-comparison {
+    color: var(--dm-ink-muted);
 }
 
 [data-theme="dark"] .prediction-card.has-result {
@@ -470,6 +567,10 @@
 
 [data-theme="dark"] .match-scheduled-input:focus {
     background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .bulk-datetime {
+    background: rgba(52, 152, 219, 0.16);
 }
 
 [data-theme="dark"] .bulk-datetime input[type="datetime-local"] {
@@ -706,6 +807,10 @@
     color: var(--dm-ink);
 }
 
+[data-theme="dark"] .minute-indicator.second-half {
+    background: rgba(241, 196, 15, 0.16);
+}
+
 [data-theme="dark"] .goal-form {
     background: var(--dm-surface-1);
     border-color: var(--dm-border);
@@ -784,6 +889,16 @@
     color: var(--dm-ink-muted);
 }
 
+[data-theme="dark"] .elo-form-mod.positive {
+    background: rgba(39, 174, 96, 0.18);
+    color: #7dcea0;
+}
+
+[data-theme="dark"] .elo-form-mod.negative {
+    background: rgba(231, 76, 60, 0.18);
+    color: #f1948a;
+}
+
 [data-theme="dark"] .elo-form-mod.neutral {
     background: var(--dm-surface-2);
     color: var(--dm-ink-muted);
@@ -795,6 +910,16 @@
 
 [data-theme="dark"] .form-detail-item:not(:last-child) {
     border-bottom-color: var(--dm-border);
+}
+
+[data-theme="dark"] .elo-home-advantage {
+    background: rgba(39, 174, 96, 0.18);
+    color: #7dcea0;
+}
+
+[data-theme="dark"] .elo-home-advantage.reduced {
+    background: rgba(241, 196, 15, 0.16);
+    color: #f7dc6f;
 }
 
 [data-theme="dark"] #matchDateTime {
@@ -892,6 +1017,21 @@
     background: var(--dm-surface-2);
 }
 
+[data-theme="dark"] .temp-message.success {
+    background: rgba(39, 174, 96, 0.18);
+    color: #7dcea0;
+}
+
+[data-theme="dark"] .temp-message.error {
+    background: rgba(231, 76, 60, 0.18);
+    color: #f1948a;
+}
+
+[data-theme="dark"] .temp-message.info {
+    background: rgba(52, 152, 219, 0.16);
+    color: #85c1e9;
+}
+
 /* ---- dérivé de pronostics-analysis.css ---- */
 [data-theme="dark"] .duels-header {
     background: var(--dm-surface-2);
@@ -911,6 +1051,10 @@
 
 [data-theme="dark"] .duel-player-card {
     background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .duel-player-card.winner {
+    background: rgba(39, 174, 96, 0.18);
 }
 
 [data-theme="dark"] .duel-player-card .player-name {
@@ -988,6 +1132,16 @@
 
 [data-theme="dark"] .comparison-stat .stat-value {
     color: var(--dm-ink);
+}
+
+[data-theme="dark"] .comparison-message.positive {
+    background: rgba(241, 196, 15, 0.16);
+    color: #f7dc6f;
+}
+
+[data-theme="dark"] .comparison-message.negative {
+    background: rgba(39, 174, 96, 0.18);
+    color: #7dcea0;
 }
 
 [data-theme="dark"] .comparison-match {
@@ -1071,6 +1225,10 @@
     background: var(--dm-surface-1);
 }
 
+[data-theme="dark"] .badge-item.negative {
+    background: rgba(52, 152, 219, 0.16);
+}
+
 [data-theme="dark"] .badge-item.locked {
     background: var(--dm-surface-2);
 }
@@ -1138,8 +1296,16 @@
     color: var(--dm-ink-muted);
 }
 
+[data-theme="dark"] .chat-error code {
+    background: rgba(231, 76, 60, 0.18);
+}
+
 [data-theme="dark"] .chat-message {
     background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .chat-message.own-message {
+    background: rgba(52, 152, 219, 0.16);
 }
 
 [data-theme="dark"] .chat-message-author {
@@ -1159,6 +1325,10 @@
     border-color: var(--dm-border);
 }
 
+[data-theme="dark"] .chat-reaction.own-reaction {
+    background: rgba(52, 152, 219, 0.16);
+}
+
 [data-theme="dark"] .chat-reaction-picker {
     background: var(--dm-surface-1);
     border-color: var(--dm-border);
@@ -1172,7 +1342,12 @@
     background: var(--dm-surface-2);
 }
 
+[data-theme="dark"] .chat-reply-message.own-message {
+    background: rgba(52, 152, 219, 0.16);
+}
+
 [data-theme="dark"] .chat-reply-banner {
+    background: rgba(52, 152, 219, 0.16);
     color: var(--dm-ink);
 }
 
@@ -1324,6 +1499,31 @@
     border-color: var(--dm-border);
 }
 
+[data-theme="dark"] .deadline-info {
+    background: rgba(241, 196, 15, 0.16);
+    color: #f7dc6f;
+}
+
+[data-theme="dark"] .deadline-info.locked {
+    background: rgba(231, 76, 60, 0.18);
+    color: #f1948a;
+}
+
+[data-theme="dark"] .deadline-info.open {
+    background: rgba(39, 174, 96, 0.18);
+    color: #7dcea0;
+}
+
+[data-theme="dark"] .predictions-status.saved {
+    background: rgba(39, 174, 96, 0.18);
+    color: #7dcea0;
+}
+
+[data-theme="dark"] .predictions-status.unsaved {
+    background: rgba(241, 196, 15, 0.16);
+    color: #f7dc6f;
+}
+
 [data-theme="dark"] .prediction-match {
     background: var(--dm-surface-2);
     border-color: var(--dm-border);
@@ -1414,6 +1614,10 @@
     background: var(--dm-surface-2);
 }
 
+[data-theme="dark"] .rule-section p {
+    color: var(--dm-ink-muted);
+}
+
 [data-theme="dark"] .rule-section code {
     background: var(--dm-surface-2);
 }
@@ -1428,6 +1632,7 @@
 
 [data-theme="dark"] .btn-secondary {
     background: var(--dm-surface-2);
+    color: var(--dm-ink-muted);
 }
 
 [data-theme="dark"] .match-time {
@@ -1474,6 +1679,10 @@
 
 [data-theme="dark"] .mission-card:hover {
     background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .mission-card.completed {
+    background: rgba(39, 174, 96, 0.18);
 }
 
 [data-theme="dark"] .mission-name {
@@ -1695,6 +1904,10 @@
     background: var(--dm-surface-2);
 }
 
+[data-theme="dark"] .odds-display.adjusted {
+    background: rgba(52, 152, 219, 0.16);
+}
+
 [data-theme="dark"] .odds-title {
     color: var(--dm-ink);
 }
@@ -1744,9 +1957,21 @@
     color: var(--dm-ink-muted);
 }
 
+[data-theme="dark"] .team-odds {
+    background: rgba(52, 152, 219, 0.16);
+}
+
 [data-theme="dark"] .separator.odds-draw {
     color: var(--dm-ink-muted);
     background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .odds-mult-item.malus {
+    background: rgba(241, 196, 15, 0.16);
+}
+
+[data-theme="dark"] .team-odds.malus {
+    background: rgba(241, 196, 15, 0.16);
 }
 
 [data-theme="dark"] .separator.odds-draw {
@@ -1950,6 +2175,10 @@
 
 [data-theme="dark"] .elo-info {
     background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .elo-info p {
+    color: var(--dm-ink-muted);
 }
 
 [data-theme="dark"] .elo-info strong {
@@ -2161,6 +2390,7 @@
 
 [data-theme="dark"] .chart-summary {
     background: var(--dm-surface-2);
+    color: var(--dm-ink-muted);
 }
 
 [data-theme="dark"] .minutes-column h4 {
@@ -2184,6 +2414,18 @@
     border-color: var(--dm-border);
 }
 
+[data-theme="dark"] .score-item.win {
+    background: rgba(39, 174, 96, 0.18);
+}
+
+[data-theme="dark"] .score-item.loss {
+    background: rgba(231, 76, 60, 0.18);
+}
+
+[data-theme="dark"] .score-item.draw {
+    background: rgba(241, 196, 15, 0.16);
+}
+
 [data-theme="dark"] .score-label {
     color: var(--dm-ink);
 }
@@ -2204,6 +2446,10 @@
     color: var(--dm-ink);
 }
 
+[data-theme="dark"] .record-details {
+    color: var(--dm-ink-muted);
+}
+
 [data-theme="dark"] .record-comparison {
     border-top-color: var(--dm-border);
     color: var(--dm-ink-muted);
@@ -2219,6 +2465,10 @@
 
 [data-theme="dark"] .heatmap-section h4 {
     color: var(--dm-ink);
+}
+
+[data-theme="dark"] .legend-item {
+    color: var(--dm-ink-muted);
 }
 
 [data-theme="dark"] .results-card-table th {
@@ -2248,6 +2498,10 @@
     color: var(--dm-ink);
 }
 
+[data-theme="dark"] .result-score {
+    color: var(--dm-ink-muted);
+}
+
 [data-theme="dark"] .result-location {
     color: var(--dm-ink-muted);
 }
@@ -2262,6 +2516,10 @@
 
 [data-theme="dark"] .confrontations-legend {
     background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .legend-item {
+    color: var(--dm-ink-muted);
 }
 
 [data-theme="dark"] .confrontations-graph {
@@ -2304,22 +2562,6 @@
 /* ---- dérivé de style.css ---- */
 [data-theme="dark"] body {
     color: var(--dm-ink);
-}
-
-[data-theme="dark"] .nav-btn {
-    background: rgba(255, 255, 255, 0.08);
-}
-
-[data-theme="dark"] .nav-btn:hover {
-    background: rgba(255, 255, 255, 0.18);
-}
-
-/* La page courante reste en surbrillance bleue (cette règle doit suivre
-   les deux ci-dessus : même spécificité, c'est l'ordre qui départage) */
-[data-theme="dark"] .nav-btn.active {
-    background: linear-gradient(135deg, #3498db, #2980b9);
-    color: white;
-    box-shadow: 0 2px 10px rgba(52, 152, 219, 0.45);
 }
 
 [data-theme="dark"] .welcome-section {
@@ -2549,4 +2791,135 @@
     background: linear-gradient(135deg, #9b59b6, #8e44ad);
     color: white;
     border-color: #8e44ad;
+}
+
+
+/* Navigation : base et survol sombres, page courante en surbrillance
+   (exclus du générateur pour ne pas écraser l'état actif) */
+[data-theme="dark"] .nav-btn {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .nav-btn:hover {
+    background: rgba(255, 255, 255, 0.18);
+}
+
+[data-theme="dark"] .nav-btn.active {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+    box-shadow: 0 2px 10px rgba(52, 152, 219, 0.45);
+}
+
+/* ===============================
+   BLOC MONTE CARLO (onglet Simulation)
+   Ce bloc est généré avec des styles inline (calendar-simulation.js) :
+   on cible les valeurs inline par attribut, avec !important.
+   =============================== */
+
+[data-theme="dark"] .monte-carlo-section {
+    background: var(--dm-surface-1) !important;
+}
+
+[data-theme="dark"] .monte-carlo-section div[style*="background: white"] {
+    background: var(--dm-surface-2) !important;
+}
+
+[data-theme="dark"] .monte-carlo-section div[style*="#f8f9fa"] {
+    background: var(--dm-surface-2) !important;
+}
+
+[data-theme="dark"] .monte-carlo-section [style*="color: #2c3e50"] {
+    color: var(--dm-ink) !important;
+}
+
+[data-theme="dark"] .monte-carlo-section [style*="color: #7f8c8d"],
+[data-theme="dark"] .monte-carlo-section [style*="color: #95a5a6"] {
+    color: var(--dm-ink-muted) !important;
+}
+
+/* ===============================
+   ONGLET ARBRE (calendar-tree.js)
+   Ses styles sont injectés par le JS dans un <style> : ils échappent au
+   générateur, on les couvre ici (la spécificité [data-theme] l'emporte).
+   =============================== */
+
+[data-theme="dark"] .tree-intro {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .tree-intro h3 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .tree-intro .scenario-count,
+[data-theme="dark"] .tree-match-day-label,
+[data-theme="dark"] .tree-heatmap td.summary-likely {
+    color: #bb8fce;
+}
+
+[data-theme="dark"] .tree-selector,
+[data-theme="dark"] .tree-multi-selector,
+[data-theme="dark"] .tree-match-card {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .tree-multi-selector label {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .tree-add-day-btn {
+    background: var(--dm-surface-1);
+    color: #bb8fce;
+}
+
+[data-theme="dark"] .tree-add-day-btn:hover {
+    background: #8e44ad;
+    color: white;
+}
+
+[data-theme="dark"] .tree-add-day-btn:disabled:hover {
+    background: var(--dm-surface-1);
+    color: #bb8fce;
+}
+
+[data-theme="dark"] .prob-home {
+    background: rgba(39, 174, 96, 0.22);
+    color: #7dcea0;
+}
+
+[data-theme="dark"] .prob-draw {
+    background: rgba(241, 196, 15, 0.18);
+    color: #f7dc6f;
+}
+
+[data-theme="dark"] .prob-away {
+    background: rgba(231, 76, 60, 0.2);
+    color: #f1948a;
+}
+
+[data-theme="dark"] .tree-mode-btn {
+    background: var(--dm-surface-1);
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .tree-mode-btn:hover {
+    background: rgba(142, 68, 173, 0.25);
+}
+
+[data-theme="dark"] .tree-mode-btn.active {
+    background: #8e44ad;
+    color: white;
+}
+
+[data-theme="dark"] .tree-heatmap {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .tree-heatmap td {
+    border-color: var(--dm-border);
+}
+
+[data-theme="dark"] .tree-heatmap td.team-name,
+[data-theme="dark"] .tree-heatmap td.current-pts {
+    background: var(--dm-surface-2);
 }
