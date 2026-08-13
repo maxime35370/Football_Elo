@@ -314,12 +314,20 @@
 
 let TREE_MAX_MATCHES = 13;
 
+// Au-delà de TREE_EXACT_MAX matchs, l'énumération exhaustive (3^N scénarios)
+// devient impraticable : on bascule sur une estimation Monte Carlo pondérée
+// par les probabilités Elo (TREE_MC_SAMPLES tirages, coût quasi constant,
+// précision ≈ ±0.2 point de pourcentage).
+const TREE_EXACT_MAX = 13;
+const TREE_MC_SAMPLES = 300000;
+
 const TREE_LIMIT_OPTIONS = [
-    { value: 9,  label: '9 matchs',  detail: '~20K scén. • instantané' },
-    { value: 11, label: '11 matchs', detail: '~177K scén. • <1 sec' },
-    { value: 13, label: '13 matchs', detail: '~1.6M scén. • ~1 sec' },
-    { value: 15, label: '15 matchs', detail: '~14M scén. • ~10 sec ⚠️' },
-    { value: 18, label: '18 matchs', detail: '~387M scén. • très long ⛔' },
+    { value: 9,  label: '9 matchs',  detail: '~20K scén. exacts • instantané' },
+    { value: 11, label: '11 matchs', detail: '~177K scén. exacts • <1 sec' },
+    { value: 13, label: '13 matchs', detail: '~1.6M scén. exacts • ~1 sec' },
+    { value: 18, label: '18 matchs (2 journées)', detail: 'Monte Carlo 300K tirages • <1 sec' },
+    { value: 27, label: '27 matchs (3 journées)', detail: 'Monte Carlo 300K tirages • ~1 sec' },
+    { value: 45, label: '45 matchs (5 journées)', detail: 'Monte Carlo 300K tirages • ~2 sec' },
 ];
 
 // ===============================
@@ -522,8 +530,101 @@ function computeTreeScenarios(matches, baseStandings, onProgress) {
     const bucketLen = new Int32Array(bucketSize);
     const sortResult = new Int32Array(teamCount);
 
+    // Mode : exhaustif jusqu'à TREE_EXACT_MAX matchs, Monte Carlo au-delà.
+    // En Monte Carlo, chaque itération fait DEUX tirages : un pondéré Elo
+    // (alimente positionProbs, poids 1/S) et un équiprobable (alimente
+    // positionCounts, poids 3^n/S pour que counts/total reste la fréquence
+    // affichée par le mode ⚖️ sans changer le code de rendu).
+    const mcMode = n > TREE_EXACT_MAX;
+    const iterations = mcMode ? TREE_MC_SAMPLES : total;
+    const mcProbWeight = 1 / TREE_MC_SAMPLES;
+    const mcCountWeight = total / TREE_MC_SAMPLES;
+
+    // Classe le scénario courant (scenPts) et accumule les poids fournis
+    function rankAndAccumulate(probWeight, countWeight) {
+        let usedMin = maxPossiblePts, usedMax = 0;
+        for (let t = 0; t < teamCount; t++) {
+            const pts = scenPts[t];
+            if (pts < usedMin) usedMin = pts;
+            if (pts > usedMax) usedMax = pts;
+            buckets[pts * teamCount + bucketLen[pts]] = t;
+            bucketLen[pts]++;
+        }
+
+        let pos = 0;
+        for (let pts = usedMax; pts >= usedMin; pts--) {
+            const len = bucketLen[pts];
+            if (len === 0) continue;
+
+            if (len === 1) {
+                sortResult[pos++] = buckets[pts * teamCount];
+            } else {
+                const start = pos;
+                for (let k = 0; k < len; k++) {
+                    sortResult[pos++] = buckets[pts * teamCount + k];
+                }
+                for (let a = start + 1; a < pos; a++) {
+                    const val = sortResult[a];
+                    const valGD = baseGD[val];
+                    const valGF = baseGF[val];
+                    let b = a - 1;
+                    while (b >= start) {
+                        const cmp = sortResult[b];
+                        if (baseGD[cmp] > valGD || (baseGD[cmp] === valGD && baseGF[cmp] >= valGF)) break;
+                        sortResult[b + 1] = sortResult[b];
+                        b--;
+                    }
+                    sortResult[b + 1] = val;
+                }
+            }
+
+            bucketLen[pts] = 0;
+        }
+
+        for (let p = 0; p < teamCount; p++) {
+            const tIdx = sortResult[p];
+            positionCounts[tIdx][p] += countWeight;
+            positionProbs[tIdx][p] += probWeight;
+        }
+
+        for (let t = 0; t < teamCount; t++) {
+            const pts = scenPts[t];
+            if (pts < minPts[t]) minPts[t] = pts;
+            if (pts > maxPts[t]) maxPts[t] = pts;
+        }
+    }
+
     // Fonction de calcul d'un chunk [start, end)
     function processChunk(start, end) {
+        if (mcMode) {
+            for (let i = start; i < end; i++) {
+                // Tirage pondéré par les probabilités Elo
+                scenPts.set(basePoints);
+                for (let j = 0; j < n; j++) {
+                    const j3 = j * 3;
+                    const r = Math.random();
+                    let outcome;
+                    if (r < flatProbs[j3]) outcome = 0;
+                    else if (r < flatProbs[j3] + flatProbs[j3 + 1]) outcome = 1;
+                    else outcome = 2;
+                    const idx = j3 + outcome;
+                    scenPts[homeIdx[j]] += homeDeltas[idx];
+                    scenPts[awayIdx[j]] += awayDeltas[idx];
+                }
+                rankAndAccumulate(mcProbWeight, 0);
+
+                // Tirage équiprobable (mode ⚖️ 1/3)
+                scenPts.set(basePoints);
+                for (let j = 0; j < n; j++) {
+                    const idx = j * 3 + ((Math.random() * 3) | 0);
+                    scenPts[homeIdx[j]] += homeDeltas[idx];
+                    scenPts[awayIdx[j]] += awayDeltas[idx];
+                }
+                rankAndAccumulate(0, mcCountWeight);
+            }
+            return;
+        }
+
         for (let i = start; i < end; i++) {
             scenPts.set(basePoints);
 
@@ -540,56 +641,7 @@ function computeTreeScenarios(matches, baseStandings, onProgress) {
                 scenPts[awayIdx[j]] += awayDeltas[j3];
             }
 
-            let usedMin = maxPossiblePts, usedMax = 0;
-            for (let t = 0; t < teamCount; t++) {
-                const pts = scenPts[t];
-                if (pts < usedMin) usedMin = pts;
-                if (pts > usedMax) usedMax = pts;
-                buckets[pts * teamCount + bucketLen[pts]] = t;
-                bucketLen[pts]++;
-            }
-
-            let pos = 0;
-            for (let pts = usedMax; pts >= usedMin; pts--) {
-                const len = bucketLen[pts];
-                if (len === 0) continue;
-
-                if (len === 1) {
-                    sortResult[pos++] = buckets[pts * teamCount];
-                } else {
-                    const start = pos;
-                    for (let k = 0; k < len; k++) {
-                        sortResult[pos++] = buckets[pts * teamCount + k];
-                    }
-                    for (let a = start + 1; a < pos; a++) {
-                        const val = sortResult[a];
-                        const valGD = baseGD[val];
-                        const valGF = baseGF[val];
-                        let b = a - 1;
-                        while (b >= start) {
-                            const cmp = sortResult[b];
-                            if (baseGD[cmp] > valGD || (baseGD[cmp] === valGD && baseGF[cmp] >= valGF)) break;
-                            sortResult[b + 1] = sortResult[b];
-                            b--;
-                        }
-                        sortResult[b + 1] = val;
-                    }
-                }
-
-                bucketLen[pts] = 0;
-            }
-
-            for (let p = 0; p < teamCount; p++) {
-                const tIdx = sortResult[p];
-                positionCounts[tIdx][p] += 1;
-                positionProbs[tIdx][p] += scenProb;
-            }
-
-            for (let t = 0; t < teamCount; t++) {
-                const pts = scenPts[t];
-                if (pts < minPts[t]) minPts[t] = pts;
-                if (pts > maxPts[t]) maxPts[t] = pts;
-            }
+            rankAndAccumulate(scenProb, 1);
         }
     }
 
@@ -603,12 +655,14 @@ function computeTreeScenarios(matches, baseStandings, onProgress) {
         minPts,
         maxPts,
         matchProbs,
-        basePoints
+        basePoints,
+        approximate: mcMode,
+        samples: mcMode ? TREE_MC_SAMPLES : null
     };
 
     // Si petit calcul ou pas de callback → synchrone
-    if (total <= TREE_PROGRESS_THRESHOLD || !onProgress) {
-        processChunk(0, total);
+    if (iterations <= TREE_PROGRESS_THRESHOLD || !onProgress) {
+        processChunk(0, iterations);
         return result;
     }
 
@@ -617,14 +671,14 @@ function computeTreeScenarios(matches, baseStandings, onProgress) {
         let current = 0;
 
         function nextChunk() {
-            const end = Math.min(current + TREE_CHUNK_SIZE, total);
+            const end = Math.min(current + TREE_CHUNK_SIZE, iterations);
             processChunk(current, end);
             current = end;
 
-            const pct = Math.round((current / total) * 100);
-            onProgress(pct, current, total);
+            const pct = Math.round((current / iterations) * 100);
+            onProgress(pct, current, iterations);
 
-            if (current < total) {
+            if (current < iterations) {
                 setTimeout(nextChunk, 0); // Laisse l'UI respirer
             } else {
                 resolve(result);
@@ -709,7 +763,7 @@ function renderTreeUI(container, available) {
     );
 
     let countClass = 'count-ok';
-    if (totalMatches > 11) countClass = 'count-warn';
+    if (totalMatches > TREE_EXACT_MAX) countClass = 'count-warn'; // passera en Monte Carlo
     if (totalMatches > TREE_MAX_MATCHES) countClass = 'count-over';
 
     // === Sélecteur de limite ===
@@ -787,12 +841,14 @@ function renderTreeUI(container, available) {
     }
 
     const totalScenarios = Math.pow(3, totalMatches);
-    const showProgress = totalScenarios > TREE_PROGRESS_THRESHOLD;
+    const isApprox = totalMatches > TREE_EXACT_MAX;
+    const iterationsToShow = isApprox ? TREE_MC_SAMPLES : totalScenarios;
+    const showProgress = iterationsToShow > TREE_PROGRESS_THRESHOLD;
     
     if (showProgress) {
         container.innerHTML = html + `
             <div class="tree-intro" id="treeProgressZone">
-                <p>🔄 Calcul de <strong>${totalScenarios.toLocaleString()}</strong> scénarios...</p>
+                <p>🔄 ${isApprox ? `Estimation Monte Carlo (<strong>${TREE_MC_SAMPLES.toLocaleString()}</strong> tirages sur ${totalScenarios.toLocaleString()} scénarios)` : `Calcul de <strong>${totalScenarios.toLocaleString()}</strong> scénarios`}...</p>
                 <div style="width: 80%; max-width: 400px; margin: 1rem auto; height: 20px; background: #e9ecef; border-radius: 10px; overflow: hidden;">
                     <div id="treeProgressBar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #8e44ad, #3498db); border-radius: 10px; transition: width 0.1s ease;"></div>
                 </div>
@@ -802,7 +858,7 @@ function renderTreeUI(container, available) {
     } else {
         container.innerHTML = html + `
             <div class="tree-intro">
-                <p>🔄 Calcul de <strong>${totalScenarios.toLocaleString()}</strong> scénarios...</p>
+                <p>🔄 ${isApprox ? `Estimation Monte Carlo (<strong>${TREE_MC_SAMPLES.toLocaleString()}</strong> tirages sur ${totalScenarios.toLocaleString()} scénarios)` : `Calcul de <strong>${totalScenarios.toLocaleString()}</strong> scénarios`}...</p>
             </div>
         `;
     }
@@ -858,7 +914,10 @@ function renderFullTree(container, target, standings, results, elapsed, availabl
                 ? `<p>⚡ ${target.playedMatches.length} match(s) déjà joué(s), ${target.totalUnplayed} restant(s)</p>`
                 : `<p>${target.totalUnplayed} matchs à simuler</p>`
             }
-            <p><span class="scenario-count">${results.total.toLocaleString()}</span> scénarios exhaustifs</p>
+            ${results.approximate
+                ? `<p><span class="scenario-count">≈ ${results.total.toLocaleString()}</span> scénarios (estimation Monte Carlo, ${results.samples.toLocaleString()} tirages, précision ≈ ±0.2%)</p>`
+                : `<p><span class="scenario-count">${results.total.toLocaleString()}</span> scénarios exhaustifs</p>`
+            }
             <p class="tree-calc-time">⚡ Calculé en ${timeDisplay}</p>
         </div>
     `;
