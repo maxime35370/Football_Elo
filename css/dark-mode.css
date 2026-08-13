@@ -2307,11 +2307,19 @@
 }
 
 [data-theme="dark"] .nav-btn {
-    background: var(--dm-surface-1);
+    background: rgba(255, 255, 255, 0.08);
 }
 
 [data-theme="dark"] .nav-btn:hover {
-    background: var(--dm-surface-1);
+    background: rgba(255, 255, 255, 0.18);
+}
+
+/* La page courante reste en surbrillance bleue (cette règle doit suivre
+   les deux ci-dessus : même spécificité, c'est l'ordre qui départage) */
+[data-theme="dark"] .nav-btn.active {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+    box-shadow: 0 2px 10px rgba(52, 152, 219, 0.45);
 }
 
 [data-theme="dark"] .welcome-section {
