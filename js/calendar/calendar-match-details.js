@@ -14,15 +14,22 @@ const MD_FORM_COUNT = 5;      // Nombre de matchs pour la forme / dynamique
 
 function showCalendarMatchDetails(homeTeamId, awayTeamId, matchDay, status) {
     const source = status === 'played' ? allMatches : futureMatches;
-    const match = source.find(m =>
+    let match = source.find(m =>
         m.homeTeamId == homeTeamId &&
         m.awayTeamId == awayTeamId &&
         (m.matchDay || 0) == matchDay
     );
 
     if (!match) {
-        console.warn('Match introuvable pour la modale de détails');
-        return;
+        // Un match à venir peut ne pas (encore) exister dans futureMatches
+        // (ex. carte de pronostic) : l'analyse d'avant-match n'a besoin que
+        // des équipes et de la journée, on reconstruit un match minimal.
+        if (status !== 'played') {
+            match = { homeTeamId, awayTeamId, matchDay: parseInt(matchDay) || 0 };
+        } else {
+            console.warn('Match introuvable pour la modale de détails');
+            return;
+        }
     }
 
     const overlay = ensureMatchDetailsModal();
@@ -392,6 +399,94 @@ function mdVsSimilarHtml(teamId, refTeamId, timeline) {
 }
 
 // ===============================
+// CONFRONTATIONS DIRECTES (toutes saisons)
+// ===============================
+
+function mdHeadToHeadHtml(homeTeamId, awayTeamId, excludeMatch) {
+    // allSeasonsMatches contient tous les matchs joués, toutes saisons
+    // confondues (chargé par calendar-core) ; repli sur allMatches sinon.
+    const pool = (typeof allSeasonsMatches !== 'undefined' && allSeasonsMatches.length > 0)
+        ? allSeasonsMatches
+        : allMatches;
+
+    // Exclusion par clé (et non par identité d'objet) : le match affiché
+    // dans la modale peut être une copie de celui stocké dans le pool.
+    const isExcluded = m => excludeMatch &&
+        m.homeTeamId == excludeMatch.homeTeamId &&
+        m.awayTeamId == excludeMatch.awayTeamId &&
+        (m.matchDay || 0) == (excludeMatch.matchDay || 0) &&
+        (!m.season || !excludeMatch.season || m.season === excludeMatch.season);
+
+    const meetings = pool
+        .filter(m => !isExcluded(m) && m.finalScore &&
+            ((m.homeTeamId == homeTeamId && m.awayTeamId == awayTeamId) ||
+             (m.homeTeamId == awayTeamId && m.awayTeamId == homeTeamId)))
+        .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+
+    if (meetings.length === 0) {
+        return '<div class="md-muted">Première confrontation entre ces deux équipes</div>';
+    }
+
+    const homeTeam = mdTeam(homeTeamId);
+    const awayTeam = mdTeam(awayTeamId);
+
+    let homeWins = 0, draws = 0, awayWins = 0;
+    meetings.forEach(m => {
+        const homeSideScore = m.homeTeamId == homeTeamId ? m.finalScore.home : m.finalScore.away;
+        const awaySideScore = m.homeTeamId == homeTeamId ? m.finalScore.away : m.finalScore.home;
+        if (homeSideScore > awaySideScore) homeWins++;
+        else if (homeSideScore < awaySideScore) awayWins++;
+        else draws++;
+    });
+
+    const list = meetings.slice(0, 6).map(m => {
+        const h = mdTeam(m.homeTeamId);
+        const a = mdTeam(m.awayTeamId);
+        const seasonLabel = m.season ? `<span class="md-h2h-season">${m.season}</span>` : '';
+        return `
+            <div class="md-h2h-row">
+                <span class="md-h2h-match">${h.shortName} ${m.finalScore.home} - ${m.finalScore.away} ${a.shortName}</span>
+                ${seasonLabel}
+            </div>
+        `;
+    }).join('');
+
+    return `
+        <div class="md-h2h-balance">
+            <span class="md-h2h-stat win">${homeWins} V ${homeTeam.shortName}</span>
+            <span class="md-h2h-stat draw">${draws} N</span>
+            <span class="md-h2h-stat loss">${awayWins} V ${awayTeam.shortName}</span>
+        </div>
+        <div class="md-h2h-list">${list}</div>
+    `;
+}
+
+// ===============================
+// BILAN DOMICILE / EXTÉRIEUR
+// ===============================
+
+function mdVenueRecordHtml(teamId, atHome, timeline) {
+    const results = mdTeamResults(teamId, timeline).filter(r => r.isHome === atHome);
+    const label = atHome ? '🏠 À domicile' : '✈️ À l\'extérieur';
+
+    if (results.length === 0) {
+        return `<div class="md-dyn-row"><span class="md-dyn-label">${label}</span><span class="md-dyn-value md-muted">—</span></div>`;
+    }
+
+    const pts = results.reduce((s, r) => s + r.points, 0);
+    const w = results.filter(r => r.result === 'V').length;
+    const d = results.filter(r => r.result === 'N').length;
+    const l = results.filter(r => r.result === 'D').length;
+
+    return `
+        <div class="md-dyn-row">
+            <span class="md-dyn-label">${label}</span>
+            <span class="md-dyn-value">${pts} pt${pts > 1 ? 's' : ''} en ${results.length} m. (${w}V ${d}N ${l}D)</span>
+        </div>
+    `;
+}
+
+// ===============================
 // RENDU : MATCH JOUÉ
 // ===============================
 
@@ -466,6 +561,10 @@ function renderPlayedMatchDetails(match, timeline) {
         ${goalsHtml}
         ${contextHtml}
         ${eloHtml}
+        <div class="md-section md-h2h-section">
+            <h4>🤜🤛 Autres confrontations directes</h4>
+            ${mdHeadToHeadHtml(match.homeTeamId, match.awayTeamId, match)}
+        </div>
     `;
 }
 
@@ -499,7 +598,7 @@ function renderUpcomingMatchDetails(match, timeline) {
         }
     }
 
-    const teamColumn = (teamId, oppId) => {
+    const teamColumn = (teamId, oppId, atHome) => {
         const team = mdTeam(teamId);
         const opp = mdTeam(oppId);
         const results = mdTeamResults(teamId, timeline);
@@ -524,6 +623,7 @@ function renderUpcomingMatchDetails(match, timeline) {
                 <div class="md-block">
                     <h5>⚡ Dynamique</h5>
                     ${mdDynamicsHtml(results)}
+                    ${mdVenueRecordHtml(teamId, atHome, timeline)}
                 </div>
                 <div class="md-block">
                     <h5>🆚 Face aux équipes du niveau de ${opp.shortName}</h5>
@@ -548,8 +648,12 @@ function renderUpcomingMatchDetails(match, timeline) {
             ${probaHtml}
         </div>
         <div class="md-columns">
-            ${teamColumn(match.homeTeamId, match.awayTeamId)}
-            ${teamColumn(match.awayTeamId, match.homeTeamId)}
+            ${teamColumn(match.homeTeamId, match.awayTeamId, true)}
+            ${teamColumn(match.awayTeamId, match.homeTeamId, false)}
+        </div>
+        <div class="md-section md-h2h-section">
+            <h4>🤜🤛 Confrontations directes</h4>
+            ${mdHeadToHeadHtml(match.homeTeamId, match.awayTeamId, null)}
         </div>
         <div class="md-footnote">
             ⚡ Adversaire avec un Elo similaire au moment du match (à ±${MD_ELO_RANGE} pts de l'Elo actuel de l'adversaire du jour)${posNote} 🏅.

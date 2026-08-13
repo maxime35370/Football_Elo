@@ -767,8 +767,12 @@ function createPredictionCard(pred) {
         `;
     }
     
+    // Carte cliquable : ouvre la même modale de détails que l'onglet Calendrier
+    // (stats du match si joué, analyse d'avant-match sinon)
+    const detailsStatus = pred.actualScore ? 'played' : 'upcoming';
     return `
-        <div class="prediction-card ${pred.actualScore ? 'has-result' : ''}">
+        <div class="prediction-card clickable ${pred.actualScore ? 'has-result' : ''}"
+             onclick="showCalendarMatchDetails('${pred.homeTeamId}', '${pred.awayTeamId}', ${currentPredictionMatchDay || 0}, '${detailsStatus}')">
             <div class="prediction-card-header">
                 <span class="match-info">Match ${pred.homeRank > 0 ? pred.homeRank : '?'}e vs ${pred.awayRank > 0 ? pred.awayRank : '?'}e</span>
                 <div class="match-stakes">${stakeBadges}</div>

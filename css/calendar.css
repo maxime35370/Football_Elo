@@ -2237,3 +2237,74 @@
         font-size: 1.3rem;
     }
 }
+
+/* --- Confrontations directes --- */
+
+.prediction-card.clickable {
+    cursor: pointer;
+}
+
+.md-h2h-section {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #e9ecef;
+    margin-bottom: 0;
+}
+
+.md-h2h-balance {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.md-h2h-stat {
+    flex: 1;
+    text-align: center;
+    font-size: 0.82rem;
+    font-weight: 700;
+    padding: 0.3rem 0.4rem;
+    border-radius: 8px;
+}
+
+.md-h2h-stat.win {
+    background: rgba(39, 174, 96, 0.12);
+    color: #27ae60;
+}
+
+.md-h2h-stat.draw {
+    background: rgba(149, 165, 166, 0.15);
+    color: #7f8c8d;
+}
+
+.md-h2h-stat.loss {
+    background: rgba(231, 76, 60, 0.12);
+    color: #e74c3c;
+}
+
+.md-h2h-list {
+    max-height: 140px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.md-h2h-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+    padding: 0.35rem 0.6rem;
+}
+
+.md-h2h-match {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.md-h2h-season {
+    font-size: 0.75rem;
+    color: #95a5a6;
+}

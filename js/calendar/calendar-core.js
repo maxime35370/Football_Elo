@@ -6,6 +6,7 @@
 let currentSeason = '';
 let allTeams = [];
 let allMatches = [];
+let allSeasonsMatches = [];   // Tous les matchs joués, toutes saisons (pour les confrontations directes)
 let futureMatches = [];
 let teamsWithElo = [];
 
@@ -82,9 +83,10 @@ async function loadSeasons() {
 async function loadSeasonData() {
     if (!currentSeason) return;
     
-    // Charger les matchs joués
-    allMatches = await getStoredMatchesAsync();
-    allMatches = allMatches.filter(m => m.season === currentSeason);
+    // Charger les matchs joués (toutes saisons pour les confrontations directes,
+    // puis filtrés sur la saison courante pour le reste de la page)
+    allSeasonsMatches = await getStoredMatchesAsync();
+    allMatches = allSeasonsMatches.filter(m => m.season === currentSeason);
     
     // Charger les matchs à venir (utilise loadFutureMatchesAsync de storage.js qui synchronise avec Firebase)
     futureMatches = await loadFutureMatchesAsync(currentSeason);
@@ -148,10 +150,21 @@ async function loadSeasonData() {
 }
 
 // Calculer les Elo manuellement si EloSystem n'est pas disponible
+// Mêmes constantes et même formule qu'EloSystem (avantage domicile 100,
+// multiplicateur d'écart de buts) pour que les Elo restent identiques
+// partout, même si elo-system.js échoue à charger.
 function calculateEloManually() {
     const K = 32;
-    const HOME_ADVANTAGE = 50;
+    const HOME_ADVANTAGE = 100;
     const INITIAL_RATING = 1500;
+
+    const goalDiffMultiplier = diff => {
+        const absDiff = Math.abs(diff);
+        if (absDiff <= 1) return 1;
+        if (absDiff === 2) return 1.5;
+        if (absDiff === 3) return 1.75;
+        return Math.min(2.0, 1.75 + (absDiff - 3) * 0.125);
+    };
     
     // Initialiser avec le report d'Elo de début de saison (1500 pour les promus
     // et la 1re saison), comme le fait le calcul principal via EloSystem.
@@ -166,7 +179,12 @@ function calculateEloManually() {
     const teamMap = {};
     teams.forEach(t => teamMap[t.id] = t);
     
-    const sortedMatches = [...allMatches].sort((a, b) => (a.matchDay || 0) - (b.matchDay || 0));
+    const sortedMatches = [...allMatches].sort((a, b) => {
+        if ((a.matchDay || 0) !== (b.matchDay || 0)) {
+            return (a.matchDay || 0) - (b.matchDay || 0);
+        }
+        return new Date(a.date || 0) - new Date(b.date || 0);
+    });
     
     sortedMatches.forEach(match => {
         const homeTeam = teamMap[match.homeTeamId];
@@ -195,9 +213,10 @@ function calculateEloManually() {
             actualHome = 0.5;
             actualAway = 0.5;
         }
-        
-        homeTeam.eloRating = Math.round(homeTeam.eloRating + K * (actualHome - expectedHome));
-        awayTeam.eloRating = Math.round(awayTeam.eloRating + K * (actualAway - expectedAway));
+
+        const multiplier = goalDiffMultiplier(homeScore - awayScore);
+        homeTeam.eloRating = homeTeam.eloRating + Math.round(K * multiplier * (actualHome - expectedHome));
+        awayTeam.eloRating = awayTeam.eloRating + Math.round(K * multiplier * (actualAway - expectedAway));
     });
     
     return teams;
