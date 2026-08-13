@@ -84,33 +84,79 @@
 
 .ranking-table th,
 .ranking-table td {
-    padding: 1rem 0.5rem;
+    padding: 0.85rem 0.6rem;
     text-align: center;
-    border-bottom: 1px solid #e9ecef;
+    border-bottom: 1px solid #f1f3f5;
 }
 
 .ranking-table th {
     background: linear-gradient(135deg, #2c3e50, #34495e);
     color: white;
     font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
     position: sticky;
     top: 0;
     z-index: 10;
 }
 
-.ranking-table tbody tr:hover {
-    background: #f8f9fa;
+.ranking-table th:first-child {
+    border-top-left-radius: 10px;
+}
+
+.ranking-table th:last-child {
+    border-top-right-radius: 10px;
+}
+
+.ranking-table tbody tr {
+    transition: background 0.15s;
 }
 
 .ranking-table tbody tr:nth-child(odd) {
-    background: rgba(52, 152, 219, 0.05);
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.ranking-table tbody tr:hover {
+    background: rgba(52, 152, 219, 0.08);
 }
 
 /* Colonnes spécifiques */
 .ranking-table .position {
     font-weight: bold;
-    color: #3498db;
-    font-size: 1.1rem;
+    font-size: 1.05rem;
+}
+
+/* Badge rond de position (rempli par le JS) */
+.pos-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #eef1f4;
+    color: #2c3e50;
+    font-weight: 800;
+    font-size: 0.92rem;
+}
+
+tr.champion .pos-badge {
+    background: linear-gradient(135deg, #f1c40f, #f39c12);
+    color: white;
+    box-shadow: 0 2px 6px rgba(243, 156, 18, 0.4);
+}
+
+tr.european .pos-badge {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+    box-shadow: 0 2px 6px rgba(52, 152, 219, 0.4);
+}
+
+tr.relegation .pos-badge {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+    box-shadow: 0 2px 6px rgba(231, 76, 60, 0.4);
 }
 
 .ranking-table .team-name {
@@ -133,37 +179,34 @@
     color: #e74c3c;
 }
 
-/* Positions spéciales */
-.ranking-table .champion {
-    background: linear-gradient(45deg, #f1c40f, #f39c12) !important;
-    color: white !important;
+/* Positions spéciales : teinte légère + liseré coloré à gauche,
+   le texte reste foncé et lisible (l'ancien fond en dégradé plein
+   rendait par exemple l'Elo violet illisible sur les lignes bleues) */
+.ranking-table tr.champion {
+    background: rgba(241, 196, 15, 0.14) !important;
+    box-shadow: inset 4px 0 0 #f1c40f;
 }
 
-.ranking-table .european {
-    background: linear-gradient(45deg, #3498db, #2980b9) !important;
-    color: white !important;
+.ranking-table tr.european {
+    background: rgba(52, 152, 219, 0.10) !important;
+    box-shadow: inset 4px 0 0 #3498db;
 }
 
-.ranking-table .relegation {
-    background: linear-gradient(45deg, #e74c3c, #c0392b) !important;
-    color: white !important;
+.ranking-table tr.relegation {
+    background: rgba(231, 76, 60, 0.10) !important;
+    box-shadow: inset 4px 0 0 #e74c3c;
 }
 
-/* Numéros de position visibles sur fonds colorés */
-.ranking-table tr.champion .position,
-.ranking-table tr.european .position,
-.ranking-table tr.relegation .position {
-    color: white !important;
+.ranking-table tr.champion:hover {
+    background: rgba(241, 196, 15, 0.22) !important;
 }
 
-/* Aussi pour les noms d'équipes et points */
-.ranking-table tr.champion .team-name,
-.ranking-table tr.european .team-name,
-.ranking-table tr.relegation .team-name,
-.ranking-table tr.champion .points,
-.ranking-table tr.european .points,
-.ranking-table tr.relegation .points {
-    color: white !important;
+.ranking-table tr.european:hover {
+    background: rgba(52, 152, 219, 0.18) !important;
+}
+
+.ranking-table tr.relegation:hover {
+    background: rgba(231, 76, 60, 0.18) !important;
 }
 
 /* Message aucun match */
@@ -250,8 +293,8 @@
 
 /* Rating Elo */
 .ranking-table .elo-rating {
-    font-weight: bold;
-    color: #9b59b6;
+    font-weight: 800;
+    color: #7d3c98;
     font-size: 1.1rem;
 }
 
@@ -656,4 +699,43 @@
     .chart-controls select[multiple] {
         min-width: 100%;
     }
+}
+/* ===============================
+   LÉGENDE DES ZONES DU CLASSEMENT
+   =============================== */
+
+.zone-legend {
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+.zone-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.3rem 0.75rem;
+    border-radius: 20px;
+}
+
+.zone-chip.champion-chip {
+    background: rgba(241, 196, 15, 0.15);
+    color: #b7950b;
+    border: 1px solid rgba(241, 196, 15, 0.4);
+}
+
+.zone-chip.european-chip {
+    background: rgba(52, 152, 219, 0.12);
+    color: #2471a3;
+    border: 1px solid rgba(52, 152, 219, 0.35);
+}
+
+.zone-chip.relegation-chip {
+    background: rgba(231, 76, 60, 0.1);
+    color: #b03a2e;
+    border: 1px solid rgba(231, 76, 60, 0.35);
 }

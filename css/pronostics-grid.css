@@ -5,8 +5,9 @@
    =============================== */
 
 .prono-container {
-    max-width: 1400px !important;
-    width: 95% !important;
+    /* Largeur unifiée : le conteneur remplit <main> comme toutes les pages */
+    max-width: 100% !important;
+    width: 100% !important;
 }
 
 /* ===============================
@@ -43,10 +44,6 @@
 
 /* Grand écran - 3 colonnes */
 @media (min-width: 1500px) {
-    .prono-container {
-        max-width: 1800px !important;
-    }
-    
     .predictions-list {
         grid-template-columns: repeat(3, 1fr) !important;
     }
