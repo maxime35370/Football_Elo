@@ -126,7 +126,8 @@ function displayMatches() {
         return;
     }
     
-    matchesList.style.display = 'block';
+    // Laisser le CSS décider (grille multi-colonnes) plutôt que 'block'
+    matchesList.style.display = '';
     noMatchesMessage.style.display = 'none';
     
     matchesList.innerHTML = '';

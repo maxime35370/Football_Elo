@@ -1,7 +1,7 @@
 /* results-table.css - Styles pour le tableau croisé des résultats */
 
 .results-container {
-    max-width: 1400px;
+    max-width: 100%;
     margin: 2rem auto;
     padding: 0 1rem;
 }

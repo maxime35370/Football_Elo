@@ -1,7 +1,7 @@
 /* match-form.css - Styles spécifiques pour le formulaire de match */
 
 .form-container {
-    max-width: 800px;
+    max-width: 100%;
     margin: 2rem auto;
     background: rgba(255, 255, 255, 0.95);
     padding: 2rem;
@@ -688,4 +688,49 @@
     margin-top: 0.25rem;
     font-size: 0.85rem;
     color: #7f8c8d;
+}
+/* ===============================
+   MISE EN PAGE LARGE (formulaire réparti sur 2 colonnes)
+   Ordre des sections du formulaire :
+   1. Informations générales | 2. Score
+   3. Analyse Elo (pleine largeur)
+   4. Détails des buts | 5. Mi-temps
+   Actions : pleine largeur
+   =============================== */
+
+@media (min-width: 1100px) {
+    .match-form {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        column-gap: 1.5rem;
+        align-items: start;
+    }
+
+    .match-form > * {
+        grid-column: 1 / -1;
+    }
+
+    .match-form > .form-section:nth-child(1) {
+        grid-column: 1;
+    }
+
+    .match-form > .form-section:nth-child(2) {
+        grid-column: 2;
+    }
+
+    .match-form > .form-section:nth-child(4) {
+        grid-column: 1;
+    }
+
+    .match-form > .form-section:nth-child(5) {
+        grid-column: 2;
+    }
+
+    /* Les buts saisis se répartissent aussi en colonnes */
+    #goalsContainer {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr));
+        gap: 1rem;
+        align-items: start;
+    }
 }
