@@ -389,6 +389,13 @@
         font-size: 0.95rem;
     }
 
+    /* Badge de position plus compact sur mobile */
+    .pos-badge {
+        min-width: 24px;
+        height: 24px;
+        font-size: 0.8rem;
+    }
+
     /* Statistiques du championnat */
     .stats-grid {
         grid-template-columns: repeat(2, 1fr) !important;

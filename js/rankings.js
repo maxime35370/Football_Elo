@@ -321,7 +321,7 @@ function createRankingRow(team, position) {
         : '-';
 
     row.innerHTML = `
-        <td class="position">${position}</td>
+        <td class="position"><span class="pos-badge">${position}</span></td>
         <td class="team-name">${team.shortName}</td>
         <td>${team.played}</td>
         <td>${team.won}</td>
@@ -493,7 +493,7 @@ function createEloRankingRow(team, position) {
     }
     
     row.innerHTML = `
-        <td class="position">${position}</td>
+        <td class="position"><span class="pos-badge">${position}</span></td>
         <td class="team-name">${team.shortName}</td>
         <td class="elo-rating">${eloRating}</td>
         <td class="${changeClass}">${changeSymbol}${eloChange}</td>
