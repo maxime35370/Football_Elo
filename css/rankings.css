@@ -240,7 +240,7 @@ tr.relegation .pos-badge {
 .championship-stats h3 {
     color: #2c3e50;
     margin-bottom: 1.5rem;
-    font-size: 1.3rem;
+    font-size: 1.5rem;
     text-align: center;
 }
 
@@ -254,14 +254,29 @@ tr.relegation .pos-badge {
     text-align: center;
     padding: 1.5rem;
     background: #f8f9fa;
-    border-radius: 10px;
+    border-radius: 12px;
     border-left: 4px solid #3498db;
+    transition: transform 0.2s, box-shadow 0.2s;
 }
+
+.stat-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* Un accent de couleur par tuile, la valeur assortie */
+.stats-grid .stat-item:nth-child(2) { border-left-color: #27ae60; }
+.stats-grid .stat-item:nth-child(3) { border-left-color: #e67e22; }
+.stats-grid .stat-item:nth-child(4) { border-left-color: #8e44ad; }
+
+.stats-grid .stat-item:nth-child(2) .stat-value { color: #27ae60; }
+.stats-grid .stat-item:nth-child(3) .stat-value { color: #e67e22; }
+.stats-grid .stat-item:nth-child(4) .stat-value { color: #8e44ad; }
 
 .stat-value {
     display: block;
-    font-size: 2rem;
-    font-weight: bold;
+    font-size: 2.2rem;
+    font-weight: 800;
     color: #3498db;
     margin-bottom: 0.5rem;
 }
@@ -380,16 +395,16 @@ tr.relegation .pos-badge {
 
 .h2h-table th,
 .h2h-table td {
-    padding: 1rem 0.5rem;
+    padding: 0.85rem 0.6rem;
     text-align: center;
-    border-bottom: 1px solid #e9ecef;
+    border-bottom: 1px solid #f1f3f5;
 }
 
 .h2h-table th {
     background: linear-gradient(135deg, #2c3e50, #34495e);
     color: white;
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     position: sticky;
@@ -397,16 +412,24 @@ tr.relegation .pos-badge {
     z-index: 10;
 }
 
+.h2h-table th:first-child {
+    border-top-left-radius: 10px;
+}
+
+.h2h-table th:last-child {
+    border-top-right-radius: 10px;
+}
+
 .h2h-table tbody tr {
     transition: background-color 0.2s ease;
 }
 
 .h2h-table tbody tr:hover {
-    background-color: #f8f9fa;
+    background-color: rgba(52, 152, 219, 0.08);
 }
 
 .h2h-table tbody tr:nth-child(even) {
-    background-color: #fafbfc;
+    background-color: rgba(0, 0, 0, 0.02);
 }
 
 .h2h-table .rank-column {
@@ -422,35 +445,41 @@ tr.relegation .pos-badge {
     color: #2c3e50;
 }
 
+/* Les couleurs de colonnes ci-dessus ne doivent pas assombrir l'en-tête */
+.h2h-table th.rank-column,
+.h2h-table th.team-column {
+    color: white;
+}
+
 .h2h-table .result-cell {
     font-weight: 700;
     font-size: 0.95rem;
     min-width: 80px;
 }
 
-/* Couleurs pastels claires pour les résultats */
+/* Résultats : teintes légères cohérentes avec les zones du classement */
 .h2h-table .result-win {
-    background-color: #d4edda;
-    color: #155724;
+    background-color: rgba(39, 174, 96, 0.15);
+    color: #1e8449;
 }
 
 .h2h-table .result-draw {
-    background-color: #fff3cd;
-    color: #856404;
+    background-color: rgba(149, 165, 166, 0.18);
+    color: #626f70;
 }
 
 .h2h-table .result-loss {
-    background-color: #f8d7da;
-    color: #721c24;
+    background-color: rgba(231, 76, 60, 0.14);
+    color: #b03a2e;
 }
 
 .h2h-table .result-none {
-    background-color: #f8f9fa;
+    background-color: rgba(0, 0, 0, 0.02);
     color: transparent;
 }
 
 .h2h-table .result-selected {
-    background-color: #e7f3ff;
+    background-color: rgba(52, 152, 219, 0.1);
     font-style: italic;
     color: #6c757d;
 }

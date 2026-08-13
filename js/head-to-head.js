@@ -94,7 +94,7 @@ function displayH2HTable() {
         if (team.teamId === h2hSelectedTeam) {
             html += `
                 <tr>
-                    <td class="rank-column">${index + 1}</td>
+                    <td class="rank-column"><span class="pos-badge">${index + 1}</span></td>
                     <td class="team-column">${teamData.name}</td>
                     <td>${team.played}</td>
                     <td><strong>${team.points}</strong></td>
@@ -111,7 +111,7 @@ function displayH2HTable() {
             
             html += `
                 <tr>
-                    <td class="rank-column">${index + 1}</td>
+                    <td class="rank-column"><span class="pos-badge">${index + 1}</span></td>
                     <td class="team-column">${teamData.name}</td>
                     <td>${team.played}</td>
                     <td><strong>${team.points}</strong></td>
