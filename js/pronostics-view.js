@@ -104,6 +104,29 @@ function renderPredictionsStatus(statusEl, existingPredictions, openMatches) {
 // CARTE MATCH (1 match)
 // ===============================
 
+// Boutons − / + des scores : un seul écouteur délégué pour toute la page.
+// Depuis un champ vide : « + » donne 1 (prono le plus courant), « − » donne 0.
+if (!window._scoreStepperBound) {
+    window._scoreStepperBound = true;
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.score-btn');
+        if (!btn || btn.disabled) return;
+        const input = btn.parentElement.querySelector('input');
+        if (!input || input.disabled) return;
+
+        const dir = parseInt(btn.dataset.dir, 10);
+        let value;
+        if (input.value === '') {
+            value = dir > 0 ? 1 : 0;
+        } else {
+            value = Math.max(0, Math.min(20, (parseInt(input.value, 10) || 0) + dir));
+        }
+        input.value = value;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+}
+
 /**
  * Génère le HTML d'une carte de match
  * @param {Object} data - Toutes les données nécessaires au rendu
@@ -144,17 +167,25 @@ function renderMatchCard(data) {
                 <span class="team-badge">🏠 <span class="team-badge-label">Domicile</span></span>
             </div>
             <div class="prediction-score">
-                <input type="number" min="0" max="20" class="home-score" 
-                       value="${homeScore}" 
-                       ${isMatchLocked ? 'disabled' : ''}
-                       data-home="${match.homeTeamId}" 
-                       data-away="${match.awayTeamId}">
+                <div class="score-stepper">
+                    <button type="button" class="score-btn" data-dir="-1" ${isMatchLocked ? 'disabled' : ''} aria-label="Score domicile -1">−</button>
+                    <input type="number" min="0" max="20" class="home-score"
+                           value="${homeScore}"
+                           ${isMatchLocked ? 'disabled' : ''}
+                           data-home="${match.homeTeamId}"
+                           data-away="${match.awayTeamId}">
+                    <button type="button" class="score-btn" data-dir="1" ${isMatchLocked ? 'disabled' : ''} aria-label="Score domicile +1">+</button>
+                </div>
                 <span class="separator odds-draw">${drawMultText}</span>
-                <input type="number" min="0" max="20" class="away-score" 
-                       value="${awayScore}" 
-                       ${isMatchLocked ? 'disabled' : ''}
-                       data-home="${match.homeTeamId}" 
-                       data-away="${match.awayTeamId}">
+                <div class="score-stepper">
+                    <button type="button" class="score-btn" data-dir="-1" ${isMatchLocked ? 'disabled' : ''} aria-label="Score extérieur -1">−</button>
+                    <input type="number" min="0" max="20" class="away-score"
+                           value="${awayScore}"
+                           ${isMatchLocked ? 'disabled' : ''}
+                           data-home="${match.homeTeamId}"
+                           data-away="${match.awayTeamId}">
+                    <button type="button" class="score-btn" data-dir="1" ${isMatchLocked ? 'disabled' : ''} aria-label="Score extérieur +1">+</button>
+                </div>
             </div>
             <div class="prediction-team away">
                 ${awayMultHtml}

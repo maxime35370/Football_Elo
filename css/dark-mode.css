@@ -2923,3 +2923,54 @@
 [data-theme="dark"] .tree-heatmap td.current-pts {
     background: var(--dm-surface-2);
 }
+
+/* ===============================
+   SAISIE DES PRONOS (steppers, buteurs, progression)
+   =============================== */
+
+[data-theme="dark"] .score-btn {
+    background: var(--dm-surface-2);
+    border-color: var(--dm-border);
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .score-btn:hover:not(:disabled) {
+    border-color: #3498db;
+    color: #5dade2;
+    background: rgba(52, 152, 219, 0.15);
+}
+
+[data-theme="dark"] .scorer-open-btn {
+    background: rgba(142, 68, 173, 0.15);
+    color: #bb8fce;
+}
+
+[data-theme="dark"] .scorer-open-btn:hover {
+    background: rgba(142, 68, 173, 0.3);
+}
+
+[data-theme="dark"] .scorer-btn {
+    background: var(--dm-surface-2);
+    border-color: var(--dm-border);
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .scorer-btn:hover {
+    border-color: #8e44ad;
+    color: #bb8fce;
+}
+
+[data-theme="dark"] .scorer-btn.selected {
+    background: #8e44ad;
+    color: white;
+    border-color: #8e44ad;
+}
+
+[data-theme="dark"] .prono-progress-bar {
+    background: rgba(20, 25, 36, 0.97);
+    border: 1px solid var(--dm-border);
+}
+
+[data-theme="dark"] .prono-progress-bar.complete {
+    background: rgba(30, 90, 55, 0.97);
+}
