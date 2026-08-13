@@ -671,3 +671,52 @@ footer {
         max-width: 100% !important;
     }
 }
+/* ===============================
+   ESPACEMENT VERTICAL UNIFORME
+   Tous les blocs directs des conteneurs de page sont séparés du même
+   écart (2rem), quelle que soit leur marge d'origine. La spécificité
+   (main + classe) l'emporte sur les règles des fichiers par page.
+   =============================== */
+
+main .rankings-container > *,
+main .matches-container > *,
+main .calendar-container > *,
+main .stats-container > *,
+main .results-container > *,
+main .admin-container > *,
+main .prono-container > * {
+    margin-top: 0;
+    margin-bottom: 2rem;
+}
+
+main .rankings-container > :last-child,
+main .matches-container > :last-child,
+main .calendar-container > :last-child,
+main .stats-container > :last-child,
+main .results-container > :last-child,
+main .admin-container > :last-child,
+main .prono-container > :last-child {
+    margin-bottom: 0;
+}
+
+@media (max-width: 768px) {
+    main .rankings-container > *,
+    main .matches-container > *,
+    main .calendar-container > *,
+    main .stats-container > *,
+    main .results-container > *,
+    main .admin-container > *,
+    main .prono-container > * {
+        margin-bottom: 1.5rem;
+    }
+
+    main .rankings-container > :last-child,
+    main .matches-container > :last-child,
+    main .calendar-container > :last-child,
+    main .stats-container > :last-child,
+    main .results-container > :last-child,
+    main .admin-container > :last-child,
+    main .prono-container > :last-child {
+        margin-bottom: 0;
+    }
+}
