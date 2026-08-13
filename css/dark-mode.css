@@ -3036,3 +3036,9 @@
 [data-theme="dark"] [style*="background:rgba(255,255,255"] {
     background: var(--dm-surface-1) !important;
 }
+
+/* Heatmap de l'Arbre : pourcentages lisibles sur les teintes sombres
+   (l'encre #333 des cellules pâles disparaissait sur fond sombre) */
+[data-theme="dark"] .tree-cell.cell-soft {
+    color: var(--dm-ink);
+}

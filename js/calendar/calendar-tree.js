@@ -215,6 +215,15 @@
             border: 1px solid #e9ecef;
             min-width: 42px;
         }
+        .tree-heatmap td.tree-cell {
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+        .tree-cell.cell-strong { color: white; }
+        .tree-cell.cell-soft { color: #333; }
+        /* L'or est un fond clair : encre foncée même en teinte soutenue */
+        .tree-cell.cell-warm.cell-strong { color: #333; }
+        .tree-cell.cell-major { font-weight: 800; font-size: 0.88rem; }
         .tree-heatmap td.team-name {
             text-align: left;
             font-weight: 600;
@@ -1041,11 +1050,14 @@ function renderTreeHeatmap(results, standings, config, eloWeighted) {
 
                 const intensity = Math.min(0.85, val * 2);
                 const bg = `hsla(${hue}, 70%, 50%, ${intensity})`;
-                const color = intensity > 0.35 ? 'white' : '#333';
-                const fw = pctRound >= 25 ? 'bold' : 'normal';
+                // L'encre est choisie par le CSS selon le thème :
+                // cell-strong (teinte soutenue) = blanc, cell-soft = encre du thème
+                const strength = intensity > 0.5 ? 'cell-strong' : 'cell-soft';
+                const warm = hue === 48 ? ' cell-warm' : '';
+                const major = pctRound >= 25 ? ' cell-major' : '';
                 const display = pctRound < 1 ? '<1' : pctRound;
 
-                html += `<td class="tree-cell" style="background:${bg};color:${color};font-weight:${fw};">${display}%</td>`;
+                html += `<td class="tree-cell ${strength}${warm}${major}" style="background:${bg};">${display}%</td>`;
             }
         }
 
