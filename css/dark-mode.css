@@ -2517,3 +2517,36 @@
     background: linear-gradient(135deg, #3498db, #2980b9);
     color: white;
 }
+
+/* ===============================
+   ÉTATS ACTIFS DES ONGLETS ET BOUTONS
+   Les surcharges sombres génériques ci-dessus (même spécificité,
+   chargées après les CSS clairs) écrasaient les états .active :
+   on les redéclare ici, en dernier, pour qu'ils gagnent à l'ordre.
+   =============================== */
+
+[data-theme="dark"] .calendar-tab.active,
+[data-theme="dark"] .ranking-tab.active {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    border-color: #3498db;
+    color: white;
+    box-shadow: 0 2px 10px rgba(52, 152, 219, 0.45);
+}
+
+[data-theme="dark"] .chart-filter-btn.active,
+[data-theme="dark"] .chat-channel-btn.active {
+    background: #3498db;
+    border-color: #3498db;
+    color: white;
+}
+
+[data-theme="dark"] .chat-day-btn.active {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+}
+
+[data-theme="dark"] .joker-btn.active {
+    background: linear-gradient(135deg, #9b59b6, #8e44ad);
+    color: white;
+    border-color: #8e44ad;
+}
