@@ -63,16 +63,6 @@
     }
 
     /* Header des pages */
-    header {
-        padding: 1rem 0 !important;
-    }
-    header h1 {
-        font-size: 1.6rem !important;
-    }
-    header p {
-        font-size: 0.95rem !important;
-    }
-
     /* Titres de section */
     .rankings-header h2,
     .results-header h2,
@@ -1515,13 +1505,6 @@
 
 /* ============ TRÈS PETIT MOBILE (≤ 400px) ============ */
 @media (max-width: 400px) {
-
-    header h1 {
-        font-size: 1.35rem !important;
-    }
-    header p {
-        font-size: 0.8rem !important;
-    }
 
     /* Classement encore plus compact */
     .ranking-table {
