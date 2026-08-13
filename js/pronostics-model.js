@@ -121,8 +121,15 @@ async function getPlayerHistory(playerId) {
             .where('playerId', '==', playerId)
             .orderBy('matchDay', 'desc')
             .get();
-        
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // Ne garder que la saison en cours : sans ce filtre, l'historique
+        // affichait les journées des saisons passées (équipes reléguées
+        // introuvables et 0 point car les matchs ne sont plus dans allMatches).
+        // Les documents sans champ season (anciens) restent visibles.
+        const season = (typeof currentSeason !== 'undefined' && currentSeason) ? currentSeason : null;
+        return snapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() }))
+            .filter(d => !season || !d.season || d.season === season);
     } catch (error) {
         console.error('Erreur getPlayerHistory:', error);
         return [];
