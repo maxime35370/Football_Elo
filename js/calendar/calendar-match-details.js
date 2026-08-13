@@ -1,24 +1,62 @@
-// calendar-match-details.js - Modale de détails d'un match (clic sur une carte de l'onglet Calendrier)
+// calendar-match-details.js - Modale de détails d'un match
+// Utilisée par la page Calendrier (onglets Calendrier & Pronostics) et la page Historique.
 //
 // - Match joué : score, mi-temps, buteurs, impact Elo, contexte avant-match
 // - Match à venir : séries en cours, forme, dynamique, et points pris par chaque
 //   équipe face à des adversaires de niveau similaire à son adversaire du jour
 //   (Elo à ±MD_ELO_RANGE points, ou même place au classement au moment du match)
+// - Dans les deux cas : courbe d'évolution Elo des deux équipes et
+//   confrontations directes toutes saisons
 
 const MD_ELO_RANGE = 50;      // "Elo similaire" = à ±50 points
 const MD_FORM_COUNT = 5;      // Nombre de matchs pour la forme / dynamique
 
 // ===============================
+// ACCÈS AUX DONNÉES
+// La modale ne dépend pas des variables globales d'une page précise :
+// elle prend ce qui est disponible (Calendrier : allTeams/allMatches/
+// allSeasonsMatches/futureMatches ; Historique : teamsData/allMatches).
+// ===============================
+
+function mdAllTeams() {
+    if (typeof allTeams !== 'undefined' && allTeams.length > 0) return allTeams;
+    if (typeof teamsData !== 'undefined' && Array.isArray(teamsData)) return teamsData;
+    return [];
+}
+
+// Tous les matchs joués disponibles (toutes saisons si possible)
+function mdMatchPool() {
+    if (typeof allSeasonsMatches !== 'undefined' && allSeasonsMatches.length > 0) return allSeasonsMatches;
+    if (typeof allMatches !== 'undefined') return allMatches;
+    return [];
+}
+
+function mdDefaultSeason() {
+    return (typeof currentSeason !== 'undefined' && currentSeason) ? currentSeason : '';
+}
+
+// ===============================
 // OUVERTURE / FERMETURE DE LA MODALE
 // ===============================
 
-function showCalendarMatchDetails(homeTeamId, awayTeamId, matchDay, status) {
-    const source = status === 'played' ? allMatches : futureMatches;
-    let match = source.find(m =>
-        m.homeTeamId == homeTeamId &&
-        m.awayTeamId == awayTeamId &&
-        (m.matchDay || 0) == matchDay
-    );
+function showCalendarMatchDetails(homeTeamId, awayTeamId, matchDay, status, season) {
+    const matchSeason = season || mdDefaultSeason();
+
+    let match = null;
+    if (status === 'played') {
+        match = mdMatchPool().find(m =>
+            m.homeTeamId == homeTeamId &&
+            m.awayTeamId == awayTeamId &&
+            (m.matchDay || 0) == matchDay &&
+            (!matchSeason || !m.season || m.season === matchSeason)
+        );
+    } else if (typeof futureMatches !== 'undefined') {
+        match = futureMatches.find(m =>
+            m.homeTeamId == homeTeamId &&
+            m.awayTeamId == awayTeamId &&
+            (m.matchDay || 0) == matchDay
+        );
+    }
 
     if (!match) {
         // Un match à venir peut ne pas (encore) exister dans futureMatches
@@ -35,7 +73,7 @@ function showCalendarMatchDetails(homeTeamId, awayTeamId, matchDay, status) {
     const overlay = ensureMatchDetailsModal();
     const body = overlay.querySelector('#matchDetailsBody');
 
-    const timeline = buildSeasonTimeline();
+    const timeline = buildSeasonTimeline(match.season || matchSeason);
 
     body.innerHTML = status === 'played'
         ? renderPlayedMatchDetails(match, timeline)
@@ -87,24 +125,30 @@ function ensureMatchDetailsModal() {
 // chaque match : l'Elo des deux équipes et leur place au classement.
 // ===============================
 
-function buildSeasonTimeline() {
+function buildSeasonTimeline(season) {
+    const timelineSeason = season || mdDefaultSeason();
+
     const startingElo = (typeof getSeasonStartingElo === 'function')
-        ? getSeasonStartingElo(currentSeason)
+        ? getSeasonStartingElo(timelineSeason)
         : {};
 
+    const teams = (typeof getTeamsBySeason === 'function' && timelineSeason)
+        ? getTeamsBySeason(timelineSeason)
+        : mdAllTeams();
+
     const elo = {};
-    allTeams.forEach(t => {
+    teams.forEach(t => {
         elo[t.id] = (startingElo && startingElo[t.id] != null) ? startingElo[t.id] : 1500;
     });
 
     // Accumulateur de classement
     const acc = {};
-    allTeams.forEach(t => {
+    teams.forEach(t => {
         acc[t.id] = { teamId: t.id, points: 0, goalDiff: 0, goalsFor: 0, played: 0 };
     });
 
-    const sorted = allMatches
-        .filter(m => m.finalScore)
+    const sorted = mdMatchPool()
+        .filter(m => m.finalScore && (!timelineSeason || !m.season || m.season === timelineSeason))
         .sort((a, b) => {
             if ((a.matchDay || 0) !== (b.matchDay || 0)) {
                 return (a.matchDay || 0) - (b.matchDay || 0);
@@ -167,6 +211,8 @@ function buildSeasonTimeline() {
 
     return {
         entries,
+        teams,
+        season: timelineSeason,
         currentElo: elo,
         currentSnapshot: mdSnapshotPositions(acc)
     };
@@ -195,7 +241,7 @@ function mdSnapshotPositions(acc) {
 // ===============================
 
 function mdTeam(teamId) {
-    return allTeams.find(t => t.id == teamId) || { name: '?', shortName: '?' };
+    return mdAllTeams().find(t => t.id == teamId) || { name: '?', shortName: '?' };
 }
 
 function mdFormatDate(match) {
@@ -399,15 +445,128 @@ function mdVsSimilarHtml(teamId, refTeamId, timeline) {
 }
 
 // ===============================
+// COURBE D'ÉVOLUTION ELO
+// SVG inline : une ligne par équipe sur la saison, étiquettes directes
+// aux extrémités, infobulle native (title) sur chaque point.
+// ===============================
+
+const MD_CHART_COLORS = { home: '#3498db', away: '#e67e22' };
+
+// Série d'une équipe : point de départ + un point par match joué
+function mdEloSeries(teamId, timeline) {
+    const points = [];
+    timeline.entries.forEach(e => {
+        const m = e.match;
+        if (m.homeTeamId == teamId) {
+            if (points.length === 0) points.push({ day: (m.matchDay || 1) - 1, elo: e.homeEloBefore, label: 'Départ' });
+            points.push({ day: m.matchDay || 0, elo: e.homeEloAfter, label: `J${m.matchDay || '?'}` });
+        } else if (m.awayTeamId == teamId) {
+            if (points.length === 0) points.push({ day: (m.matchDay || 1) - 1, elo: e.awayEloBefore, label: 'Départ' });
+            points.push({ day: m.matchDay || 0, elo: e.awayEloAfter, label: `J${m.matchDay || '?'}` });
+        }
+    });
+    return points;
+}
+
+function mdEloChartHtml(homeTeamId, awayTeamId, timeline) {
+    const homeTeam = mdTeam(homeTeamId);
+    const awayTeam = mdTeam(awayTeamId);
+    const series = [
+        { team: homeTeam, color: MD_CHART_COLORS.home, points: mdEloSeries(homeTeamId, timeline) },
+        { team: awayTeam, color: MD_CHART_COLORS.away, points: mdEloSeries(awayTeamId, timeline) }
+    ].filter(s => s.points.length >= 2);
+
+    if (series.length === 0) {
+        return '<div class="md-muted">Pas encore de matchs joués cette saison</div>';
+    }
+
+    // Échelles
+    const allPoints = series.flatMap(s => s.points);
+    const minDay = Math.min(...allPoints.map(p => p.day));
+    const maxDay = Math.max(...allPoints.map(p => p.day));
+    const minElo = Math.min(...allPoints.map(p => p.elo));
+    const maxElo = Math.max(...allPoints.map(p => p.elo));
+    const eloPad = Math.max(10, Math.round((maxElo - minElo) * 0.15));
+    const yMin = minElo - eloPad, yMax = maxElo + eloPad;
+
+    const W = 600, H = 170;
+    const M = { top: 12, right: 96, bottom: 20, left: 44 };
+    const x = day => maxDay === minDay
+        ? M.left + (W - M.left - M.right) / 2
+        : M.left + (day - minDay) / (maxDay - minDay) * (W - M.left - M.right);
+    const y = elo => M.top + (yMax - elo) / (yMax - yMin) * (H - M.top - M.bottom);
+
+    // Lignes de grille discrètes (min / milieu / max)
+    const gridValues = [yMin + eloPad, Math.round((yMin + yMax) / 2), yMax - eloPad];
+    const grid = gridValues.map(v => `
+        <line x1="${M.left}" y1="${y(v).toFixed(1)}" x2="${W - M.right}" y2="${y(v).toFixed(1)}" stroke="#e9ecef" stroke-width="1"/>
+        <text x="${M.left - 6}" y="${(y(v) + 3).toFixed(1)}" text-anchor="end" class="md-chart-axis">${v}</text>
+    `).join('');
+
+    // Axe X : première et dernière journée
+    const firstLabel = allPoints.find(p => p.day === minDay);
+    const xAxis = `
+        <text x="${x(minDay).toFixed(1)}" y="${H - 4}" text-anchor="middle" class="md-chart-axis">${firstLabel && firstLabel.label === 'Départ' ? 'Départ' : 'J' + minDay}</text>
+        <text x="${x(maxDay).toFixed(1)}" y="${H - 4}" text-anchor="middle" class="md-chart-axis">J${maxDay}</text>
+    `;
+
+    // Étiquettes de fin de ligne : écartées si elles se chevauchent
+    const endLabels = series.map(s => {
+        const last = s.points[s.points.length - 1];
+        return { s, yPos: y(last.elo), text: `${s.team.shortName} ${last.elo}` };
+    });
+    if (endLabels.length === 2 && Math.abs(endLabels[0].yPos - endLabels[1].yPos) < 14) {
+        const [a, b] = endLabels[0].yPos <= endLabels[1].yPos ? [endLabels[0], endLabels[1]] : [endLabels[1], endLabels[0]];
+        const mid = (a.yPos + b.yPos) / 2;
+        a.yPos = mid - 7;
+        b.yPos = mid + 7;
+    }
+
+    const seriesSvg = series.map(s => {
+        const path = s.points.map(p => `${x(p.day).toFixed(1)},${y(p.elo).toFixed(1)}`).join(' ');
+        const last = s.points[s.points.length - 1];
+        // Points de survol : cercle invisible large + infobulle native
+        const hoverPoints = s.points.map(p => `
+            <circle cx="${x(p.day).toFixed(1)}" cy="${y(p.elo).toFixed(1)}" r="9" fill="transparent">
+                <title>${p.label} · ${s.team.shortName} : ${p.elo}</title>
+            </circle>
+        `).join('');
+        return `
+            <polyline points="${path}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+            <circle cx="${x(last.day).toFixed(1)}" cy="${y(last.elo).toFixed(1)}" r="3.5" fill="${s.color}" stroke="white" stroke-width="1.5"/>
+            ${hoverPoints}
+        `;
+    }).join('');
+
+    const endLabelsSvg = endLabels.map(l => `
+        <text x="${W - M.right + 8}" y="${(l.yPos + 3.5).toFixed(1)}" class="md-chart-label">${l.text}</text>
+    `).join('');
+
+    const legend = series.map(s => `
+        <span class="md-chart-legend-item"><span class="md-chart-dot" style="background:${s.color}"></span>${s.team.shortName}</span>
+    `).join('');
+
+    return `
+        <div class="md-chart-legend">${legend}</div>
+        <div class="md-chart">
+            <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img"
+                 aria-label="Évolution de l'Elo de ${homeTeam.shortName} et ${awayTeam.shortName} sur la saison">
+                ${grid}
+                ${xAxis}
+                ${seriesSvg}
+                ${endLabelsSvg}
+            </svg>
+        </div>
+    `;
+}
+
+// ===============================
 // CONFRONTATIONS DIRECTES (toutes saisons)
 // ===============================
 
 function mdHeadToHeadHtml(homeTeamId, awayTeamId, excludeMatch) {
-    // allSeasonsMatches contient tous les matchs joués, toutes saisons
-    // confondues (chargé par calendar-core) ; repli sur allMatches sinon.
-    const pool = (typeof allSeasonsMatches !== 'undefined' && allSeasonsMatches.length > 0)
-        ? allSeasonsMatches
-        : allMatches;
+    // Toutes saisons confondues quand la page les fournit
+    const pool = mdMatchPool();
 
     // Exclusion par clé (et non par identité d'objet) : le match affiché
     // dans la modale peut être une copie de celui stocké dans le pool.
@@ -424,7 +583,9 @@ function mdHeadToHeadHtml(homeTeamId, awayTeamId, excludeMatch) {
         .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 
     if (meetings.length === 0) {
-        return '<div class="md-muted">Première confrontation entre ces deux équipes</div>';
+        return excludeMatch
+            ? '<div class="md-muted">Aucune autre confrontation entre ces deux équipes</div>'
+            : '<div class="md-muted">Première confrontation entre ces deux équipes</div>';
     }
 
     const homeTeam = mdTeam(homeTeamId);
@@ -495,7 +656,11 @@ function renderPlayedMatchDetails(match, timeline) {
     const awayTeam = mdTeam(match.awayTeamId);
     const dateText = mdFormatDate(match);
 
-    const entry = timeline.entries.find(e => e.match === match);
+    const entry = timeline.entries.find(e => e.match === match) ||
+        timeline.entries.find(e =>
+            e.match.homeTeamId == match.homeTeamId &&
+            e.match.awayTeamId == match.awayTeamId &&
+            (e.match.matchDay || 0) == (match.matchDay || 0));
 
     // Buteurs par équipe (triés par minute)
     const goals = (match.goals || []).slice().sort((a, b) => {
@@ -561,6 +726,10 @@ function renderPlayedMatchDetails(match, timeline) {
         ${goalsHtml}
         ${contextHtml}
         ${eloHtml}
+        <div class="md-section">
+            <h4>📈 Évolution Elo sur la saison</h4>
+            ${mdEloChartHtml(match.homeTeamId, match.awayTeamId, timeline)}
+        </div>
         <div class="md-section md-h2h-section">
             <h4>🤜🤛 Autres confrontations directes</h4>
             ${mdHeadToHeadHtml(match.homeTeamId, match.awayTeamId, match)}
@@ -583,10 +752,15 @@ function renderUpcomingMatchDetails(match, timeline) {
     const awayPos = timeline.currentSnapshot.positions[match.awayTeamId];
     const meaningful = timeline.currentSnapshot.meaningful;
 
-    // Probabilités Elo (si disponibles)
+    // Probabilités Elo (si disponibles) — à partir des Elo de la timeline,
+    // pour ne pas dépendre du teamsWithElo de la page Calendrier
     let probaHtml = '';
-    if (typeof EloSystem !== 'undefined' && EloSystem.predictMatch && teamsWithElo.length > 0) {
-        const pred = EloSystem.predictMatch(match.homeTeamId, match.awayTeamId, teamsWithElo);
+    if (typeof EloSystem !== 'undefined' && EloSystem.predictMatch && timeline.teams.length > 0) {
+        const teamsForPrediction = timeline.teams.map(t => ({
+            ...t,
+            eloRating: timeline.currentElo[t.id] != null ? timeline.currentElo[t.id] : 1500
+        }));
+        const pred = EloSystem.predictMatch(match.homeTeamId, match.awayTeamId, teamsForPrediction);
         if (pred) {
             probaHtml = `
                 <div class="md-proba-bar">
@@ -650,6 +824,10 @@ function renderUpcomingMatchDetails(match, timeline) {
         <div class="md-columns">
             ${teamColumn(match.homeTeamId, match.awayTeamId, true)}
             ${teamColumn(match.awayTeamId, match.homeTeamId, false)}
+        </div>
+        <div class="md-section md-chart-section">
+            <h4>📈 Évolution Elo sur la saison</h4>
+            ${mdEloChartHtml(match.homeTeamId, match.awayTeamId, timeline)}
         </div>
         <div class="md-section md-h2h-section">
             <h4>🤜🤛 Confrontations directes</h4>

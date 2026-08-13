@@ -182,7 +182,18 @@ function createMatchElement(match) {
         
         ${match.goals.length > 0 ? createGoalsHTML(match.goals) : '<div class="no-goals">Match sans but</div>'}
     `;
-    
+
+    // Carte cliquable : ouvre la modale de détails du match (contexte
+    // avant-match, impact Elo, courbe Elo, confrontations directes).
+    // Les clics sur les boutons admin (éditer/supprimer) sont ignorés.
+    if (typeof showCalendarMatchDetails === 'function') {
+        matchDiv.classList.add('clickable');
+        matchDiv.addEventListener('click', function(e) {
+            if (e.target.closest('button')) return;
+            showCalendarMatchDetails(match.homeTeamId, match.awayTeamId, match.matchDay || 0, 'played', match.season);
+        });
+    }
+
     return matchDiv;
 }
 
