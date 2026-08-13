@@ -1,7 +1,7 @@
 /* admin.css - Styles pour l'interface d'administration */
 
 .admin-container {
-    max-width: 1200px;
+    max-width: 100%;
     margin: 2rem auto;
     padding: 0 1rem;
 }
