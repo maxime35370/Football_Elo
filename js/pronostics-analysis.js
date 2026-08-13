@@ -614,9 +614,13 @@ async function getAllPredictionsForPlayer(playerId) {
                 .where('playerId', '==', playerId)
                 .get();
             
+            // Ne garder que la saison en cours : la heatmap et les duels
+            // mélangeaient sinon les journées des saisons passées.
+            const season = (typeof currentSeason !== 'undefined' && currentSeason) ? currentSeason : null;
             const predictions = {};
             snapshot.docs.forEach(doc => {
                 const data = doc.data();
+                if (season && data.season && data.season !== season) return;
                 if (data.matchDay && data.predictions) {
                     predictions[data.matchDay] = data.predictions;
                 }
