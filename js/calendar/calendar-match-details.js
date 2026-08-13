@@ -12,7 +12,7 @@ const MD_FORM_COUNT = 5;      // Nombre de matchs pour la forme / dynamique
 // OUVERTURE / FERMETURE DE LA MODALE
 // ===============================
 
-function showMatchDetails(homeTeamId, awayTeamId, matchDay, status) {
+function showCalendarMatchDetails(homeTeamId, awayTeamId, matchDay, status) {
     const source = status === 'played' ? allMatches : futureMatches;
     const match = source.find(m =>
         m.homeTeamId == homeTeamId &&
@@ -38,7 +38,7 @@ function showMatchDetails(homeTeamId, awayTeamId, matchDay, status) {
     document.body.style.overflow = 'hidden';
 }
 
-function closeMatchDetails() {
+function closeCalendarMatchDetails() {
     const overlay = document.getElementById('matchDetailsOverlay');
     if (overlay) {
         overlay.classList.remove('visible');
@@ -55,19 +55,19 @@ function ensureMatchDetailsModal() {
     overlay.className = 'match-details-overlay';
     overlay.innerHTML = `
         <div class="md-modal-box">
-            <button class="md-modal-close" onclick="closeMatchDetails()">✕</button>
+            <button class="md-modal-close" onclick="closeCalendarMatchDetails()">✕</button>
             <div id="matchDetailsBody"></div>
         </div>
     `;
 
     // Fermer en cliquant en dehors de la modale
     overlay.addEventListener('click', function(e) {
-        if (e.target === overlay) closeMatchDetails();
+        if (e.target === overlay) closeCalendarMatchDetails();
     });
 
     // Fermer avec Échap
     document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') closeMatchDetails();
+        if (e.key === 'Escape') closeCalendarMatchDetails();
     });
 
     document.body.appendChild(overlay);

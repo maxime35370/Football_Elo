@@ -136,7 +136,7 @@ function createMatchCard(match, showMatchday = false) {
     // analyse d'avant-match si à venir) — voir calendar-match-details.js
     return `
         <div class="match-card ${match.status} clickable"
-             onclick="showMatchDetails('${match.homeTeamId}', '${match.awayTeamId}', ${match.matchDay || 0}, '${match.status}')">
+             onclick="showCalendarMatchDetails('${match.homeTeamId}', '${match.awayTeamId}', ${match.matchDay || 0}, '${match.status}')">
             ${matchdayBadge}
             <div class="match-teams">
                 <div class="match-team home">${homeTeam ? homeTeam.shortName : '?'}</div>
