@@ -8,11 +8,21 @@
         <link rel="stylesheet" href="../css/rankings.css">
         <link rel="stylesheet" href="../css/mobile.css">
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    </head>
+        <link rel="stylesheet" href="../css/dark-mode.css">
+    <script src="../js/theme.js"></script>
+        <script>
+        // Adapter les graphiques Chart.js au thème choisi (au chargement)
+        if (window.Chart && document.documentElement.getAttribute('data-theme') === 'dark') {
+            Chart.defaults.color = '#a3adc2';
+            Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.1)';
+        }
+        </script>
+</head>
     <body>
 
         <nav>
             <button class="burger-menu" onclick="toggleMenu()">☰</button>
+            <button class="theme-toggle" onclick="toggleTheme()" title="Changer de thème">☀️</button>
             <div class="nav-container">
                 <a href="../index.html" class="nav-btn">🏠 Accueil</a>
                 <a href="../pages/add-match.html" class="nav-btn">➕ Ajouter un match</a>
@@ -33,7 +43,7 @@
                 <div class="rankings-header">
                     <h2>🏆 Classement du championnat</h2>
                     <div class="ranking-mode-selector" style="margin-bottom: 1rem; text-align: center;">
-                        <label for="rankingPeriod" style="font-weight: 600; color: #2c3e50; margin-right: 0.5rem;">⏱️ Période :</label>
+                        <label for="rankingPeriod" style="font-weight: 600; margin-right: 0.5rem;">⏱️ Période :</label>
                         <select id="rankingPeriod" style="padding: 0.5rem 1rem; border: 2px solid #e9ecef; border-radius: 8px; font-size: 0.95rem; font-weight: 600;">
                             <option value="all">📊 Match complet</option>
                             <option value="firstHalf">1️⃣ 1ère mi-temps (1'-45'+)</option>

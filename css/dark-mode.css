@@ -1,0 +1,2511 @@
+/* ===============================================================
+   MODE SOMBRE — appliqué quand <html data-theme="dark">
+   Sections :
+   1. Variables et bases (fond, textes, formulaires, nav)
+   2. Surcharges générées automatiquement depuis les CSS existants
+      (fonds blancs → surfaces sombres, encres foncées → claires)
+   3. Corrections manuelles (composants spécifiques)
+   Le basculement est géré par js/theme.js (bouton 🌙/☀️ dans la nav).
+   =============================================================== */
+
+/* ---- 1. Variables et bases ---- */
+
+[data-theme="dark"] {
+    --dm-bg-1: #141824;
+    --dm-bg-2: #1e1830;
+    --dm-surface-1: #1f2532;   /* cartes (ex-blanc) */
+    --dm-surface-2: #293040;   /* blocs secondaires (ex-#f8f9fa) */
+    --dm-surface-3: #333b4e;   /* survol / éléments actifs */
+    --dm-border: #3a4356;
+    --dm-ink: #e8eaf0;
+    --dm-ink-muted: #a3adc2;
+    color-scheme: dark;
+}
+
+[data-theme="dark"] body {
+    background: linear-gradient(135deg, var(--dm-bg-1) 0%, var(--dm-bg-2) 100%);
+    color: var(--dm-ink);
+}
+
+/* Nav : déjà sombre, on fonce légèrement pour garder le contraste */
+[data-theme="dark"] nav {
+    background: rgba(15, 19, 28, 0.95);
+}
+
+[data-theme="dark"] footer {
+    color: var(--dm-ink-muted);
+}
+
+/* Formulaires : tous les champs passent en sombre */
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+    background: var(--dm-surface-2) !important;
+    color: var(--dm-ink) !important;
+    border-color: var(--dm-border) !important;
+}
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+    color: var(--dm-ink-muted);
+}
+
+/* Ombres adoucies : sur fond sombre les grosses ombres claires bavent */
+[data-theme="dark"] .welcome-section,
+[data-theme="dark"] .form-container,
+[data-theme="dark"] .ranking-section,
+[data-theme="dark"] .matchday-section {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* ---- dérivé de admin.css ---- */
+[data-theme="dark"] .admin-stats span {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .form-section {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .form-section h3 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .team-form .form-group label, [data-theme="dark"] .season-form .form-group label {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .team-form .form-group input, [data-theme="dark"] .season-form .form-group input {
+    border-color: var(--dm-border);
+    color: var(--dm-ink);
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .team-form .form-group small, [data-theme="dark"] .season-form .form-group small {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .form-actions {
+    border-top-color: var(--dm-border);
+}
+
+[data-theme="dark"] .season-preview {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .season-preview h4 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .teams-list-section {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .teams-list-section h3 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .team-card {
+    background: var(--dm-surface-1);
+    border-color: var(--dm-border);
+}
+
+[data-theme="dark"] .team-name {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .team-info {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .no-teams {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .import-section {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .import-section h3 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .import-help {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .import-help code {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .import-preview {
+    background: var(--dm-surface-2);
+    border-color: var(--dm-border);
+}
+
+/* ---- dérivé de calendar.css ---- */
+[data-theme="dark"] .calendar-header {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .calendar-header h2 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .control-group label {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .control-group select {
+    border-color: var(--dm-border);
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .calendar-tab {
+    border-color: var(--dm-border);
+    background: var(--dm-surface-1);
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .tab-content {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .schedule-controls {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .matchday-section {
+    border-color: var(--dm-border);
+}
+
+[data-theme="dark"] .match-card {
+    background: var(--dm-surface-2);
+    border-left-color: var(--dm-border);
+}
+
+[data-theme="dark"] .match-team {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .match-score {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .difficulty-intro, [data-theme="dark"] .objectives-intro, [data-theme="dark"] .simulation-intro {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .difficulty-row {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .difficulty-rank {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .difficulty-team {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .difficulty-bar-container {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .difficulty-matches {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .objectives-row {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .objectives-header {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .simulation-match {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .simulation-match input {
+    border-color: var(--dm-border);
+}
+
+[data-theme="dark"] .simulation-match .vs {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .simulation-ranking {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .simulation-ranking h4 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .manual-creation-section {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .manual-header {
+    border-bottom-color: var(--dm-border);
+}
+
+[data-theme="dark"] .manual-header h3 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .btn-close {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .manual-controls {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .teams-selection h4, [data-theme="dark"] .created-matches h4 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .team-btn {
+    border-color: var(--dm-border);
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .team-btn.disabled {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .created-match-item {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .empty-matches {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .manual-actions {
+    border-top-color: var(--dm-border);
+}
+
+[data-theme="dark"] .objective-target {
+    background: var(--dm-surface-2);
+    border-left-color: var(--dm-border);
+}
+
+[data-theme="dark"] .target-label {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .target-value {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .target-hint {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .objectives-table th, [data-theme="dark"] .objectives-table td {
+    border-bottom-color: var(--dm-border);
+}
+
+[data-theme="dark"] .objectives-table th {
+    background: var(--dm-surface-2);
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .objectives-table .position {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .objectives-table .team-name {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .objectives-legend {
+    background: var(--dm-surface-2);
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .objectives-method {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .objectives-table .team-elo {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .btn-details {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .modal-content {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .modal-header {
+    border-bottom-color: var(--dm-border);
+}
+
+[data-theme="dark"] .modal-header h3 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .match-details-table th, [data-theme="dark"] .match-details-table td {
+    border-bottom-color: var(--dm-border);
+}
+
+[data-theme="dark"] .match-details-table th {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .match-details-summary {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .predictions-header h3 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .btn-nav {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .predictions-intro {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .prediction-card {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .team-name-pred {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .team-details {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .team-elo {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .prediction-score {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .score-display {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .score-label {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .prob-labels {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .prediction-favorite {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .favorite-label {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .favorite-team {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .factor-tag {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .predictions-end {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .actual-score {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .prediction-card.has-result {
+    border-color: var(--dm-border);
+}
+
+[data-theme="dark"] .final-ranking-section h3 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .final-ranking-intro {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .final-ranking-table th, [data-theme="dark"] .final-ranking-table td {
+    border-bottom-color: var(--dm-border);
+}
+
+[data-theme="dark"] .final-ranking-table .position-change.same {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .final-stats {
+    border-top-color: var(--dm-border);
+}
+
+[data-theme="dark"] .final-stat-card {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .final-stat-card .stat-value {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .final-stat-card .stat-label {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .match-scheduled-input:focus {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .bulk-datetime input[type="datetime-local"] {
+    background: var(--dm-surface-1);
+}
+
+/* ---- dérivé de match-details.css ---- */
+[data-theme="dark"] .md-modal-box {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .md-modal-close {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .md-modal-close:hover {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .md-header {
+    border-bottom-color: var(--dm-border);
+}
+
+[data-theme="dark"] .md-header-team {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .md-halftime {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .md-header-sub {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .md-section h4 {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .md-goal {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .md-goal-time {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .md-context-row {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .md-elo-team {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .md-elo-name {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .md-team-column {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .md-team-header {
+    border-bottom-color: var(--dm-border);
+}
+
+[data-theme="dark"] .md-team-name {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .md-team-meta {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .md-block h5 {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .md-streak {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .md-streak-extra {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .md-dyn-label {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .md-dyn-value {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .md-dyn-trend {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .md-similar-total {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .md-similar-avg {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .md-similar-row {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .md-similar-day {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .md-similar-opp {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .md-similar-score {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .md-footnote {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .md-muted {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .md-h2h-section {
+    border-top-color: var(--dm-border);
+}
+
+[data-theme="dark"] .md-h2h-stat.draw {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .md-h2h-row {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .md-h2h-match {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .md-h2h-season {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .md-chart-section {
+    border-top-color: var(--dm-border);
+}
+
+[data-theme="dark"] .md-chart-legend-item {
+    color: var(--dm-ink);
+}
+
+/* ---- dérivé de match-form.css ---- */
+[data-theme="dark"] .form-container {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .form-container h2 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .form-section {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .form-section h3 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .section-desc {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .form-group label {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .form-group input, [data-theme="dark"] .form-group select {
+    border-color: var(--dm-border);
+    color: var(--dm-ink);
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .form-group small {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .score-display {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .team-score span:first-child {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .score-number {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .score-divider {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .halftime-display {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .halftime-display span {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .info-text {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .minute-inputs input[name="goalMinute"] {
+    color: var(--dm-ink);
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .minute-inputs input[name="goalExtraTime"] {
+    color: var(--dm-ink);
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .plus-sign {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .goal-form {
+    background: var(--dm-surface-1);
+    border-color: var(--dm-border);
+}
+
+[data-theme="dark"] .goal-header {
+    border-bottom-color: var(--dm-border);
+}
+
+[data-theme="dark"] .goal-header h4 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .form-actions {
+    border-top-color: var(--dm-border);
+}
+
+[data-theme="dark"] .elo-prediction {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .elo-team-card {
+    background: var(--dm-surface-2);
+    border-color: var(--dm-border);
+}
+
+[data-theme="dark"] .elo-team-card h4 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .elo-current {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .elo-label {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .elo-probability {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .elo-changes {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .elo-change-item {
+    border-bottom-color: var(--dm-border);
+}
+
+[data-theme="dark"] .elo-result {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .elo-note {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .team-form-display {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .form-label {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .form-results {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .form-status.neutral {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .elo-base {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .elo-form-mod.neutral {
+    background: var(--dm-surface-2);
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .form-details {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .form-detail-item:not(:last-child) {
+    border-bottom-color: var(--dm-border);
+}
+
+[data-theme="dark"] #matchDateTime {
+    border-color: var(--dm-border);
+}
+
+[data-theme="dark"] .form-hint {
+    color: var(--dm-ink-muted);
+}
+
+/* ---- dérivé de matches.css ---- */
+[data-theme="dark"] .matches-header {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .matches-header h2 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .filters-section {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .filter-group label {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .filter-group select {
+    border-color: var(--dm-border);
+}
+
+[data-theme="dark"] .match-card {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .match-header {
+    border-bottom-color: var(--dm-border);
+}
+
+[data-theme="dark"] .match-date {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .team-name {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .score {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .score-separator {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .match-halftime {
+    color: var(--dm-ink-muted);
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .goals-list {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .goals-list h4 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .goal-item {
+    border-bottom-color: var(--dm-border);
+}
+
+[data-theme="dark"] .goal-scorer {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .goal-team {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .empty-state {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .empty-state h3 {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .empty-state p {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .no-goals {
+    color: var(--dm-ink-muted);
+    background: var(--dm-surface-2);
+}
+
+/* ---- dérivé de pronostics-analysis.css ---- */
+[data-theme="dark"] .duels-header {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .duel-player label {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .duel-player select {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .duel-summary {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .duel-player-card {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .duel-player-card .player-name {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .duel-player-card .player-wins {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .duel-vs-result .vs-score {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .duel-vs-result .vs-label {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .duel-details {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .duel-details h4 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .duel-matchday {
+    border-color: var(--dm-border);
+}
+
+[data-theme="dark"] .matchday-header {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .matchday-header:hover {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .matchday-label {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .matchday-toggle {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .matchday-details {
+    background: var(--dm-surface-1);
+    border-top-color: var(--dm-border);
+}
+
+[data-theme="dark"] .match-detail {
+    border-bottom-color: var(--dm-border);
+}
+
+[data-theme="dark"] .match-info {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .match-preds {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .comparison-title {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .comparison-stat {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .comparison-stat .stat-label {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .comparison-stat .stat-value {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .comparison-match {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .comparison-match .match-name {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .comparison-match .match-pred {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .heatmap-header h4 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .legend-item {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .heatmap-stat {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .heatmap-stat .stat-value {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .heatmap-stat .stat-label {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .heatmap-compare {
+    border-top-color: var(--dm-border);
+}
+
+[data-theme="dark"] .heatmap-compare h4 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .compare-selector select {
+    border-color: var(--dm-border);
+}
+
+[data-theme="dark"] .comparison-result {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .score-player {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .score-vs {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .bar-day {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .bar-container {
+    background: var(--dm-surface-2);
+}
+
+/* ---- dérivé de pronostics-badges.css ---- */
+[data-theme="dark"] .badges-section h4 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .badge-category {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .category-name {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .badge-item {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .badge-item.locked {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .badge-item .badge-hint {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .locked-section h4 {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .more-badges {
+    background: var(--dm-surface-2);
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .badge-more {
+    background: var(--dm-surface-2);
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .no-badges {
+    color: var(--dm-ink-muted);
+}
+
+/* ---- dérivé de pronostics-chat.css ---- */
+[data-theme="dark"] .chat-container {
+    background: var(--dm-surface-2);
+    border-color: var(--dm-border);
+}
+
+[data-theme="dark"] .chat-header-left select {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .chat-header-left select option {
+    color: var(--dm-ink);
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .chat-channels {
+    background: var(--dm-surface-1);
+    border-bottom-color: var(--dm-border);
+}
+
+[data-theme="dark"] .chat-channel-btn {
+    border-color: var(--dm-border);
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .chat-day-btn {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .chat-match-btn.active .chat-match-score {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .chat-no-matches {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .chat-placeholder, [data-theme="dark"] .chat-loading, [data-theme="dark"] .chat-error {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .chat-message {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .chat-message-author {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .chat-message-time {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .chat-message-body {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .chat-reaction {
+    background: var(--dm-surface-2);
+    border-color: var(--dm-border);
+}
+
+[data-theme="dark"] .chat-reaction-picker {
+    background: var(--dm-surface-1);
+    border-color: var(--dm-border);
+}
+
+[data-theme="dark"] .chat-reaction-option:hover {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .chat-reply-message {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .chat-reply-banner {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .chat-reply-cancel {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .chat-input-area {
+    background: var(--dm-surface-1);
+    border-top-color: var(--dm-border);
+}
+
+[data-theme="dark"] .chat-input-wrapper {
+    background: var(--dm-surface-2);
+    border-color: var(--dm-border);
+}
+
+[data-theme="dark"] .chat-input-wrapper textarea:disabled {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .chat-input-info {
+    color: var(--dm-ink-muted);
+}
+
+/* ---- dérivé de pronostics-consensus.css ---- */
+[data-theme="dark"] .consensus-display {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .consensus-title {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .consensus-bar {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .consensus-labels {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .consensus-labels .draw {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .scores-title {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .score-badge {
+    background: var(--dm-surface-2);
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .consensus-avg {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .consensus-avg strong {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .consensus-empty {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .ia-score .score {
+    color: var(--dm-ink);
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .ia-score .result.draw {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .ia-probabilities .prob-item {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .ia-probabilities .prob-label {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .ia-probabilities .prob-item.draw .prob-value {
+    color: var(--dm-ink-muted);
+}
+
+/* ---- dérivé de pronostics-game.css ---- */
+[data-theme="dark"] .auth-card {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .auth-tabs {
+    border-bottom-color: var(--dm-border);
+}
+
+[data-theme="dark"] .auth-tab {
+    background: var(--dm-surface-2);
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .auth-tab.active {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .auth-form h3 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .form-group label {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .form-group input {
+    border-color: var(--dm-border);
+}
+
+[data-theme="dark"] .game-section {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .player-avatar {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .player-rank {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .game-tabs {
+    border-bottom-color: var(--dm-border);
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .game-tab {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .game-tab.active {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .matchday-selector label {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .matchday-selector select {
+    border-color: var(--dm-border);
+}
+
+[data-theme="dark"] .prediction-match {
+    background: var(--dm-surface-2);
+    border-color: var(--dm-border);
+}
+
+[data-theme="dark"] .prediction-match:hover {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .team-name {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .team-badge {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .prediction-score input {
+    border-color: var(--dm-border);
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .prediction-score .separator {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .points-badge {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .predictions-summary {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .summary-title {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .summary-stat {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .summary-stat .label {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .leaderboard-header h3 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .leaderboard-table th, [data-theme="dark"] .leaderboard-table td {
+    border-bottom-color: var(--dm-border);
+}
+
+[data-theme="dark"] .leaderboard-table tbody tr:hover {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .history-header h3 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .history-card {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .history-points {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .history-match {
+    border-bottom-color: var(--dm-border);
+}
+
+[data-theme="dark"] .history-prono {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .history-real {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .rules-content h3 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .rule-section {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .rule-section code {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .rules-table td {
+    border-bottom-color: var(--dm-border);
+}
+
+[data-theme="dark"] .rules-table td:nth-child(3) {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .btn-secondary {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .match-time {
+    color: var(--dm-ink-muted);
+    border-bottom-color: var(--dm-border);
+}
+
+/* ---- dérivé de pronostics-gamification.css ---- */
+[data-theme="dark"] .level-current {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .level-next {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .level-progress-bar {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .level-progress-text {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .level-display {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .streak-bonus {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .weekly-missions {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .missions-header h4 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .mission-card {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .mission-card:hover {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .mission-name {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .mission-desc {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .mission-progress-text {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .gamification-widget {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .gamification-section {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .joker-btn {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .favorite-team-selector {
+    border-top-color: var(--dm-border);
+}
+
+[data-theme="dark"] .favorite-team-selector label {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .favorite-team-selector select {
+    border-color: var(--dm-border);
+}
+
+[data-theme="dark"] .favorite-team-name {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .favorite-team-stats .stat {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .favorite-team-stats .label {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .favorite-team-empty {
+    background: var(--dm-surface-2);
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .avatar-modal-content {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .avatar-selector h4 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .avatar-option {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .avatar-option:hover {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .avatar-name {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .profile-section {
+    border-bottom-color: var(--dm-border);
+}
+
+[data-theme="dark"] .profile-section h4 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .jokers-label {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .jokers-desc {
+    color: var(--dm-ink-muted);
+}
+
+/* ---- dérivé de pronostics-ia.css ---- */
+[data-theme="dark"] .ia-stat {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .ia-vs-section {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .ia-vs-section h4 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .ia-leaderboard th {
+    background: var(--dm-surface-2);
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .ia-matchday-section {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .ia-matchday-section h4 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .summary-card {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .summary-card .summary-points {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .ia-match-card {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .ia-match-card .match-scores {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .participant-total-points {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .participant-predictions-empty {
+    color: var(--dm-ink-muted);
+}
+
+/* ---- dérivé de pronostics-matchday-ranking.css ---- */
+[data-theme="dark"] .matchday-ranking-widget {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .matchday-ranking-header h4 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .matchday-select {
+    color: var(--dm-ink);
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .podium-card {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .podium-name {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .ia-ranking-badge .ia-points {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .matchday-ranking-list th {
+    background: var(--dm-surface-2);
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .matchday-ranking-list tr:hover {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .matchday-stats-summary .stat-label {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .matchday-detail-modal .modal-content {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .matchday-detail-modal .btn-close {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .matchday-detail-modal .btn-close:hover {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .player-summary .label {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .match-detail-row {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .match-detail-row .match-teams {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .match-detail-row .match-prediction, [data-theme="dark"] .match-detail-row .match-actual {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .matchday-ranking-widget .loading {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .matchday-ranking-widget .no-data {
+    color: var(--dm-ink-muted);
+}
+
+/* ---- dérivé de pronostics-odds.css ---- */
+[data-theme="dark"] .odds-display {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .odds-title {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .odds-players {
+    color: var(--dm-ink-muted);
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .odds-label {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .odds-value {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .odds-bar {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .points-breakdown {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .points-base {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .points-equals {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .points-final {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] #oddsModeBtn {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .timing-legend {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .timing-item.normal {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .separator.odds-draw {
+    color: var(--dm-ink-muted);
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .separator.odds-draw {
+    color: var(--dm-ink-muted);
+    background: var(--dm-surface-2);
+}
+
+/* ---- dérivé de pronostics-stats.css ---- */
+[data-theme="dark"] .stats-modal-content {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .stats-modal-header .btn-close {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .stats-modal-header .btn-close:hover {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .stats-modal-body .loading {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .stats-card {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .stats-section h4 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .result-stat {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .result-stat .result-label {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .type-label {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .type-bar-container {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .type-rate {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .streak-stat {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .streak-stat .streak-label {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .team-stat {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .team-stat .team-rank {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .team-stat .team-rate {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] #evolutionChartContainer {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .chart-header h4 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .chart-filter-btn {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] #leaderboardTable tbody tr:hover {
+    background: var(--dm-surface-2);
+}
+
+/* ---- dérivé de rankings-elo.css ---- */
+[data-theme="dark"] .elo-info {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .elo-info p {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .comparison-info {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .comparison-info p {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .no-change {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .major-divergence {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .minor-divergence {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .comparison-legend {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .legend-item {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .legend-symbol.same {
+    color: var(--dm-ink-muted);
+}
+
+/* ---- dérivé de rankings.css ---- */
+[data-theme="dark"] .rankings-header {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .rankings-header h2 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .matchday-selector label {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .matchday-selector select {
+    border-color: var(--dm-border);
+    color: var(--dm-ink);
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .matchday-info {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .ranking-section {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .ranking-section h3 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .ranking-table th, [data-theme="dark"] .ranking-table td {
+    border-bottom-color: var(--dm-border);
+}
+
+[data-theme="dark"] .pos-badge {
+    background: var(--dm-surface-2);
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .ranking-table .team-name {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .no-matches .empty-state {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .no-matches h3 {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .no-matches p {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .championship-stats {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .championship-stats h3 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .stat-item {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .stat-label {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .elo-info {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .elo-info strong {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .ranking-table .no-change {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .ranking-section h3 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .controls-container {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .control-group label {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .control-group select {
+    border-color: var(--dm-border);
+    color: var(--dm-ink);
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .h2h-table {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .h2h-table th, [data-theme="dark"] .h2h-table td {
+    border-bottom-color: var(--dm-border);
+}
+
+[data-theme="dark"] .h2h-table .rank-column {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .h2h-table .team-column {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .h2h-table .result-selected {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .info-message {
+    color: var(--dm-ink-muted);
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .ranking-tab {
+    border-color: var(--dm-border);
+    background: var(--dm-surface-1);
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .chart-controls {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .chart-controls .control-group label {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .chart-controls select[multiple] {
+    border-color: var(--dm-border);
+}
+
+[data-theme="dark"] .btn-small {
+    border-color: var(--dm-border);
+    background: var(--dm-surface-1);
+    color: var(--dm-ink);
+}
+
+/* ---- dérivé de results-table.css ---- */
+[data-theme="dark"] .results-header {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .results-header h2 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .results-header p {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .legend-item {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .legend-color {
+    border-color: var(--dm-border);
+}
+
+[data-theme="dark"] .legend-color.not-played {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .table-wrapper {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .results-table th, [data-theme="dark"] .results-table td {
+    border-color: var(--dm-border);
+}
+
+[data-theme="dark"] .match-cell.not-played {
+    background: var(--dm-surface-2);
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .match-cell.same-team {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .stat-card {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .stat-card h3 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .stat-card p {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .progress-bar {
+    background: var(--dm-surface-2);
+}
+
+/* ---- dérivé de statistics.css ---- */
+[data-theme="dark"] .stats-header {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .stats-header h2 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .season-selector label {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .season-selector select {
+    border-color: var(--dm-border);
+    color: var(--dm-ink);
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .stat-section {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .stat-section h3 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .stat-section h4 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .stats-table th, [data-theme="dark"] .stats-table td {
+    border-bottom-color: var(--dm-border);
+}
+
+[data-theme="dark"] .stats-table tbody tr:hover {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .stats-table .rank-2 {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .stats-table .player-name {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .time-analysis-controls {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .control-group label {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .control-group select {
+    border-color: var(--dm-border);
+    color: var(--dm-ink);
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .chart {
+    background: var(--dm-surface-1);
+    border-color: var(--dm-border);
+}
+
+[data-theme="dark"] .chart-bar-label {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .chart-bar-wrapper {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .chart-summary {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .minutes-column h4 {
+    border-bottom-color: var(--dm-border);
+}
+
+[data-theme="dark"] .minutes-list {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .minute-item {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .empty-stats {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .score-item {
+    background: var(--dm-surface-2);
+    border-color: var(--dm-border);
+}
+
+[data-theme="dark"] .score-label {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .score-percentage {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .record-card {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .record-title {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .record-value {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .record-comparison {
+    border-top-color: var(--dm-border);
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .heatmap-legend {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .heatmap-labels {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .heatmap-section h4 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .results-card-table th {
+    color: var(--dm-ink-muted);
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .results-card-table td:first-child {
+    color: var(--dm-ink);
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .result-cell.empty {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .result-match-card {
+    background: var(--dm-surface-2);
+    border-left-color: var(--dm-border);
+}
+
+[data-theme="dark"] .result-matchday {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .result-opponent {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .result-location {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .confrontations-intro {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .confrontations-controls select {
+    border-color: var(--dm-border);
+}
+
+[data-theme="dark"] .confrontations-legend {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .confrontations-graph {
+    border-color: var(--dm-border);
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .confrontation-details {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .confrontation-details.empty {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .confrontation-details h4 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .detail-match {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .detail-match .score {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .detail-match .matchday {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .bilan-item {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .bilan-item strong {
+    color: var(--dm-ink);
+}
+
+/* ---- dérivé de style.css ---- */
+[data-theme="dark"] body {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .nav-btn {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .nav-btn:hover {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .welcome-section {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .welcome-section h2 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .welcome-section > p {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .feature-card {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .feature-card h3 {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .feature-card p {
+    color: var(--dm-ink-muted);
+}
+
+/* ---- dérivé de mobile.css (média) ---- */
+@media (max-width: 900px) {
+    [data-theme="dark"] .results-card-table thead th {
+        background: var(--dm-surface-2);
+    }
+    [data-theme="dark"] .results-card-table tbody td:first-child, [data-theme="dark"] .results-card-table tbody th:first-child {
+        background: var(--dm-surface-2);
+    }
+}
+/* ---- dérivé de mobile.css (média) ---- */
+@media (max-width: 600px) {
+    [data-theme="dark"] .match-card .match-score .score-separator {
+        color: var(--dm-ink-muted);
+    }
+    [data-theme="dark"] .match-card .goal-item .goal-team {
+        color: var(--dm-ink-muted);
+    }
+    [data-theme="dark"] .difficulty-matches {
+        color: var(--dm-ink-muted);
+    }
+    [data-theme="dark"] .monte-carlo-table-wrapper {
+        background: var(--dm-surface-1);
+    }
+    [data-theme="dark"] .monte-carlo-table th, [data-theme="dark"] .monte-carlo-table td {
+        background: var(--dm-surface-1);
+    }
+    [data-theme="dark"] .final-ranking-wrapper {
+        background: var(--dm-surface-1);
+    }
+    [data-theme="dark"] .final-ranking-table th, [data-theme="dark"] .final-ranking-table td {
+        background: var(--dm-surface-1);
+    }
+}
+
+/* ---- 3. Corrections manuelles ---- */
+
+/* Zébrage et survols des tableaux : le noir translucide est invisible
+   sur fond sombre, on passe en blanc translucide */
+[data-theme="dark"] .ranking-table tbody tr:nth-child(odd) {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+[data-theme="dark"] .ranking-table tbody tr:hover {
+    background: rgba(52, 152, 219, 0.15);
+}
+
+[data-theme="dark"] .pos-badge {
+    background: var(--dm-surface-3);
+    color: var(--dm-ink);
+}
+
+/* Zones du classement : tintes légèrement plus présentes sur fond sombre */
+[data-theme="dark"] .ranking-table tr.champion {
+    background: rgba(241, 196, 15, 0.12) !important;
+}
+
+[data-theme="dark"] .ranking-table tr.european {
+    background: rgba(52, 152, 219, 0.14) !important;
+}
+
+[data-theme="dark"] .ranking-table tr.relegation {
+    background: rgba(231, 76, 60, 0.14) !important;
+}
+
+/* Elo : violet clair lisible sur sombre (le foncé #7d3c98 disparaîtrait) */
+[data-theme="dark"] .ranking-table .elo-rating,
+[data-theme="dark"] .elo-rating {
+    color: #c39bd3;
+}
+
+/* Modale de détails d'un match */
+[data-theme="dark"] .match-details-overlay {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+[data-theme="dark"] .md-modal-close {
+    background: var(--dm-surface-3);
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .md-similar-row,
+[data-theme="dark"] .md-h2h-row {
+    background: var(--dm-surface-2);
+}
+
+/* Courbe Elo : axes et étiquettes lisibles sur sombre */
+[data-theme="dark"] .md-chart-axis {
+    fill: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .md-chart-label {
+    fill: var(--dm-ink);
+}
+
+[data-theme="dark"] .md-chart svg line {
+    stroke: var(--dm-border);
+}
+
+[data-theme="dark"] .md-elo-change.positive {
+    background: rgba(39, 174, 96, 0.25);
+}
+
+[data-theme="dark"] .md-elo-change.negative {
+    background: rgba(231, 76, 60, 0.25);
+}
+
+/* Sélecteur Monte Carlo stylé en dur dans calendar.html */
+[data-theme="dark"] #monteCarloCount {
+    background: var(--dm-surface-2) !important;
+    color: var(--dm-ink) !important;
+}
+
+/* Bouton de bascule de thème dans la nav */
+.theme-toggle {
+    background: rgba(255, 255, 255, 0.12);
+    border: none;
+    border-radius: 50%;
+    width: 38px;
+    height: 38px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+    vertical-align: middle;
+}
+
+.theme-toggle:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: scale(1.1);
+}
+
+
+/* Table face-à-face en sombre : teintes adaptées */
+[data-theme="dark"] .h2h-table tbody tr:nth-child(even) {
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+[data-theme="dark"] .h2h-table tbody tr:hover {
+    background-color: rgba(52, 152, 219, 0.15);
+}
+
+[data-theme="dark"] .h2h-table .result-win {
+    background-color: rgba(39, 174, 96, 0.22);
+    color: #7dcea0;
+}
+
+[data-theme="dark"] .h2h-table .result-draw {
+    background-color: rgba(149, 165, 166, 0.15);
+    color: #aab7b8;
+}
+
+[data-theme="dark"] .h2h-table .result-loss {
+    background-color: rgba(231, 76, 60, 0.2);
+    color: #f1948a;
+}
+
+[data-theme="dark"] .h2h-table .result-none {
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+[data-theme="dark"] .h2h-table .result-selected {
+    background-color: rgba(52, 152, 219, 0.12);
+}
+
+/* Tuiles de statistiques : accents éclaircis pour rester lisibles */
+[data-theme="dark"] .stats-grid .stat-item:nth-child(4) .stat-value { color: #bb8fce; }
+
+/* Sélection multiple des graphiques */
+[data-theme="dark"] .chart-controls select[multiple] option:checked {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+}
