@@ -870,3 +870,162 @@
     color: #e74c3c;
     background: rgba(231, 76, 60, 0.1);
 }
+/* ===============================
+   SAISIE DES PRONOS — STEPPERS, BUTEURS, PROGRESSION
+   =============================== */
+
+/* Boutons − / + autour des champs de score */
+.score-stepper {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.score-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 2px solid #e9ecef;
+    background: white;
+    color: #2c3e50;
+    font-size: 1.15rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.score-btn:hover:not(:disabled) {
+    border-color: #3498db;
+    color: #3498db;
+    background: rgba(52, 152, 219, 0.08);
+}
+
+.score-btn:active:not(:disabled) {
+    background: #3498db;
+    color: white;
+    transform: scale(0.92);
+}
+
+.score-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* Bouton d'accès direct au défi buteur */
+.scorer-open-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.8rem;
+    border: 1.5px solid rgba(142, 68, 173, 0.5);
+    border-radius: 20px;
+    background: rgba(142, 68, 173, 0.06);
+    color: #8e44ad;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.scorer-open-btn:hover {
+    background: rgba(142, 68, 173, 0.15);
+    border-color: #8e44ad;
+}
+
+.scorer-open-pts {
+    font-size: 0.72rem;
+    opacity: 0.7;
+    font-weight: 700;
+}
+
+/* Boutons buteurs du picker (classes, ex-styles inline) */
+.scorer-btn {
+    padding: 0.35rem 0.7rem;
+    border-radius: 14px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    border: 1px solid #ddd;
+    background: #f8f9fa;
+    color: #2c3e50;
+    transition: all 0.15s;
+}
+
+.scorer-btn:hover {
+    border-color: #8e44ad;
+    color: #8e44ad;
+}
+
+.scorer-btn.selected {
+    background: #8e44ad;
+    color: white;
+    border-color: #8e44ad;
+}
+
+.scorer-btn.selected:hover {
+    color: white;
+}
+
+.scorer-goals {
+    opacity: 0.6;
+}
+
+/* Barre de progression flottante des pronos */
+.prono-progress-bar {
+    position: fixed;
+    bottom: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 1rem;
+    background: rgba(44, 62, 80, 0.96);
+    color: white;
+    border-radius: 25px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+    z-index: 500;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.prono-progress-bar.complete {
+    background: rgba(39, 174, 96, 0.96);
+}
+
+.prono-progress-save {
+    padding: 0.35rem 0.8rem;
+    border: none;
+    border-radius: 16px;
+    background: #3498db;
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.prono-progress-bar.complete .prono-progress-save {
+    background: white;
+    color: #27ae60;
+}
+
+.prono-progress-save:hover {
+    filter: brightness(1.1);
+}
+
+@media (max-width: 600px) {
+    .score-btn {
+        width: 38px;
+        height: 38px;
+    }
+
+    .prono-progress-bar {
+        bottom: 0.5rem;
+        width: calc(100% - 1rem);
+        justify-content: space-between;
+    }
+}

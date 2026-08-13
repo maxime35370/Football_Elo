@@ -231,7 +231,66 @@ function isMatchDayStarted(matchDay) {
  * au-dessus de 600px, le bouton pleine largeur s'insérait au milieu de la
  * rangée flex et cassait la ligne.
  */
+// ===============================
+// BARRE DE PROGRESSION DES PRONOS
+// Compteur flottant "X/N scores saisis" + accès rapide à la sauvegarde,
+// mis à jour en direct à chaque saisie (écouteur délégué).
+// ===============================
+
+function updatePronoProgressBar() {
+    const saveBtn = document.getElementById('savePredictionsBtn');
+    const openCards = document.querySelectorAll('.prediction-match:not(.locked)');
+
+    let bar = document.getElementById('pronoProgressBar');
+
+    // Rien à pronostiquer (ou bouton sauvegarde masqué) : cacher la barre
+    if (openCards.length === 0 || !saveBtn || saveBtn.style.display === 'none') {
+        if (bar) bar.style.display = 'none';
+        return;
+    }
+
+    let filled = 0;
+    openCards.forEach(card => {
+        const h = card.querySelector('.home-score');
+        const a = card.querySelector('.away-score');
+        if (h && a && h.value !== '' && a.value !== '') filled++;
+    });
+
+    if (!bar) {
+        bar = document.createElement('div');
+        bar.id = 'pronoProgressBar';
+        bar.className = 'prono-progress-bar';
+        bar.innerHTML = `
+            <span class="prono-progress-count"></span>
+            <button type="button" class="prono-progress-save">💾 Sauvegarder</button>
+        `;
+        bar.querySelector('.prono-progress-save').addEventListener('click', () => {
+            const btn = document.getElementById('savePredictionsBtn');
+            if (btn) btn.click();
+        });
+        document.body.appendChild(bar);
+    }
+
+    bar.style.display = 'flex';
+    const countEl = bar.querySelector('.prono-progress-count');
+    const done = filled === openCards.length;
+    countEl.textContent = `${done ? '✅' : '📝'} ${filled}/${openCards.length} prono${openCards.length > 1 ? 's' : ''} saisi${openCards.length > 1 ? 's' : ''}`;
+    bar.classList.toggle('complete', done);
+}
+
+// Mise à jour en direct pendant la saisie
+if (!window._pronoProgressBound) {
+    window._pronoProgressBound = true;
+    document.addEventListener('input', function(e) {
+        if (e.target.classList && (e.target.classList.contains('home-score') || e.target.classList.contains('away-score'))) {
+            updatePronoProgressBar();
+        }
+    });
+}
+
 function wrapExtrasForMobile() {
+    updatePronoProgressBar();
+
     if (window.innerWidth > 600) {
         // Desktop : s'assurer que tout est visible, supprimer les wrappers
         document.querySelectorAll('.extras-mobile-wrapper').forEach(wrapper => {
@@ -376,8 +435,8 @@ window.addEventListener('resize', () => {
             }
             
             .scorer-btn {
-                padding: 0.25rem 0.5rem !important;
-                font-size: 0.72rem !important;
+                padding: 0.45rem 0.7rem !important;
+                font-size: 0.8rem !important;
             }
             
             .combine-btn, .combine-toggle-btn {

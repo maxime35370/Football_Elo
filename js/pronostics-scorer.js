@@ -143,16 +143,11 @@ function renderScorerChallenge(homeTeamId, awayTeamId, existingPick, isLocked) {
             </div>
         `;
     } else {
-        // ❌ PAS DE BUTEUR → Checkbox + picker
+        // ❌ PAS DE BUTEUR → bouton direct qui ouvre le picker (accès en 1 clic)
         html += `
-            <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.3rem;">
-                <label style="display:flex;align-items:center;gap:0.3rem;cursor:pointer;font-size:0.85rem;color:#8e44ad;">
-                    <input type="checkbox" class="scorer-toggle" data-match="${matchKey}" 
-                           onchange="toggleScorerChallenge('${matchKey}')">
-                    ⚽ Défi 1er buteur
-                    <span style="font-size:0.75rem;color:#95a5a6;">(+${SCORER_FIRST_EXACT} pts)</span>
-                </label>
-            </div>
+            <button type="button" class="scorer-open-btn" onclick="toggleScorerPicker('${matchKey}')">
+                ⚽ 1er buteur <span class="scorer-open-pts">+${SCORER_FIRST_EXACT} pts</span>
+            </button>
             <div class="scorer-picker" id="scorerPicker_${matchKey}" style="display:none;">
                 ${_renderScorerPickerContent(matchKey, homeTeam, awayTeam, scorers, null)}
             </div>
@@ -176,14 +171,9 @@ function _renderScorerPickerContent(matchKey, homeTeam, awayTeam, scorers, exist
         scorers.home.slice(0, 5).forEach(s => {
             const selected = existingPick && matchScorerNames(existingPick, s.name);
             html += `
-                <button type="button" class="scorer-btn ${selected ? 'selected' : ''}" 
-                        onclick="selectScorer('${matchKey}', '${s.name.replace(/'/g, "\\'")}')"
-                        style="padding:0.2rem 0.5rem;border-radius:12px;font-size:0.75rem;cursor:pointer;
-                               border:1px solid ${selected ? '#8e44ad' : '#ddd'};
-                               background:${selected ? '#8e44ad' : '#f8f9fa'};
-                               color:${selected ? 'white' : '#2c3e50'};
-                               transition:all 0.15s;">
-                    ${s.name} <span style="opacity:0.6;">(${s.goals})</span>
+                <button type="button" class="scorer-btn ${selected ? 'selected' : ''}"
+                        onclick="selectScorer('${matchKey}', '${s.name.replace(/'/g, "\\'")}')">
+                    ${s.name} <span class="scorer-goals">(${s.goals})</span>
                 </button>
             `;
         });
@@ -195,14 +185,9 @@ function _renderScorerPickerContent(matchKey, homeTeam, awayTeam, scorers, exist
         scorers.away.slice(0, 5).forEach(s => {
             const selected = existingPick && matchScorerNames(existingPick, s.name);
             html += `
-                <button type="button" class="scorer-btn ${selected ? 'selected' : ''}" 
-                        onclick="selectScorer('${matchKey}', '${s.name.replace(/'/g, "\\'")}')"
-                        style="padding:0.2rem 0.5rem;border-radius:12px;font-size:0.75rem;cursor:pointer;
-                               border:1px solid ${selected ? '#8e44ad' : '#ddd'};
-                               background:${selected ? '#8e44ad' : '#f8f9fa'};
-                               color:${selected ? 'white' : '#2c3e50'};
-                               transition:all 0.15s;">
-                    ${s.name} <span style="opacity:0.6;">(${s.goals})</span>
+                <button type="button" class="scorer-btn ${selected ? 'selected' : ''}"
+                        onclick="selectScorer('${matchKey}', '${s.name.replace(/'/g, "\\'")}')">
+                    ${s.name} <span class="scorer-goals">(${s.goals})</span>
                 </button>
             `;
         });
@@ -268,20 +253,7 @@ function selectScorer(matchKey, scorerName) {
     const container = document.querySelector(`.scorer-challenge[data-match="${matchKey}"]`);
     if (container) {
         container.querySelectorAll('.scorer-btn').forEach(btn => {
-            btn.classList.remove('selected');
-            btn.style.background = '#f8f9fa';
-            btn.style.color = '#2c3e50';
-            btn.style.borderColor = '#ddd';
-        });
-        
-        // Sélectionner le bon
-        container.querySelectorAll('.scorer-btn').forEach(btn => {
-            if (btn.textContent.includes(scorerName)) {
-                btn.classList.add('selected');
-                btn.style.background = '#8e44ad';
-                btn.style.color = 'white';
-                btn.style.borderColor = '#8e44ad';
-            }
+            btn.classList.toggle('selected', btn.textContent.includes(scorerName));
         });
         
         // Vider le champ custom
@@ -317,12 +289,7 @@ function selectCustomScorer(matchKey) {
     // Désélectionner les boutons
     const container = document.querySelector(`.scorer-challenge[data-match="${matchKey}"]`);
     if (container) {
-        container.querySelectorAll('.scorer-btn').forEach(btn => {
-            btn.classList.remove('selected');
-            btn.style.background = '#f8f9fa';
-            btn.style.color = '#2c3e50';
-            btn.style.borderColor = '#ddd';
-        });
+        container.querySelectorAll('.scorer-btn').forEach(btn => btn.classList.remove('selected'));
     }
     
     // Highlight le champ custom
@@ -350,7 +317,9 @@ function _collapseScorerToBadge(matchKey, scorerName) {
     const picker = container.querySelector('.scorer-picker');
     if (picker) picker.style.display = 'none';
     
-    // Cacher la checkbox si elle existe
+    // Cacher le bouton d'ouverture (et l'ex-checkbox si présente)
+    const openBtn = container.querySelector('.scorer-open-btn');
+    if (openBtn) openBtn.style.display = 'none';
     const checkboxLabel = container.querySelector('label');
     if (checkboxLabel) checkboxLabel.style.display = 'none';
     
