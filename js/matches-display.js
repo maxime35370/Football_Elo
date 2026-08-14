@@ -18,7 +18,10 @@ function loadAndDisplayMatches() {
     updateStats();
     populateSeasonFilter();
     populateTeamFilter();
-    displayMatches();
+    // Appliquer les filtres dès le chargement : populateSeasonFilter
+    // présélectionne la saison active, displayMatches() l'ignorait et
+    // affichait aussi les saisons passées.
+    applyFilters();
 }
 
 // Afficher les statistiques
@@ -99,9 +102,12 @@ function applyFilters() {
         filtered = filtered.filter(match => match.season === seasonFilter.value);
     }
     
-    // Filtrer par équipe
+    // Filtrer par équipe (en respectant le filtre saison déjà appliqué)
     if (teamFilter && teamFilter.value) {
-        filtered = getMatchesByTeam(teamFilter.value);
+        const teamId = teamFilter.value;
+        filtered = filtered.filter(match =>
+            match.homeTeamId == teamId || match.awayTeamId == teamId
+        );
     }
     
     // Trier par date
