@@ -132,6 +132,20 @@ function createMatchCard(match, showMatchday = false) {
         ? `<span class="match-matchday-badge">J${match.matchDay}</span>`
         : '';
 
+    // Date/heure du match si renseignée (scheduledAt avec heure, sinon date)
+    let dateHtml = '';
+    const raw = match.scheduledAt || match.date;
+    if (raw) {
+        const d = new Date(raw);
+        if (!isNaN(d.getTime())) {
+            let text = d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+            if (match.scheduledAt) {
+                text += ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+            }
+            dateHtml = `<span class="match-row-date">${text}</span>`;
+        }
+    }
+
     // Ligne compacte (un match = une ligne), cliquable : ouvre la modale
     // de détails (stats si joué, analyse d'avant-match si à venir).
     // L'équipe à domicile est citée en premier, en gras.
@@ -140,6 +154,7 @@ function createMatchCard(match, showMatchday = false) {
              onclick="showCalendarMatchDetails('${match.homeTeamId}', '${match.awayTeamId}', ${match.matchDay || 0}, '${match.status}')">
             ${matchdayBadge}
             <span class="match-row-teams"><span class="match-row-home">${homeTeam ? homeTeam.shortName : '?'}</span> &ndash; ${awayTeam ? awayTeam.shortName : '?'}</span>
+            ${dateHtml}
             <span class="match-row-score ${match.status}">${score}</span>
         </div>
     `;

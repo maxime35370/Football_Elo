@@ -1881,3 +1881,10 @@
     font-weight: 600;
     opacity: 0.85;
 }
+
+.match-row-date {
+    font-size: 0.72rem;
+    color: #95a5a6;
+    white-space: nowrap;
+    font-weight: 600;
+}
