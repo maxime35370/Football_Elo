@@ -606,28 +606,36 @@ async function syncFromFirebase() {
 }
 
 // Afficher un message de synchronisation
+// Les succès sont silencieux (la pop-up masquait le menu à chaque
+// chargement) : seuls les problèmes méritent d'être signalés, en bas
+// à droite pour ne rien recouvrir d'important.
 function showSyncMessage(message, type) {
-    // Créer un message temporaire
+    if (type === 'success') {
+        console.log('✅ ' + message);
+        return;
+    }
+
     const messageDiv = document.createElement('div');
     messageDiv.style.cssText = `
         position: fixed;
-        top: 20px;
+        bottom: 20px;
         right: 20px;
         padding: 1rem;
-        border-radius: 5px;
+        border-radius: 8px;
         color: white;
         font-weight: bold;
         z-index: 1000;
-        ${type === 'success' ? 'background: #27ae60;' : 'background: #e74c3c;'}
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+        background: #e74c3c;
     `;
     messageDiv.textContent = message;
-    
+
     document.body.appendChild(messageDiv);
-    
-    // Supprimer après 3 secondes
+
+    // Supprimer après 4 secondes
     setTimeout(() => {
         messageDiv.remove();
-    }, 3000);
+    }, 4000);
 }
 
 // === INITIALISATION ===
