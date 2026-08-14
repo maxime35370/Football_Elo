@@ -1018,9 +1018,10 @@
 }
 
 @media (max-width: 600px) {
+    /* Sur mobile, le clavier numérique suffit : on masque les boutons
+       − / + pour alléger chaque bloc de match */
     .score-btn {
-        width: 38px;
-        height: 38px;
+        display: none;
     }
 
     .prono-progress-bar {
