@@ -207,8 +207,8 @@ function renderCreatedMatches() {
         const homeTeam = allTeams.find(t => t.id === match.homeTeamId);
         const awayTeam = allTeams.find(t => t.id === match.awayTeamId);
         
-        const scheduledValue = match.scheduledAt 
-            ? new Date(match.scheduledAt).toISOString().slice(0, 16) 
+        const scheduledValue = match.scheduledAt
+            ? toDatetimeLocalValue(match.scheduledAt)
             : '';
         
         return `

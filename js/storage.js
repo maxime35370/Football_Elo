@@ -605,6 +605,17 @@ async function syncFromFirebase() {
     }
 }
 
+// Formater une date pour un champ <input type="datetime-local"> en HEURE
+// LOCALE. Ne jamais utiliser toISOString().slice(0,16) pour cela : c'est
+// l'heure UTC, d'où des décalages de 2h (21:00 saisi -> 19:00 affiché,
+// et re-décalage à chaque sauvegarde).
+function toDatetimeLocalValue(dateLike) {
+    const d = new Date(dateLike);
+    if (isNaN(d.getTime())) return '';
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 // Afficher un message de synchronisation
 // Les succès sont silencieux (la pop-up masquait le menu à chaque
 // chargement) : seuls les problèmes méritent d'être signalés, en bas

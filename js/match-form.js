@@ -138,7 +138,7 @@ function loadMatchForEditing(matchId) {
             
             // ✅ FIX: Charger la date au format datetime-local (YYYY-MM-DDTHH:MM)
             if (match.scheduledAt) {
-                dateInput.value = new Date(match.scheduledAt).toISOString().slice(0, 16);
+                dateInput.value = toDatetimeLocalValue(match.scheduledAt);
             } else if (match.date) {
                 dateInput.value = match.date.includes('T') ? match.date.slice(0, 16) : match.date + 'T15:00';
             }
@@ -384,7 +384,7 @@ function setTodayDate() {
         // Format: YYYY-MM-DDTHH:MM
         const now = new Date();
         now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-        dateTimeInput.value = now.toISOString().slice(0, 16);
+        dateTimeInput.value = toDatetimeLocalValue(now);
     }
 }
 
