@@ -1001,31 +1001,17 @@
         grid-template-columns: 1fr !important;
         gap: 1rem !important;
     }
-    /* Match de simulation : TOUT sur une seule ligne, en compact.
-       5 éléments : [home] [input] [-] [input] [away] → flex nowrap. */
+    /* Match de simulation : bloc compact (équipes puis scores) */
     .simulation-match {
-        display: flex !important;
-        flex-wrap: nowrap !important;
-        align-items: center !important;
-        justify-content: center;
-        grid-template-columns: none !important;
-        gap: 0.35rem !important;
-        padding: 0.5rem 0.55rem !important;
+        padding: 0.45rem 0.25rem !important;
     }
     .simulation-match .team-home,
     .simulation-match .team-away {
-        flex: 1 1 0;
         min-width: 0;
-        font-size: 0.8rem !important;
+        font-size: 0.75rem !important;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-    }
-    .simulation-match .team-home {
-        text-align: right !important;
-    }
-    .simulation-match .team-away {
-        text-align: left !important;
     }
     .simulation-match input {
         flex: 0 0 auto;
