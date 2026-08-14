@@ -352,8 +352,8 @@ function displaySimulation() {
     // Générer les matchs à simuler
     let matchesHtml = sortedDays.map(day => `
         <div class="matchday-section">
-            <div class="matchday-header">Journée ${day}</div>
-            <div style="padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
+            <div class="matchday-header"><span>Journée ${day}</span></div>
+            <div class="sim-blocks">
                 ${matchesByDay[day].map(match => createSimulationMatchRow(match)).join('')}
             </div>
         </div>
@@ -370,7 +370,7 @@ function displaySimulation() {
     }
     
     container.innerHTML = `
-        <div class="simulation-grid" style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
+        <div class="simulation-grid">
             <div class="simulation-matches">${matchesHtml}</div>
             <div class="simulation-ranking">
                 <h4>📊 Classement simulé</h4>
@@ -422,13 +422,19 @@ function createSimulationMatchRow(match) {
     const homeScore = simulatedResults[matchKey]?.home ?? '';
     const awayScore = simulatedResults[matchKey]?.away ?? '';
     
+    // Bloc compact : équipes en haut, scores en dessous (3 blocs par ligne)
     return `
         <div class="simulation-match" data-match-key="${matchKey}">
-            <span class="team-home" title="${homeTeam ? homeTeam.name : '?'}">${homeTeam ? (homeTeam.shortName || homeTeam.name) : '?'}</span>
-            <input type="number" min="0" max="20" class="score-home" value="${homeScore}" data-match-key="${matchKey}" data-type="home">
-            <span class="vs">-</span>
-            <input type="number" min="0" max="20" class="score-away" value="${awayScore}" data-match-key="${matchKey}" data-type="away">
-            <span class="team-away" title="${awayTeam ? awayTeam.name : '?'}">${awayTeam ? (awayTeam.shortName || awayTeam.name) : '?'}</span>
+            <div class="sim-match-teams">
+                <span class="team-home" title="${homeTeam ? homeTeam.name : '?'}">${homeTeam ? (homeTeam.shortName || homeTeam.name) : '?'}</span>
+                <span class="sim-vs">vs</span>
+                <span class="team-away" title="${awayTeam ? awayTeam.name : '?'}">${awayTeam ? (awayTeam.shortName || awayTeam.name) : '?'}</span>
+            </div>
+            <div class="sim-match-scores">
+                <input type="number" min="0" max="20" class="score-home" value="${homeScore}" data-match-key="${matchKey}" data-type="home">
+                <span class="vs">-</span>
+                <input type="number" min="0" max="20" class="score-away" value="${awayScore}" data-match-key="${matchKey}" data-type="away">
+            </div>
         </div>
     `;
 }
