@@ -132,18 +132,15 @@ function createMatchCard(match, showMatchday = false) {
         ? `<span class="match-matchday-badge">J${match.matchDay}</span>`
         : '';
 
-    // Carte cliquable : ouvre la modale de détails (stats si joué,
-    // analyse d'avant-match si à venir) — voir calendar-match-details.js
+    // Ligne compacte (un match = une ligne), cliquable : ouvre la modale
+    // de détails (stats si joué, analyse d'avant-match si à venir).
+    // L'équipe à domicile est citée en premier, en gras.
     return `
-        <div class="match-card ${match.status} clickable"
+        <div class="match-row ${match.status} clickable"
              onclick="showCalendarMatchDetails('${match.homeTeamId}', '${match.awayTeamId}', ${match.matchDay || 0}, '${match.status}')">
             ${matchdayBadge}
-            <div class="match-teams">
-                <div class="match-team home">${homeTeam ? homeTeam.shortName : '?'}</div>
-                <div class="match-team away">${awayTeam ? awayTeam.shortName : '?'}</div>
-            </div>
-            <div class="match-score ${match.status}">${score}</div>
-            <span class="match-status ${match.status}">${isPlayed ? 'Joué' : 'À venir'}</span>
+            <span class="match-row-teams"><span class="match-row-home">${homeTeam ? homeTeam.shortName : '?'}</span> &ndash; ${awayTeam ? awayTeam.shortName : '?'}</span>
+            <span class="match-row-score ${match.status}">${score}</span>
         </div>
     `;
 }

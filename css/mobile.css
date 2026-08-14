@@ -795,12 +795,11 @@
         font-size: 0.9rem !important;
     }
 
-    /* Grille des matchs du calendrier : 3 cartes par ligne sur mobile */
+    /* Matchs du calendrier : lignes compactes empilées */
     .matchday-matches {
-        display: grid !important;
-        grid-template-columns: repeat(3, 1fr) !important;
-        padding: 0.4rem !important;
-        gap: 0.4rem !important;
+        display: flex !important;
+        flex-direction: column !important;
+        padding: 0.2rem 0 !important;
     }
 
     /* Quand une équipe est sélectionnée : 2 journées côte à côte et
@@ -818,9 +817,12 @@
         font-size: 0.95rem !important;
     }
     .schedule-grid.team-filtered .matchday-matches {
-        grid-template-columns: 1fr !important;
-        padding: 0.4rem !important;
-        gap: 0.4rem !important;
+        padding: 0.2rem 0 !important;
+    }
+
+    .match-row {
+        padding: 0.4rem 0.5rem !important;
+        font-size: 0.82rem !important;
     }
 
     /* Badge Jxx : plus compact sur mobile */

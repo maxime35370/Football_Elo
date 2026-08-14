@@ -163,9 +163,12 @@
 }
 
 .schedule-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
+    /* Journées côte à côte : ~3 colonnes sur grand écran, 2 sur
+       moyennes largeurs, 1 sur mobile — pour limiter le scroll */
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(420px, 100%), 1fr));
+    gap: 1.25rem;
+    align-items: start;
 }
 
 .matchday-section {
@@ -177,9 +180,9 @@
 .matchday-header {
     background: linear-gradient(135deg, #3498db, #2980b9);
     color: white;
-    padding: 1rem;
+    padding: 0.6rem 0.9rem;
     font-weight: bold;
-    font-size: 1.1rem;
+    font-size: 1rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -191,10 +194,64 @@
 }
 
 .matchday-matches {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1rem;
-    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    padding: 0.35rem 0;
+}
+
+/* Ligne compacte : un match par ligne */
+.match-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.45rem 0.9rem;
+    border-left: 3px solid transparent;
+    border-bottom: 1px solid rgba(127, 140, 141, 0.12);
+    cursor: pointer;
+    transition: background 0.15s;
+    font-size: 0.92rem;
+}
+
+.match-row:last-child {
+    border-bottom: none;
+}
+
+.match-row:hover {
+    background: rgba(52, 152, 219, 0.1);
+}
+
+.match-row.played {
+    border-left-color: #27ae60;
+}
+
+.match-row.upcoming {
+    border-left-color: #f39c12;
+}
+
+.match-row-teams {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.match-row-home {
+    font-weight: 700;
+}
+
+.match-row-score {
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.match-row-score.played {
+    color: #27ae60;
+}
+
+.match-row-score.upcoming {
+    color: #f39c12;
+    font-size: 0.78rem;
+    font-weight: 600;
 }
 
 .match-card {
@@ -1817,4 +1874,10 @@
     .match-scheduled-input {
         width: 100%;
     }
+}
+
+.matchday-header .match-count {
+    font-size: 0.72rem;
+    font-weight: 600;
+    opacity: 0.85;
 }
