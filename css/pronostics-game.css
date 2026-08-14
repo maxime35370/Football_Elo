@@ -624,9 +624,9 @@
    ONGLET RÈGLES
    =============================== */
 
+/* L'onglet Règles occupe toute la largeur disponible, comme les autres onglets */
 .rules-content {
-    max-width: 700px;
-    margin: 0 auto;
+    width: 100%;
 }
 
 .rules-content h3 {
