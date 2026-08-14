@@ -3042,3 +3042,9 @@
 [data-theme="dark"] .tree-cell.cell-soft {
     color: var(--dm-ink);
 }
+
+/* Bandeau saison sans match (page Stats) */
+[data-theme="dark"] .empty-stats-notice {
+    background: rgba(52, 152, 219, 0.15);
+    color: var(--dm-ink);
+}
