@@ -22,7 +22,8 @@ function openManualMode() {
         ? Math.max(...futureMatches.map(m => m.matchDay || 0), 0) 
         : lastPlayedMatchDay;
     
-    manualMatchDay = Math.max(lastPlayedMatchDay, lastFutureMatchDay) + 1;
+    const maxDay = Math.max((allTeams.length - 1) * 2, 1);
+    manualMatchDay = Math.min(Math.max(lastPlayedMatchDay, lastFutureMatchDay) + 1, maxDay);
     
     // Peupler le sélecteur de journées
     populateManualMatchDaySelector();
@@ -52,16 +53,22 @@ function populateManualMatchDaySelector() {
     if (!select) return;
     
     const numTeams = allTeams.length;
-    const totalMatchDays = (numTeams - 1) * 2;
-    
+    // 18 équipes -> 17 adversaires x2 (aller/retour) = 34 journées
+    const totalMatchDays = Math.max((numTeams - 1) * 2, 1);
+
     // Trouver les journées qui ont déjà des matchs
     const existingMatchDays = new Set([
         ...allMatches.map(m => m.matchDay),
         ...futureMatches.map(m => m.matchDay)
     ]);
-    
+
+    // Ne proposer que les journées du championnat — sauf si des matchs
+    // existent déjà au-delà (pour pouvoir les rouvrir et les corriger)
+    const maxExisting = Math.max(0, ...[...existingMatchDays].filter(d => d));
+    const lastDay = Math.max(totalMatchDays, maxExisting);
+
     let options = '';
-    for (let day = 1; day <= totalMatchDays + 5; day++) {
+    for (let day = 1; day <= lastDay; day++) {
         const hasMatches = existingMatchDays.has(day);
         const label = hasMatches ? `Journée ${day} (existante)` : `Journée ${day}`;
         const selected = day === manualMatchDay ? 'selected' : '';
