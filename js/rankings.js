@@ -356,11 +356,16 @@ function createRankingRow(team, position) {
 
 // Mettre à jour les statistiques du championnat
 function updateChampionshipStats() {
-    const matches = getStoredMatches();
     const teams = getStoredTeams();
-    
+
+    // Ne compter que les matchs de la saison affichée : sans ce filtre,
+    // le bloc affichait les totaux de toutes les saisons confondues
+    // (des données alors que la saison n'a pas commencé).
+    const season = selectedSeason || getCurrentSeason();
+    const matches = getStoredMatches().filter(m => !season || m.season === season);
+
     // Filtrer les matchs selon la journée sélectionnée
-    const filteredMatches = currentMatchDay 
+    const filteredMatches = currentMatchDay
         ? matches.filter(match => match.matchDay <= currentMatchDay)
         : matches;
     
