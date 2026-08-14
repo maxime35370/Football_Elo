@@ -106,38 +106,65 @@ async function onSeasonChange(event) {
 
 async function loadSeasonData() {
     if (!currentSeason) {
-        showEmptyState();
+        showEmptyState(true);
         return;
     }
-    
+
     // Charger tous les matchs de la saison
     allMatches = await getStoredMatchesAsync();
     allMatches = allMatches.filter(match => match.season === currentSeason);
-    
-    if (allMatches.length === 0) {
-        showEmptyState();
-        return;
-    }
-    
-    // Mettre à jour toutes les sections
-    updateTopScorers();
-    updateTimeAnalysis();
-    updateGeneralStats();
-    toggleStatsView();
-    initNewStats();
-    initMatchdaySummary();
-    initFranceMap();
-    initTitleRace();
+
+    // Saison sans match : on garde toutes les sections visibles (avec leurs
+    // valeurs vides) et on affiche un simple bandeau — avant, toute la page
+    // était effacée, sélecteur de saison compris.
+    showEmptyState(allMatches.length === 0);
+
+    // Mettre à jour toutes les sections. Chaque section est isolée : si
+    // l'une d'elles échoue (notamment sans aucun match), les autres
+    // s'affichent quand même.
+    [
+        updateTopScorers,
+        updateTimeAnalysis,
+        updateGeneralStats,
+        toggleStatsView,
+        initNewStats,
+        initMatchdaySummary,
+        initFranceMap,
+        initTitleRace
+    ].forEach(fn => {
+        try {
+            fn();
+        } catch (e) {
+            console.error(`Erreur dans ${fn.name} :`, e);
+        }
+    });
 }
 
-function showEmptyState() {
-    document.querySelector('.stats-container').innerHTML = `
-        <div class="empty-stats">
-            <h3>📭 Aucune donnée disponible</h3>
-            <p>Il n'y a pas encore de matchs pour cette saison.</p>
-            <a href="add-match.html" class="btn">➕ Ajouter un match</a>
-        </div>
-    `;
+// Bandeau "saison sans match" (non destructif : les sections restent visibles)
+function showEmptyState(show) {
+    let notice = document.getElementById('statsEmptyNotice');
+
+    if (!show) {
+        if (notice) notice.remove();
+        return;
+    }
+
+    if (!notice) {
+        notice = document.createElement('div');
+        notice.id = 'statsEmptyNotice';
+        notice.className = 'empty-stats-notice';
+        notice.innerHTML = `
+            📭 <strong>Pas encore de matchs pour cette saison.</strong>
+            Les statistiques ci-dessous se rempliront au fil des journées.
+            <a href="add-match.html">➕ Ajouter un match</a>
+        `;
+        const header = document.querySelector('.stats-header');
+        if (header && header.parentNode) {
+            header.after(notice);
+        } else {
+            document.querySelector('.stats-container')?.prepend(notice);
+        }
+    }
 }
 
 // === TOP 10 BUTEURS ===
