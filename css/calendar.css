@@ -1024,14 +1024,16 @@
     background: linear-gradient(135deg, rgba(231, 76, 60, 0.1), rgba(192, 57, 43, 0.05));
 }
 
-/* Classement simulé : fixe pendant le scroll des journées */
+/* Classement simulé : fixe pendant le scroll des journées.
+   Le décalage haut laisse la place à la barre de navigation collante
+   (position: sticky; top: 0) qui masquerait sinon le haut du tableau. */
 .simulation-ranking {
     position: sticky;
-    top: 1rem;
+    top: 6.5rem;
     background: #f8f9fa;
     border-radius: 12px;
     padding: 0.75rem;
-    max-height: calc(100vh - 2rem);
+    max-height: calc(100vh - 7.5rem);
     overflow-y: auto;
 }
 
