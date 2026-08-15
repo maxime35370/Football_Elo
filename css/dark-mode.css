@@ -866,7 +866,9 @@
 }
 
 [data-theme="dark"] .elo-note {
+    background: rgba(39, 174, 96, 0.15);
     color: var(--dm-ink);
+    border-left-color: #27ae60;
 }
 
 [data-theme="dark"] .team-form-display {
@@ -1631,8 +1633,11 @@
 }
 
 [data-theme="dark"] .btn-secondary {
-    background: var(--dm-surface-2);
-    color: var(--dm-ink-muted);
+    /* On garde le dégradé gris du mode clair : il reste lisible sur fond
+       sombre, alors que la version aplatie (surface + encre atténuée)
+       ressemblait à un bouton désactivé */
+    background: linear-gradient(45deg, #95a5a6, #7f8c8d);
+    color: white;
 }
 
 [data-theme="dark"] .match-time {
