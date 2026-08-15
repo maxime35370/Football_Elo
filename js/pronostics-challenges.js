@@ -48,7 +48,7 @@ const CHALLENGE_TYPES = [
     },
     {
         id: 'clean_sheet',
-        label: (match, params) => `Clean sheet pour ${params.teamShort} ?`,
+        label: (match, params) => `Clean sheet pour ${params.teamShort} dans ${match.homeShort} - ${match.awayShort} ?`,
         emoji: '🧤',
         generate: (match) => {
             // L'équipe la plus forte (par Elo pré-journée) a plus de chances de clean sheet
@@ -81,7 +81,7 @@ const CHALLENGE_TYPES = [
     },
     {
         id: 'home_win',
-        label: (match) => `${match.homeShort} gagne à domicile ?`,
+        label: (match) => `${match.homeShort} gagne à domicile contre ${match.awayShort} ?`,
         emoji: '🏠',
         generate: (match) => {
             // Intéressant quand le favori est à l'extérieur
