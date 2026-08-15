@@ -3145,3 +3145,28 @@
 [data-theme="dark"] .df-grid {
     stroke: var(--dm-border);
 }
+
+/* Matchs de la journée proposés dans l'ajout de match */
+[data-theme="dark"] .matchday-fixtures {
+    background: var(--dm-surface-2);
+    border-color: var(--dm-border);
+}
+
+[data-theme="dark"] .fixtures-title {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .fixture-chip {
+    background: var(--dm-surface-1);
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .fixture-chip:hover {
+    background: var(--dm-surface-3);
+}
+
+[data-theme="dark"] .fixture-chip.fixture-played {
+    background: var(--dm-surface-2);
+    border-color: var(--dm-border);
+    color: var(--dm-ink-muted);
+}

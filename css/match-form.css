@@ -734,3 +734,76 @@
         align-items: start;
     }
 }
+
+/* ===============================
+   MATCHS DE LA JOURNÉE (calendrier)
+   =============================== */
+
+.matchday-fixtures {
+    background: #f8f9fa;
+    border: 1px solid #ecf0f1;
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.fixtures-title {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 0.6rem;
+}
+
+.fixtures-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
+}
+
+.fixture-chip {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.1rem;
+    background: white;
+    border: 2px solid #3498db55;
+    border-radius: 10px;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #2c3e50;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.fixture-chip small {
+    font-weight: 400;
+    color: #7f8c8d;
+    font-size: 0.75rem;
+}
+
+.fixture-chip:hover {
+    border-color: #3498db;
+    background: #eaf4fc;
+    transform: translateY(-1px);
+}
+
+.fixture-chip.fixture-played {
+    cursor: default;
+    border-color: #ecf0f1;
+    background: #f4f6f7;
+    color: #7f8c8d;
+    font-weight: 500;
+}
+
+.fixture-chip.fixture-played:hover {
+    transform: none;
+    background: #f4f6f7;
+    border-color: #ecf0f1;
+}
+
+.fixtures-done {
+    color: #27ae60;
+    font-size: 0.9rem;
+    margin-bottom: 0.4rem;
+}
