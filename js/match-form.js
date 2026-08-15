@@ -1331,6 +1331,20 @@ function renderMatchdayFixtures() {
                d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
     };
 
+    // Ordre chronologique, puis alphabétique de l'équipe à domicile à heure
+    // égale (comme l'onglet Calendrier)
+    toEnter.sort((a, b) => {
+        const rawA = a.scheduledAt || '';
+        const rawB = b.scheduledAt || '';
+        if (rawA !== rawB) {
+            if (!rawA) return 1;
+            if (!rawB) return -1;
+            const diff = new Date(rawA) - new Date(rawB);
+            if (diff !== 0) return diff;
+        }
+        return short(a.homeTeamId).localeCompare(short(b.homeTeamId), 'fr');
+    });
+
     let html = `<div class="fixtures-title">📋 Matchs de la journée ${dayValue}</div>`;
 
     if (toEnter.length > 0) {

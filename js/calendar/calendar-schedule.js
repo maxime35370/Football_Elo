@@ -95,8 +95,27 @@ function displaySchedule() {
         return;
     }
     
+    // Tri des matchs d'une journée : par date/heure, puis ordre alphabétique
+    // de l'équipe à domicile quand plusieurs matchs sont à la même heure
+    // (les matchs sans date passent en dernier)
+    const homeShort = m => {
+        const t = allTeams.find(tm => tm.id == m.homeTeamId);
+        return t ? t.shortName : '';
+    };
+    const sortMatchesChrono = matches => [...matches].sort((a, b) => {
+        const rawA = a.scheduledAt || a.date || '';
+        const rawB = b.scheduledAt || b.date || '';
+        if (rawA !== rawB) {
+            if (!rawA) return 1;
+            if (!rawB) return -1;
+            const diff = new Date(rawA) - new Date(rawB);
+            if (diff !== 0) return diff;
+        }
+        return homeShort(a).localeCompare(homeShort(b), 'fr');
+    });
+
     container.innerHTML = sortedDays.map(day => {
-        const matches = matchesByDay[day];
+        const matches = sortMatchesChrono(matchesByDay[day]);
         const playedCount = matches.filter(m => m.status === 'played').length;
         const upcomingCount = matches.filter(m => m.status === 'upcoming').length;
 
