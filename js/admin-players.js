@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     document.getElementById('addStintBtn').addEventListener('click', apAddStintFromSelectors);
     document.getElementById('newPlayerBtn').addEventListener('click', () => apOpenPlayerForm(null));
     document.getElementById('detectedSearch').addEventListener('input', apRenderDetected);
+    document.getElementById('detectedSeason').addEventListener('change', apRefreshAll);
     document.getElementById('mergeSelectionBtn').addEventListener('click', apCreateFromSelection);
 });
 
@@ -55,12 +56,16 @@ function apTeamShort(teamId) {
 // BUTEURS DÉTECTÉS (NON LIÉS)
 // ===============================
 
-// Regroupe tous les buts non résolus par (nom normalisé, club), toutes
-// saisons confondues, pour proposer la création/fusion de joueurs.
+// Regroupe les buts non résolus par (nom normalisé, club) pour proposer la
+// création/fusion de joueurs. Limité à la saison choisie dans le filtre
+// (saison active par défaut, « Toutes les saisons » disponible).
 function apComputeDetected() {
     const buckets = {};
+    const seasonSel = document.getElementById('detectedSeason');
+    const seasonFilter = seasonSel ? seasonSel.value : 'all';
 
     apMatches.forEach(match => {
+        if (seasonFilter !== 'all' && match.season !== seasonFilter) return;
         (match.goals || []).forEach(goal => {
             if (!goal.scorer) return;
             const teamId = String(goal.teamId);
@@ -220,6 +225,13 @@ function apRenderPlayers() {
 // ===============================
 
 function apPopulateFormSelectors() {
+    // Filtre saison des buteurs détectés : saison active par défaut
+    const detectedSeason = document.getElementById('detectedSeason');
+    const seasonsList = (typeof getSeasonsOrderedByDate === 'function' ? getSeasonsOrderedByDate() : []) || [];
+    detectedSeason.innerHTML = seasonsList.map(s =>
+        `<option value="${s.name}"${s.isActive ? ' selected' : ''}>${s.name}</option>`).join('') +
+        '<option value="all">Toutes les saisons</option>';
+
     const clubSelect = document.getElementById('stintTeam');
     clubSelect.innerHTML = [...apTeams]
         .sort((a, b) => (a.shortName || '').localeCompare(b.shortName || '', 'fr'))
