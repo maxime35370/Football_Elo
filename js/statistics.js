@@ -135,7 +135,12 @@ async function loadSeasonData() {
         initNewStats,
         initMatchdaySummary,
         initFranceMap,
-        initTitleRace
+        initTitleRace,
+        // Ces trois blocs n'étaient dessinés qu'au chargement initial et
+        // ignoraient donc les changements du sélecteur de saison
+        updatePerformanceChart,
+        displayConfrontations,
+        displayVulnerability
     ].forEach(fn => {
         try {
             fn();
