@@ -8,6 +8,9 @@ let allTeams = [];
 let allMatches = [];
 let allSeasonsMatches = [];   // Tous les matchs joués, toutes saisons (pour les confrontations directes)
 let futureMatches = [];
+// Affiches du calendrier dont le match est déjà joué : écartées de
+// futureMatches (en mémoire) mais conservées pour les sauvegardes
+let playedFixturesAside = [];
 let teamsWithElo = [];
 
 // Variables pour le mode manuel
@@ -94,24 +97,25 @@ async function loadSeasonData() {
     console.log('Future Matches:', futureMatches.length);
     
     // ========================================
-    // NETTOYAGE AUTOMATIQUE : Enlever de futureMatches les matchs déjà joués
+    // Les matchs déjà joués sont écartés EN MÉMOIRE seulement : le calendrier
+    // stocké garde toutes les affiches. (Avant, la liste filtrée était
+    // réécrite en base : supprimer un match joué ne restaurait jamais son
+    // affiche au calendrier.)
     // ========================================
     const playedKeys = new Set();
     allMatches.forEach(m => {
         playedKeys.add(`${m.homeTeamId}-${m.awayTeamId}`);
     });
-    
-    const originalCount = futureMatches.length;
+
+    // Les affiches déjà jouées sont mises de côté : toute sauvegarde du
+    // calendrier (mode manuel) doit les réinjecter pour ne pas les perdre
+    playedFixturesAside = futureMatches.filter(m =>
+        playedKeys.has(`${m.homeTeamId}-${m.awayTeamId}`));
+
     futureMatches = futureMatches.filter(m => {
         const key = `${m.homeTeamId}-${m.awayTeamId}`;
         return !playedKeys.has(key);
     });
-    
-    // Si des matchs ont été nettoyés, sauvegarder
-    if (futureMatches.length !== originalCount) {
-        console.log(`🧹 Nettoyage automatique: ${originalCount - futureMatches.length} match(s) retiré(s) de futureMatches`);
-        await saveFutureMatches(currentSeason, futureMatches);
-    }
     // ========================================
     
     // Charger les équipes de la saison

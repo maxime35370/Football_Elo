@@ -302,9 +302,10 @@ function saveManualMatches() {
         });
     });
     
-    // Sauvegarder
-    saveFutureMatches(currentSeason, futureMatches);
-    
+    // Sauvegarder (en réinjectant les affiches déjà jouées, écartées de
+    // futureMatches en mémoire, pour ne pas les effacer du calendrier)
+    saveFutureMatches(currentSeason, [...futureMatches, ...(typeof playedFixturesAside !== 'undefined' ? playedFixturesAside : [])]);
+
     // Mettre à jour l'affichage
     updateCalendarStatus();
     populateManualMatchDaySelector();
@@ -324,7 +325,7 @@ function clearManualMatches() {
     
     // Supprimer aussi de futureMatches si déjà sauvegardés
     futureMatches = futureMatches.filter(m => m.matchDay !== manualMatchDay);
-    saveFutureMatches(currentSeason, futureMatches);
+    saveFutureMatches(currentSeason, [...futureMatches, ...(typeof playedFixturesAside !== 'undefined' ? playedFixturesAside : [])]);
     
     createdManualMatches = [];
     selectedHomeTeam = null;
