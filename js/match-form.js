@@ -367,6 +367,18 @@ function setupFormListeners() {
             // Réappliquer le filtre quand la journée change
             filterAvailableTeams();
         });
+        // Proposer les matchs du calendrier pour la journée saisie
+        matchDayInput.addEventListener('input', renderMatchdayFixtures);
+        matchDayInput.addEventListener('change', renderMatchdayFixtures);
+    }
+
+    // Clic sur une affiche proposée → pré-remplit équipes + horaire
+    const fixturesContainer = document.getElementById('matchdayFixtures');
+    if (fixturesContainer) {
+        fixturesContainer.addEventListener('click', function(e) {
+            const btn = e.target.closest('.fixture-chip[data-home]');
+            if (btn) selectMatchdayFixture(btn.dataset.home, btn.dataset.away, btn.dataset.scheduled);
+        });
     }
 
     // Bouton pour ajouter un but
@@ -1266,4 +1278,113 @@ function showError(message) {
     setTimeout(() => {
         errorDiv.style.display = 'none';
     }, 5000);
+}
+// ===============================
+// MATCHS DE LA JOURNÉE (depuis le calendrier)
+// ===============================
+//
+// Quand une journée est saisie, on propose directement les affiches prévues
+// au calendrier : celles restant à saisir sont cliquables (pré-remplissage
+// équipes + horaire), celles déjà enregistrées s'affichent avec leur score
+// (modifiables depuis la page Historique).
+
+function renderMatchdayFixtures() {
+    const container = document.getElementById('matchdayFixtures');
+    if (!container) return;
+
+    const dayValue = parseInt(document.getElementById('matchDay')?.value);
+
+    // Masqué en mode édition ou sans journée valide
+    if (!dayValue || dayValue < 1 || editingMatchId) {
+        container.style.display = 'none';
+        container.innerHTML = '';
+        return;
+    }
+
+    const season = typeof getCurrentSeason === 'function' ? getCurrentSeason() : null;
+    const future = (typeof loadFutureMatches === 'function' && season)
+        ? (loadFutureMatches(season) || [])
+        : [];
+    const played = getStoredMatches().filter(m =>
+        (!season || m.season === season) && m.matchDay == dayValue);
+
+    const playedKeys = new Set(played.map(m => `${m.homeTeamId}-${m.awayTeamId}`));
+    const toEnter = future.filter(f =>
+        f.matchDay == dayValue && !playedKeys.has(`${f.homeTeamId}-${f.awayTeamId}`));
+
+    if (toEnter.length === 0 && played.length === 0) {
+        container.style.display = 'none';
+        container.innerHTML = '';
+        return;
+    }
+
+    const short = id => {
+        const t = teamsData.find(tm => tm.id == id);
+        return t ? t.shortName : '?';
+    };
+
+    const timeText = f => {
+        if (!f.scheduledAt) return '';
+        const d = new Date(f.scheduledAt);
+        if (isNaN(d.getTime())) return '';
+        return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }) + ' ' +
+               d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    };
+
+    let html = `<div class="fixtures-title">📋 Matchs de la journée ${dayValue}</div>`;
+
+    if (toEnter.length > 0) {
+        html += '<div class="fixtures-row">' + toEnter.map(f => `
+            <button type="button" class="fixture-chip"
+                    data-home="${f.homeTeamId}" data-away="${f.awayTeamId}"
+                    data-scheduled="${f.scheduledAt || ''}"
+                    title="Cliquer pour pré-remplir le formulaire">
+                ${short(f.homeTeamId)} – ${short(f.awayTeamId)}
+                ${timeText(f) ? `<small>${timeText(f)}</small>` : ''}
+            </button>`).join('') + '</div>';
+    } else {
+        html += '<div class="fixtures-done">✅ Tous les matchs de cette journée sont saisis.</div>';
+    }
+
+    if (played.length > 0) {
+        html += '<div class="fixtures-row">' + played.map(m => `
+            <span class="fixture-chip fixture-played"
+                  title="Déjà enregistré — modifiable depuis la page Historique">
+                ${short(m.homeTeamId)} ${m.finalScore ? m.finalScore.home + '-' + m.finalScore.away : ''} ${short(m.awayTeamId)}
+            </span>`).join('') + '</div>';
+    }
+
+    // Ne pas re-rendre un contenu identique : l'événement change (blur du
+    // champ Journée) partait juste avant le clic sur une affiche et le clic
+    // atterrissait sur un chip détaché du DOM — premier clic perdu
+    if (container._lastFixturesHtml === html) {
+        container.style.display = 'block';
+        return;
+    }
+    container._lastFixturesHtml = html;
+    container.innerHTML = html;
+    container.style.display = 'block';
+}
+
+// Pré-remplit le formulaire avec une affiche du calendrier
+function selectMatchdayFixture(homeId, awayId, scheduledAt) {
+    const homeSelect = document.getElementById('homeTeam');
+    const awaySelect = document.getElementById('awayTeam');
+    if (!homeSelect || !awaySelect) return;
+
+    homeSelect.value = homeId;
+    homeSelect.dispatchEvent(new Event('change'));
+    // Le change du domicile peut reconstruire la liste extérieure : on
+    // sélectionne l'adversaire après coup
+    awaySelect.value = awayId;
+    awaySelect.dispatchEvent(new Event('change'));
+
+    // Horaire du calendrier s'il est renseigné
+    if (scheduledAt && typeof toDatetimeLocalValue === 'function') {
+        const input = document.getElementById('matchDateTime');
+        if (input) {
+            const local = toDatetimeLocalValue(scheduledAt);
+            if (local) input.value = local;
+        }
+    }
 }
