@@ -17,9 +17,9 @@ function initializeH2HSelectors() {
     
     if (!teamSelect || !matchdaySelect) return;
     
-    // Remplir le sélecteur d'équipes
+    // Remplir le sélecteur d'équipes (ordre alphabétique)
     teamSelect.innerHTML = '<option value="">Choisir une équipe...</option>';
-    h2hAllTeams.forEach(team => {
+    [...h2hAllTeams].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'fr')).forEach(team => {
         const option = document.createElement('option');
         option.value = team.id;
         option.textContent = team.name;

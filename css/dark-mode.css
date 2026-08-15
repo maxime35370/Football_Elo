@@ -3048,3 +3048,71 @@
     background: rgba(52, 152, 219, 0.15);
     color: var(--dm-ink);
 }
+
+/* Référentiel des joueurs (page Admin) */
+[data-theme="dark"] .stint-chip {
+    background: var(--dm-surface-2);
+    border-color: var(--dm-border);
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .stint-chip small {
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .stint-chip.stint-current {
+    background: rgba(39, 174, 96, 0.18);
+    border-color: #27ae60;
+}
+
+[data-theme="dark"] .player-aliases code {
+    background: var(--dm-surface-2);
+    color: var(--dm-ink-muted);
+}
+
+[data-theme="dark"] .detected-row {
+    background: var(--dm-surface-2);
+    border-color: var(--dm-border);
+}
+
+[data-theme="dark"] .detected-row:hover {
+    background: var(--dm-surface-3);
+}
+
+[data-theme="dark"] .detected-name {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .detected-toolbar input,
+[data-theme="dark"] .stint-add-row select {
+    background: var(--dm-surface-2);
+    border-color: var(--dm-border);
+    color: var(--dm-ink);
+}
+
+/* Modale des matchs d'un joueur + lignes buteurs cliquables */
+[data-theme="dark"] .scorer-row:hover {
+    background: var(--dm-surface-3);
+}
+
+[data-theme="dark"] .pm-box {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .pm-box h3,
+[data-theme="dark"] .pm-club-section h4,
+[data-theme="dark"] .pm-match {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .pm-club-section h4 {
+    border-bottom-color: var(--dm-border);
+}
+
+[data-theme="dark"] .pm-match:nth-child(even) {
+    background: var(--dm-surface-2);
+}
+
+[data-theme="dark"] .pm-match.pm-scored {
+    background: rgba(39, 174, 96, 0.18);
+}

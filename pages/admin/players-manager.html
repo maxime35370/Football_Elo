@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Référentiel joueurs - Admin Football Elo</title>
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="../../css/admin.css">
+    <link rel="stylesheet" href="../../css/mobile.css">
+    <link rel="stylesheet" href="../../css/dark-mode.css">
+    <script src="../../js/theme.js"></script>
+</head>
+<body>
+
+    <nav>
+        <button class="burger-menu" onclick="toggleMenu()">☰</button>
+            <button class="theme-toggle" onclick="toggleTheme()" title="Changer de thème">☀️</button>
+        <div class="nav-container">
+            <a href="../../index.html" class="nav-btn">🏠 Accueil</a>
+            <a href="../../pages/add-match.html" class="nav-btn">➕ Ajouter un match</a>
+            <a href="../../pages/matches.html" class="nav-btn">📋 Historique</a>
+            <a href="../../pages/results-table.html" class="nav-btn">📊 Tableau</a>
+            <a href="../../pages/rankings.html" class="nav-btn">🏆 Classements</a>
+            <a href="../../pages/statistics.html" class="nav-btn">📈 Stats</a>
+            <a href="../../pages/calendar.html" class="nav-btn">📅 Calendrier</a>
+            <a href="../../pages/pronostics-game.html" class="nav-btn">🎮 Pronos</a>
+            <a href="../../pages/archives.html" class="nav-btn">📚 Archives</a>
+            <a href="../../pages/admin/teams-manager.html" class="nav-btn active">⚙️ Admin</a>
+        </div>
+    </nav>
+
+    <main>
+        <div class="admin-container">
+            <!-- Bandeau admin -->
+            <div class="admin-banner">
+                <h2>👤 Administration - Référentiel des joueurs</h2>
+                <div class="admin-stats">
+                    <span id="playerCount">0 joueur</span>
+                    <span id="detectedCount">0 buteur non lié</span>
+                </div>
+            </div>
+
+            <!-- Actions rapides -->
+            <div class="quick-actions">
+                <button id="newPlayerBtn" class="btn btn-primary">➕ Nouveau joueur</button>
+                <a href="teams-manager.html" class="btn btn-secondary">⚙️ Gestion des équipes</a>
+            </div>
+
+            <!-- Formulaire joueur -->
+            <div id="playerFormSection" class="form-section" style="display:none;">
+                <h3 id="playerFormTitle">➕ Nouveau joueur</h3>
+                <form id="playerForm" class="team-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="playerLastName">Nom :</label>
+                            <input type="text" id="playerLastName" placeholder="ex: Traoré" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="playerFirstName">Prénom :</label>
+                            <input type="text" id="playerFirstName" placeholder="ex: Hamari">
+                            <small>Sert à différencier deux joueurs du même nom (Traoré Ham / Traoré Har)</small>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="playerCustomLabel">Surnom (optionnel) :</label>
+                            <input type="text" id="playerCustomLabel" placeholder="Remplace le nom affiché">
+                            <small>Utile pour les homonymes parfaits dans le même club</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="playerAliases">Alias (orthographes reconnues, séparées par des virgules) :</label>
+                            <input type="text" id="playerAliases" placeholder="ex: traore, h. traore">
+                            <small>Le nom et « prénom nom » sont ajoutés automatiquement</small>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Clubs (chronologique, le dernier = club actuel) :</label>
+                        <div id="formStints" class="form-stints"></div>
+                        <div class="stint-add-row">
+                            <select id="stintTeam"></select>
+                            <select id="stintSeason"></select>
+                            <select id="stintPhase">
+                                <option value="start">Début de saison</option>
+                                <option value="mercato">Mercato</option>
+                            </select>
+                            <button type="button" id="addStintBtn" class="btn btn-info btn-small">➕ Ajouter ce club</button>
+                        </div>
+                        <small>Pour un transfert au mercato de janvier : ajoute le nouveau club avec la phase « Mercato ». Les buts marqués pour chaque club restent attribués au bon club, et le total saison du joueur les additionne.</small>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
+                        <button type="button" id="cancelPlayerBtn" class="btn btn-secondary">❌ Annuler</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Joueurs du référentiel -->
+            <div class="teams-list-section">
+                <h3>👥 Joueurs du référentiel</h3>
+                <div id="playersList" class="teams-grid"></div>
+            </div>
+
+            <!-- Buteurs détectés non liés -->
+            <div class="teams-list-section">
+                <h3>🔎 Buteurs détectés (non liés)</h3>
+                <p style="color:#7f8c8d;margin-bottom:0.75rem;">
+                    Buteurs trouvés dans les matchs mais absents du référentiel.
+                    Coche une ou plusieurs lignes (ex : plusieurs orthographes du même joueur,
+                    ou son passage dans deux clubs) puis fusionne-les en un joueur.
+                </p>
+                <div class="detected-toolbar">
+                    <input type="text" id="detectedSearch" placeholder="🔍 Filtrer par nom ou club...">
+                    <button id="mergeSelectionBtn" class="btn btn-primary">🧩 Fusionner la sélection en un joueur</button>
+                </div>
+                <div id="detectedList" class="detected-list"></div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Football Elo - Administration</p>
+    </footer>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="../../js/firebase-config.js"></script>
+    <script>
+    firebase.auth().onAuthStateChanged((user) => {
+        if (!user || user.email !== 'maxime.theard@gmail.com') {
+            alert('⛔ Accès réservé aux administrateurs');
+            window.location.href = '../../index.html';
+        }
+    });
+    </script>
+
+    <script src="../../js/firebase-service.js"></script>
+    <script src="../../js/seasons.js"></script>
+    <script src="../../js/storage.js"></script>
+    <script src="../../js/players.js"></script>
+    <script src="../../js/admin-players.js"></script>
+
+    <script>
+    function toggleMenu() {
+        document.querySelector('.nav-container').classList.toggle('open');
+    }
+    </script>
+</body>
+</html>

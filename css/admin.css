@@ -443,3 +443,158 @@
         gap: 0.5rem;
     }
 }
+/* ===============================
+   RÉFÉRENTIEL DES JOUEURS
+   =============================== */
+
+.player-card .team-short {
+    background: none;
+    color: #7f8c8d;
+    font-weight: 600;
+}
+
+.player-stints {
+    margin-bottom: 0.5rem;
+    line-height: 2;
+}
+
+.stint-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: #ecf0f1;
+    border: 1px solid #d5dbdb;
+    border-radius: 999px;
+    padding: 0.15rem 0.6rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.stint-chip small {
+    font-weight: 400;
+    color: #7f8c8d;
+}
+
+.stint-chip.stint-current {
+    background: #eaf7ef;
+    border-color: #27ae60;
+}
+
+.stint-remove {
+    border: none;
+    background: none;
+    color: #e74c3c;
+    cursor: pointer;
+    font-size: 0.8rem;
+    padding: 0 0.1rem;
+}
+
+.player-aliases {
+    font-size: 0.8rem;
+    color: #7f8c8d;
+    margin-bottom: 0.4rem;
+}
+
+.player-aliases code {
+    background: #f4f6f7;
+    border-radius: 4px;
+    padding: 0.05rem 0.35rem;
+}
+
+.form-stints {
+    margin: 0.5rem 0 0.75rem;
+    line-height: 2.2;
+}
+
+.stint-add-row {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.stint-add-row select {
+    padding: 0.5rem;
+    border: 2px solid #ecf0f1;
+    border-radius: 8px;
+    font-size: 0.95rem;
+}
+
+.detected-toolbar {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.75rem;
+}
+
+.detected-toolbar input {
+    flex: 1;
+    min-width: 220px;
+    padding: 0.6rem 0.85rem;
+    border: 2px solid #ecf0f1;
+    border-radius: 8px;
+    font-size: 0.95rem;
+}
+
+.detected-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    max-height: 480px;
+    overflow-y: auto;
+}
+
+.detected-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    background: #f8f9fa;
+    border: 1px solid #ecf0f1;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.detected-row:hover {
+    background: #eef2f5;
+}
+
+.detected-name {
+    font-weight: 600;
+    color: #2c3e50;
+    min-width: 140px;
+}
+
+.detected-row .team-badge {
+    background: #3498db;
+    color: white;
+    border-radius: 999px;
+    padding: 0.1rem 0.6rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.detected-goals {
+    font-weight: 600;
+    color: #27ae60;
+}
+
+.detected-seasons {
+    margin-left: auto;
+    font-size: 0.8rem;
+    color: #7f8c8d;
+}
+
+@media (max-width: 600px) {
+    .detected-row {
+        flex-wrap: wrap;
+        gap: 0.4rem;
+    }
+
+    .detected-seasons {
+        margin-left: 0;
+        width: 100%;
+    }
+}

@@ -56,8 +56,8 @@ function populateTeamSelects() {
     homeTeamSelect.innerHTML = '<option value="">Sélectionner une équipe</option>';
     awayTeamSelect.innerHTML = '<option value="">Sélectionner une équipe</option>';
 
-    // Ajouter chaque équipe aux deux selects
-    teamsData.forEach(team => {
+    // Ajouter chaque équipe aux deux selects (ordre alphabétique)
+    [...teamsData].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'fr')).forEach(team => {
         const homeOption = document.createElement('option');
         homeOption.value = team.id;
         homeOption.textContent = `${team.name} (${team.shortName})`;

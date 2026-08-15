@@ -42,6 +42,12 @@ async function loadGameData() {
         allTeams = getTeamsBySeason(currentSeason);
         allMatches = getStoredMatches().filter(m => m.season === currentSeason);
         futureMatches = loadFutureMatches(currentSeason);
+
+        // Référentiel joueurs : fusion des alias et transferts mercato
+        // dans le picker "1er buteur"
+        if (typeof loadPlayersRegistry === 'function') {
+            await loadPlayersRegistry();
+        }
     } catch (error) {
         console.error('Erreur chargement données:', error);
     }

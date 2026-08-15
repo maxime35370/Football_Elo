@@ -61,6 +61,40 @@ class FirebaseService {
         }
     }
 
+    // === GESTION DES JOUEURS (référentiel buteurs) ===
+
+    async savePlayers(players) {
+        try {
+            const playersDoc = {
+                players: players,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                version: Date.now()
+            };
+
+            await this.db.collection('data').doc('players').set(playersDoc);
+            console.log('✅ Référentiel joueurs sauvegardé sur Firebase');
+            return true;
+        } catch (error) {
+            console.error('❌ Erreur Firebase savePlayers:', error);
+            return false;
+        }
+    }
+
+    async getPlayers() {
+        try {
+            const doc = await this.db.collection('data').doc('players').get();
+            if (doc.exists) {
+                const data = doc.data();
+                console.log('📥 Référentiel joueurs récupéré depuis Firebase');
+                return data.players || [];
+            }
+            return [];
+        } catch (error) {
+            console.error('❌ Erreur récupération players:', error);
+            return [];
+        }
+    }
+
     // === GESTION DES SAISONS ===
     // Utilise la collection /seasons/list (selon les règles Firebase)
     

@@ -346,7 +346,7 @@ function populateFilters() {
     // Filtre équipes
     if (teamFilter) {
         teamFilter.innerHTML = '<option value="">Toutes les équipes</option>';
-        allTeams.forEach(team => {
+        [...allTeams].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'fr')).forEach(team => {
             teamFilter.innerHTML += `<option value="${team.id}">${team.name}</option>`;
         });
     }

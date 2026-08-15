@@ -12,6 +12,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Charger les équipes
     allTeams = await getStoredTeamsAsync();
     populateTeamSelector();
+
+    // Référentiel joueurs (fusion mercato/alias dans les classements buteurs)
+    if (typeof loadPlayersRegistry === 'function') {
+        await loadPlayersRegistry();
+    }
     
     // Charger les saisons
     await loadSeasons();
@@ -169,46 +174,21 @@ function showEmptyState(show) {
 
 // === TOP 10 BUTEURS ===
 
+// Le classement s'appuie sur le référentiel joueurs (js/players.js) : les
+// buts d'un joueur transféré au mercato sont fusionnés entre ses clubs, et
+// les homonymes reçoivent un label distinctif (Traoré Ham / Traoré Har).
 function updateTopScorers() {
-    const scorers = {};
-    
-    // Parcourir tous les matchs pour collecter les buteurs
-    allMatches.forEach(match => {
-        if (match.goals && match.goals.length > 0) {
-            match.goals.forEach(goal => {
-                const scorerName = goal.scorer;
-                const teamId = goal.teamId;
-                
-                // Créer une clé unique combinant le nom ET l'équipe
-                const uniqueKey = `${scorerName}_${teamId}`;
-                
-                if (!scorers[uniqueKey]) {
-                    scorers[uniqueKey] = {
-                        name: scorerName,
-                        teamId: teamId,
-                        goals: 0
-                    };
-                }
-                
-                scorers[uniqueKey].goals++;
-            });
-        }
-    });
-    
-    // Convertir en tableau et trier par nombre de buts
-    const scorersArray = Object.values(scorers);
-    scorersArray.sort((a, b) => b.goals - a.goals);
-    
-    // Limiter au top 10
-    const top10 = scorersArray.slice(0, 10);
-    
-    // Afficher le tableau
+    const rows = plComputeScorerRows(allMatches);
+    plBuildLabels(rows, allTeams);
+
+    const top10 = rows.slice(0, 10);
+    plRegisterScorerRows('top10', top10, allMatches, allTeams);
     displayTopScorersTable(top10);
 }
 
 function displayTopScorersTable(scorers) {
     const tbody = document.querySelector('#topScorersTable tbody');
-    
+
     if (scorers.length === 0) {
         tbody.innerHTML = `
             <tr>
@@ -219,22 +199,27 @@ function displayTopScorersTable(scorers) {
         `;
         return;
     }
-    
+
     tbody.innerHTML = scorers.map((scorer, index) => {
-        const team = allTeams.find(t => t.id == scorer.teamId);
-        const teamName = team ? team.shortName : 'N/A';
-        
+        // Un badge par club, avec le détail des buts si le joueur a changé
+        // de club en cours de saison (ex: SRFC 9 · OL 5)
+        const clubsHtml = scorer.clubs.map(club => {
+            const team = allTeams.find(t => t.id == club.teamId);
+            const shortName = team ? team.shortName : 'N/A';
+            return `<span class="team-badge">${shortName}${scorer.clubs.length > 1 ? ` ${club.goals}` : ''}</span>`;
+        }).join(' ');
+
         // Classes spéciales pour le podium
         let rankClass = 'rank';
         if (index === 0) rankClass += ' rank-1';
         else if (index === 1) rankClass += ' rank-2';
         else if (index === 2) rankClass += ' rank-3';
-        
+
         return `
-            <tr>
+            <tr class="scorer-row" onclick="plOpenScorerModal('top10', ${index})" title="Voir les matchs du joueur">
                 <td class="${rankClass}">${index + 1}</td>
-                <td class="player-name">${scorer.name}</td>
-                <td><span class="team-badge">${teamName}</span></td>
+                <td class="player-name">${scorer.label || scorer.name}</td>
+                <td>${clubsHtml}</td>
                 <td class="goals-count">${scorer.goals}</td>
             </tr>
         `;
@@ -247,9 +232,10 @@ function populateTeamSelector() {
     const teamSelect = document.getElementById('teamSelect');
     
     teamSelect.innerHTML = '<option value="all">Toutes les équipes</option>' +
-        allTeams.map(team => 
-            `<option value="${team.id}">${team.shortName}</option>`
-        ).join('');
+        [...allTeams].sort((a, b) => (a.shortName || '').localeCompare(b.shortName || '', 'fr'))
+            .map(team =>
+                `<option value="${team.id}">${team.shortName}</option>`
+            ).join('');
 }
 
 // Afficher les buteurs de l'équipe sélectionnée
@@ -269,38 +255,23 @@ function updateTeamScorers() {
     const team = allTeams.find(t => t.id == selectedTeamId);
     document.getElementById('selectedTeamName').textContent = team ? team.shortName : '';
     
-    // Collecter les buteurs de cette équipe
-    const scorers = {};
-    
-    allMatches.forEach(match => {
-        if (match.goals && match.goals.length > 0) {
-            match.goals.forEach(goal => {
-                if (goal.teamId == selectedTeamId) {
-                    // Normaliser le nom (tirets → espaces, trim, majuscules uniformes)
-                    const name = goal.scorer.replace(/-/g, ' ').trim().toLowerCase()
-                        .split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-                    if (!scorers[name]) {
-                        scorers[name] = { name, goals: 0, matches: new Set() };
-                    }
-                    scorers[name].goals++;
-                    scorers[name].matches.add(match.id);
-                }
-            });
-        }
-    });
-    
-    // Convertir et trier
-    const scorersArray = Object.values(scorers)
-        .map(s => ({
-            ...s,
-            matchesPlayed: s.matches.size,
-            goalsPerMatch: (s.goals / s.matches.size).toFixed(2)
+    // Buteurs de cette équipe via le référentiel joueurs : on ne garde que
+    // les buts marqués POUR ce club (un joueur transféré n'apparaît ici
+    // qu'avec ses buts sous ce maillot), alias fusionnés.
+    const teamGoalsMatches = allMatches
+        .map(m => ({
+            ...m,
+            goals: (m.goals || []).filter(g => g.teamId == selectedTeamId)
         }))
-        .sort((a, b) => b.goals - a.goals);
-    
+        .filter(m => m.goals.length > 0);
+
+    const scorersArray = plComputeScorerRows(teamGoalsMatches);
+    plBuildLabels(scorersArray, allTeams);
+    plRegisterScorerRows('teamScorers', scorersArray, allMatches, allTeams);
+
     // Afficher
     const tbody = document.querySelector('#teamScorersTable tbody');
-    
+
     if (scorersArray.length === 0) {
         tbody.innerHTML = `
             <tr>
@@ -311,17 +282,17 @@ function updateTeamScorers() {
         `;
         return;
     }
-    
+
     tbody.innerHTML = scorersArray.map((scorer, index) => {
         let rankClass = 'rank';
         if (index === 0) rankClass += ' rank-1';
         else if (index === 1) rankClass += ' rank-2';
         else if (index === 2) rankClass += ' rank-3';
-        
+
         return `
-            <tr>
+            <tr class="scorer-row" onclick="plOpenScorerModal('teamScorers', ${index})" title="Voir les matchs du joueur">
                 <td class="${rankClass}">${index + 1}</td>
-                <td class="player-name">${scorer.name}</td>
+                <td class="player-name">${scorer.label || scorer.name}</td>
                 <td class="goals-count">${scorer.goals}</td>
             </tr>
         `;

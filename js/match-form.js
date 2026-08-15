@@ -19,9 +19,14 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM chargé, initialisation du formulaire...');
 
     displayCurrentSeason(); // ← AJOUTER CETTE LIGNE
-    
+
     setupFormListeners();
     setTodayDate();
+
+    // Référentiel joueurs pour l'autocomplétion des buteurs
+    if (typeof loadPlayersRegistry === 'function') {
+        loadPlayersRegistry();
+    }
     
     // Attendre un peu que tout soit prêt avant de vérifier le mode édition
     setTimeout(() => {
@@ -863,7 +868,8 @@ function addGoalForm() {
             </div>
             <div class="form-group">
                 <label>Buteur :</label>
-                <input type="text" name="goalScorer" placeholder="Nom du buteur" required>
+                <input type="text" name="goalScorer" placeholder="Nom du buteur" required
+                       list="scorerSuggestions" autocomplete="off">
             </div>
             <div class="form-group minute-group">
                 <label>Minute :</label>
@@ -891,6 +897,57 @@ function addGoalForm() {
         calculateScore();
     });
     extraTimeInput.addEventListener('input', calculateScore);
+
+    // Autocomplétion du buteur : suggestions filtrées sur l'équipe du but
+    // (noms déjà rencontrés + référentiel joueurs). Texte libre autorisé
+    // pour un nouveau joueur.
+    const scorerInput = goalDiv.querySelector('input[name="goalScorer"]');
+    scorerInput.addEventListener('focus', function() {
+        updateScorerSuggestions(goalTeamSelect.value);
+    });
+    goalTeamSelect.addEventListener('change', function() {
+        updateScorerSuggestions(goalTeamSelect.value);
+    });
+}
+
+// Remplit le datalist partagé #scorerSuggestions avec les buteurs connus de
+// l'équipe : orthographes déjà saisies dans les matchs (triées par fréquence)
+// et joueurs du référentiel passés par ce club.
+function updateScorerSuggestions(teamId) {
+    let datalist = document.getElementById('scorerSuggestions');
+    if (!datalist) {
+        datalist = document.createElement('datalist');
+        datalist.id = 'scorerSuggestions';
+        document.body.appendChild(datalist);
+    }
+
+    if (!teamId) {
+        datalist.innerHTML = '';
+        return;
+    }
+
+    const counts = {};
+    const matches = typeof getStoredMatches === 'function' ? getStoredMatches() : [];
+    matches.forEach(m => {
+        (m.goals || []).forEach(g => {
+            if (String(g.teamId) !== String(teamId) || !g.scorer) return;
+            counts[g.scorer] = (counts[g.scorer] || 0) + 1;
+        });
+    });
+
+    // Joueurs du référentiel liés à ce club (même sans but enregistré)
+    if (typeof playersRegistry !== 'undefined') {
+        playersRegistry.forEach(p => {
+            if ((p.stints || []).some(s => String(s.teamId) === String(teamId))) {
+                if (!(p.lastName in counts)) counts[p.lastName] = 0;
+            }
+        });
+    }
+
+    datalist.innerHTML = Object.entries(counts)
+        .sort((a, b) => b[1] - a[1])
+        .map(([name]) => `<option value="${name.replace(/"/g, '&quot;')}"></option>`)
+        .join('');
 }
 
 // Supprimer un but
