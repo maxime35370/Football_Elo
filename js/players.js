@@ -310,28 +310,56 @@ function plOpenScorerModal(listId, index) {
         return t ? t.shortName : `#${id}`;
     };
 
-    // Une section par club (dans l'ordre des stints/buts) : tous les matchs
-    // du club sur la saison, ballon(s) sur ceux où le joueur a marqué.
-    const sections = row.clubs.map(club => {
-        const clubMatches = matches
+    // Buts du joueur dans un match donné, pour un club donné
+    const playerGoalsIn = (m, clubTeamId) => {
+        let count = 0;
+        (m.goals || []).forEach(g => {
+            if (String(g.teamId) !== String(clubTeamId)) return;
+            if (row.playerId) {
+                const p = plResolvePlayer(g.scorer, String(g.teamId), g.scorerFull);
+                if (p && p.id === row.playerId) count++;
+            } else if (plNormalizeName(g.scorerFull || g.scorer) === row.nameKey) {
+                count++;
+            }
+        });
+        return count;
+    };
+
+    // Pré-passe mercato : première/dernière journée de but par club. On s'en
+    // sert pour borner l'affichage — inutile de lister les matchs d'Angers
+    // quand le joueur marque à Rennes depuis 10 journées.
+    const scoredDays = row.clubs.map(club => {
+        const days = matches
+            .filter(m => playerGoalsIn(m, club.teamId) > 0)
+            .map(m => m.matchDay || 0);
+        return { first: Math.min(...days), last: Math.max(...days) };
+    });
+
+    // Une section par club (ordre chronologique). Avec plusieurs clubs
+    // (mercato), chaque section est bornée par les buts : les matchs après
+    // le premier but pour le club SUIVANT sortent de la section, ceux avant
+    // le dernier but pour le club PRÉCÉDENT aussi. Entre les deux buts (la
+    // fenêtre où la date exacte du transfert est inconnue), les matchs des
+    // deux clubs restent affichés.
+    const sections = row.clubs.map((club, clubIdx) => {
+        let clubMatches = matches
             .filter(m => String(m.homeTeamId) === String(club.teamId) ||
                          String(m.awayTeamId) === String(club.teamId))
             .sort((a, b) => (a.matchDay || 0) - (b.matchDay || 0));
 
-        const lines = clubMatches.map(m => {
-            // Buts du joueur dans CE match pour CE club
-            let goalsInMatch = 0;
-            (m.goals || []).forEach(g => {
-                if (String(g.teamId) !== String(club.teamId)) return;
-                const p = row.playerId
-                    ? plResolvePlayer(g.scorer, String(g.teamId), g.scorerFull)
-                    : null;
-                if (row.playerId) {
-                    if (p && p.id === row.playerId) goalsInMatch++;
-                } else if (plNormalizeName(g.scorerFull || g.scorer) === row.nameKey) {
-                    goalsInMatch++;
-                }
+        if (row.clubs.length > 1) {
+            const prev = clubIdx > 0 ? scoredDays[clubIdx - 1] : null;
+            const next = clubIdx < row.clubs.length - 1 ? scoredDays[clubIdx + 1] : null;
+            clubMatches = clubMatches.filter(m => {
+                const day = m.matchDay || 0;
+                if (prev && day <= prev.last) return false;   // encore au club précédent
+                if (next && day >= next.first) return false;  // déjà au club suivant
+                return true;
             });
+        }
+
+        const lines = clubMatches.map(m => {
+            const goalsInMatch = playerGoalsIn(m, club.teamId);
 
             let dateText = '';
             const raw = m.scheduledAt || m.date;
