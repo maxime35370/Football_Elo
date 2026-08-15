@@ -562,7 +562,7 @@ function renderFavoriteTeamSelector(currentFavorite) {
             <label>💙 Équipe favorite :</label>
             <select id="favoriteTeamSelect" onchange="changeFavoriteTeam(this.value)">
                 <option value="">-- Aucune --</option>
-                ${teams.map(t => `
+                ${[...teams].sort((a, b) => (a.shortName || a.name || '').localeCompare(b.shortName || b.name || '', 'fr')).map(t => `
                     <option value="${t.id}" ${currentFavorite == t.id ? 'selected' : ''}>
                         ${t.shortName || t.name}
                     </option>

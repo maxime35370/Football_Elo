@@ -48,17 +48,18 @@ function populateTeamFilter() {
     // Garder l'option "Toutes les équipes"
     teamFilter.innerHTML = '<option value="">Toutes les équipes</option>';
     
-    // Ajouter les équipes qui ont joué au moins un match
+    // Ajouter les équipes qui ont joué au moins un match (ordre alphabétique)
     const stats = getMatchesStats();
-    stats.teams.forEach(teamId => {
-        const team = getTeamById(teamId);
-        if (team) {
+    stats.teams
+        .map(teamId => getTeamById(teamId))
+        .filter(Boolean)
+        .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'fr'))
+        .forEach(team => {
             const option = document.createElement('option');
-            option.value = teamId;
+            option.value = team.id;
             option.textContent = team.name;
             teamFilter.appendChild(option);
-        }
-    });
+        });
 }
 
 // Configuration des écouteurs d'événements

@@ -132,6 +132,9 @@ function convertGoalsToLocalFormat(espnGoals, espnMatch) {
 
         return {
             scorer: extractLastName(goal.scorer),
+            // Nom complet ESPN conservé : permet de différencier deux joueurs
+            // du même nom de famille dans le même club (référentiel joueurs)
+            scorerFull: goal.scorer && goal.scorer !== 'Inconnu' ? goal.scorer : null,
             minute: goal.minute,
             extraTime: extra,
             teamId: teamId,

@@ -17,17 +17,46 @@ const SCORER_SCORED = 1;         // A marqué dans le match (mais pas premier)
  * @returns [{name, goals, matches}] trié par buts décroissants
  */
 function getTeamTopScorers(teamId, limit = 10) {
+    // Avec le référentiel joueurs (js/players.js) : les transferts mercato
+    // sont pris en compte — un joueur parti du club n'est plus proposé, un
+    // joueur arrivé est proposé avec son total saison tous clubs confondus.
+    if (typeof plComputeScorerRows === 'function') {
+        const rows = plComputeScorerRows(allMatches);
+        if (typeof plBuildLabels === 'function') {
+            plBuildLabels(rows, typeof allTeams !== 'undefined' ? allTeams : []);
+        }
+
+        return rows
+            .filter(row => {
+                if (row.playerId) {
+                    // Joueur du référentiel : proposé uniquement dans son club ACTUEL
+                    const player = playersRegistry.find(p => p.id === row.playerId);
+                    return player && plCurrentTeamId(player) === String(teamId);
+                }
+                // Buteur inconnu du référentiel : un seul club par construction
+                return row.clubs.some(c => String(c.teamId) === String(teamId));
+            })
+            .map(row => ({
+                name: row.label || row.name,
+                goals: row.goals,   // total saison, clubs cumulés si mercato
+                matches: Object.keys(row.matchGoals).length
+            }))
+            .sort((a, b) => b.goals - a.goals)
+            .slice(0, limit);
+    }
+
+    // Secours si players.js n'est pas chargé : ancien comportement
     const scorers = {};
-    
+
     allMatches.forEach(match => {
         if (!match.goals || match.goals.length === 0) return;
-        
+
         match.goals.forEach(goal => {
             if (goal.teamId != teamId) return;
-            
+
             // Normaliser le nom
             const name = normalizeScorer(goal.scorer);
-            
+
             if (!scorers[name]) {
                 scorers[name] = { name, goals: 0, matchIds: new Set() };
             }
@@ -35,7 +64,7 @@ function getTeamTopScorers(teamId, limit = 10) {
             scorers[name].matchIds.add(match.id);
         });
     });
-    
+
     return Object.values(scorers)
         .map(s => ({ name: s.name, goals: s.goals, matches: s.matchIds.size }))
         .sort((a, b) => b.goals - a.goals)

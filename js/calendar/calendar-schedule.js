@@ -18,7 +18,8 @@ function populateFilters() {
     // Filtre équipes
     const teamFilter = document.getElementById('teamFilter');
     teamFilter.innerHTML = '<option value="all">Toutes</option>' +
-        allTeams.map(t => `<option value="${t.id}">${t.shortName}</option>`).join('');
+        [...allTeams].sort((a, b) => (a.shortName || '').localeCompare(b.shortName || '', 'fr'))
+            .map(t => `<option value="${t.id}">${t.shortName}</option>`).join('');
 }
 
 function setupFilters() {

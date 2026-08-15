@@ -17,6 +17,7 @@
         'seasons.js',
         'teams-loader.js',
         'storage.js',
+        'players.js',
         'elo.js',
         'elo-system.js',
 
