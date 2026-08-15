@@ -963,25 +963,22 @@ function _syncLocalStorage() {
     }
 }
 
-/** Retirer un match du calendrier futureMatches après création */
+/** Retirer un match de la liste EN MÉMOIRE des futureMatches après création.
+ *  Le calendrier stocké n'est PAS modifié : les affiches jouées sont
+ *  filtrées à l'affichage, et rester en base permet de les retrouver si le
+ *  match importé est supprimé plus tard. */
 function _removeFutureMatch(homeTeamId, awayTeamId, matchDay, season) {
     try {
         if (typeof futureMatches === 'undefined') return;
-        
+
         const idx = futureMatches.findIndex(m =>
             m.homeTeamId == homeTeamId &&
             m.awayTeamId == awayTeamId &&
             m.matchDay === matchDay
         );
-        
+
         if (idx !== -1) {
             futureMatches.splice(idx, 1);
-            console.log(`   🗑️ Retiré du calendrier futureMatches`);
-            
-            // Sauvegarder les futureMatches mis à jour
-            if (typeof saveFutureMatches === 'function') {
-                saveFutureMatches(season, futureMatches);
-            }
         }
     } catch (e) {
         console.warn('⚠️ Retrait futureMatches:', e.message);
