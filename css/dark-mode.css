@@ -3089,6 +3089,7 @@
 }
 
 [data-theme="dark"] .detected-toolbar input,
+[data-theme="dark"] .detected-toolbar select,
 [data-theme="dark"] .stint-add-row select {
     background: var(--dm-surface-2);
     border-color: var(--dm-border);

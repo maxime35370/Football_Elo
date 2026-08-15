@@ -538,6 +538,14 @@
     font-size: 0.95rem;
 }
 
+.detected-toolbar select {
+    padding: 0.6rem 0.85rem;
+    border: 2px solid #ecf0f1;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    background: white;
+}
+
 .detected-list {
     display: flex;
     flex-direction: column;
