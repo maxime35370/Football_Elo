@@ -3,6 +3,9 @@
 let currentMatchDay = null;
 let selectedSeason = null; // ← AJOUTER CETTE LIGNE
 let teamsWithElo = [];
+// Elo de chaque équipe au début de la saison affichée (hérité de la saison
+// précédente) : sert de référence à la colonne « Évolution »
+let seasonStartEloMap = {};
 let rankingMode = 'all';
 let fromMatchDay = null;
 let locationFilter = 'all'; // 'all', 'home', 'away'
@@ -101,7 +104,8 @@ function recalculateEloRatings() {
     });
     console.log('========================');
     
-    teamsWithElo = EloSystem.recalculateAllEloRatings(teams, matches, getSeasonStartingElo(season));
+    seasonStartEloMap = getSeasonStartingElo(season) || {};
+    teamsWithElo = EloSystem.recalculateAllEloRatings(teams, matches, seasonStartEloMap);
 
     console.log('✅ Ratings Elo recalculés pour', teamsWithElo.length, 'équipes');
 }
@@ -448,7 +452,9 @@ function displayEloRanking() {
             const historyAtMatchDay = team.eloHistory?.find(h => h.matchDay === currentMatchDay);
             return {
                 ...team,
-                eloRating: historyAtMatchDay ? historyAtMatchDay.rating : EloSystem.ELO_CONFIG.INITIAL_RATING
+                eloRating: historyAtMatchDay
+                    ? historyAtMatchDay.rating
+                    : (seasonStartEloMap[team.id] ?? EloSystem.ELO_CONFIG.INITIAL_RATING)
             };
         }).sort((a, b) => b.eloRating - a.eloRating);
     }
@@ -480,8 +486,11 @@ function createEloRankingRow(team, position) {
     }
     
     const eloRating = Math.round(team.eloRating || EloSystem.ELO_CONFIG.INITIAL_RATING);
-    const eloChange = team.eloHistory && team.eloHistory.length > 0 
-        ? eloRating - EloSystem.ELO_CONFIG.INITIAL_RATING 
+    // Évolution depuis le DÉBUT DE SAISON (Elo hérité de la saison passée),
+    // pas depuis le 1500 de base — sinon on affiche l'écart historique total
+    const startElo = Math.round(seasonStartEloMap[team.id] ?? EloSystem.ELO_CONFIG.INITIAL_RATING);
+    const eloChange = team.eloHistory && team.eloHistory.length > 0
+        ? eloRating - startElo
         : 0;
     
     const changeClass = eloChange >= 0 ? 'positive' : 'negative';
