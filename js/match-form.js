@@ -257,11 +257,11 @@ function updateTeamSelectsWithFilter(playedTeamIds) {
     const currentHomeTeam = homeTeamSelect.value;
     const currentAwayTeam = awayTeamSelect.value;
     
-    // Vider et remplir les selects
+    // Vider et remplir les selects (ordre alphabétique)
     homeTeamSelect.innerHTML = '<option value="">Sélectionner une équipe</option>';
     awayTeamSelect.innerHTML = '<option value="">Sélectionner une équipe</option>';
-    
-    teamsData.forEach(team => {
+
+    sortedTeamsAlpha().forEach(team => {
         // Exclure les équipes qui ont déjà joué
         if (playedTeamIds.includes(team.id.toString())) {
             return; // Skip cette équipe
@@ -661,6 +661,11 @@ function formatEloChange(change) {
     return change.toString();
 }
 
+// Équipes triées par nom pour l'affichage des selects
+function sortedTeamsAlpha() {
+    return [...teamsData].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'fr'));
+}
+
 // Filtrer les équipes disponibles selon les matchs existants
 function filterAvailableTeams() {
     // NE PAS filtrer en mode édition
@@ -671,10 +676,13 @@ function filterAvailableTeams() {
     const homeTeamSelect = document.getElementById('homeTeam');
     const awayTeamSelect = document.getElementById('awayTeam');
     const matchDayInput = document.getElementById('matchDay');
-    
+
     if (!homeTeamSelect || !awayTeamSelect) return;
-    
-    const matches = getStoredMatches();
+
+    // Uniquement les matchs de la saison en cours : sans ce filtre, les
+    // journées et les affiches de la saison précédente bloquaient la saisie
+    const currentSeasonName = getCurrentSeason();
+    const matches = getStoredMatches().filter(m => m.season === currentSeasonName);
     const selectedHomeTeam = homeTeamSelect.value;
     const selectedAwayTeam = awayTeamSelect.value;
     const currentMatchDay = matchDayInput ? parseInt(matchDayInput.value) : null;
@@ -694,10 +702,10 @@ function filterAvailableTeams() {
                 .flatMap(match => [match.homeTeamId.toString(), match.awayTeamId.toString()]);
         }
         
-        // Reconstruire la liste des équipes extérieures
+        // Reconstruire la liste des équipes extérieures (ordre alphabétique)
         awayTeamSelect.innerHTML = '<option value="">Sélectionner une équipe</option>';
-        
-        teamsData.forEach(team => {
+
+        sortedTeamsAlpha().forEach(team => {
             const teamIdStr = team.id.toString();
             
             // Exclure :
@@ -738,10 +746,10 @@ function filterAvailableTeams() {
                 .flatMap(match => [match.homeTeamId.toString(), match.awayTeamId.toString()]);
         }
         
-        // Reconstruire la liste des équipes domicile
+        // Reconstruire la liste des équipes domicile (ordre alphabétique)
         homeTeamSelect.innerHTML = '<option value="">Sélectionner une équipe</option>';
-        
-        teamsData.forEach(team => {
+
+        sortedTeamsAlpha().forEach(team => {
             const teamIdStr = team.id.toString();
             
             // Exclure :
@@ -782,7 +790,9 @@ function filterAvailableTeams() {
 function filterByMatchDay(matchDay) {
     const homeTeamSelect = document.getElementById('homeTeam');
     const awayTeamSelect = document.getElementById('awayTeam');
-    const matches = getStoredMatches();
+    // Saison en cours uniquement (les J1..J34 des saisons passées ne doivent
+    // pas marquer les équipes comme « déjà un match »)
+    const matches = getStoredMatches().filter(m => m.season === getCurrentSeason());
     
     // Trouver les équipes qui jouent déjà cette journée
     const teamsPlayingThisMatchDay = matches
@@ -814,8 +824,8 @@ function populateTeamSelects() {
     homeTeamSelect.innerHTML = '<option value="">Sélectionner une équipe</option>';
     awayTeamSelect.innerHTML = '<option value="">Sélectionner une équipe</option>';
 
-    // Ajouter chaque équipe aux deux selects
-    teamsData.forEach(team => {
+    // Ajouter chaque équipe aux deux selects (ordre alphabétique)
+    sortedTeamsAlpha().forEach(team => {
         const homeOption = document.createElement('option');
         homeOption.value = team.id;
         homeOption.textContent = `${team.name} (${team.shortName})`;
@@ -826,7 +836,7 @@ function populateTeamSelects() {
         awayOption.textContent = `${team.name} (${team.shortName})`;
         awayTeamSelect.appendChild(awayOption);
     });
-    
+
     // ← AJOUTER : Filtrer selon la journée si une journée est déjà saisie
     const matchDayInput = document.getElementById('matchDay');
     if (matchDayInput && matchDayInput.value) {
