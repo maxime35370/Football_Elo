@@ -3124,3 +3124,24 @@
 [data-theme="dark"] .pm-match.pm-scored {
     background: rgba(39, 174, 96, 0.18);
 }
+
+/* Évolution de la difficulté (onglet Difficulté du calendrier) */
+[data-theme="dark"] .difficulty-chart-block {
+    background: var(--dm-surface-1);
+}
+
+[data-theme="dark"] .difficulty-chart-block h3,
+[data-theme="dark"] .difficulty-chart-controls label,
+[data-theme="dark"] .difficulty-chart-legend {
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .difficulty-chart-controls select {
+    background: var(--dm-surface-2);
+    border-color: var(--dm-border);
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .df-grid {
+    stroke: var(--dm-border);
+}

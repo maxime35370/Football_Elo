@@ -7,7 +7,12 @@
 function displayDifficulty() {
     const container = document.getElementById('difficultyContent');
     if (!container) return;
-    
+
+    // Graphique d'évolution de la difficulté (rendu même si le classement
+    // ci-dessous n'a plus de matchs restants à afficher)
+    populateDifficultyChartTeams();
+    renderDifficultyChart();
+
     // CORRIGÉ : Filtrer futureMatches pour exclure les matchs déjà joués
     // On compare EXACTEMENT homeTeamId-awayTeamId (pas les deux sens car aller ≠ retour)
     const playedConfrontations = new Set();
@@ -129,4 +134,154 @@ function displayDifficulty() {
             </div>
         `;
     }).join('');
+}
+// ===============================
+// ÉVOLUTION DE LA DIFFICULTÉ PAR JOURNÉE
+// ===============================
+//
+// Après chaque journée jouée, on fige deux valeurs pour l'équipe choisie :
+//   - son Elo à ce moment-là,
+//   - l'Elo moyen (à ce moment-là) des adversaires qu'il lui reste à jouer.
+// Tout est recalculé à la volée en rejouant la saison : rien n'est stocké,
+// donc les courbes restent justes si un match est modifié ou supprimé.
+
+const DIFFICULTY_CHART_COLORS = { team: '#3498db', difficulty: '#e67e22' };
+
+function computeDifficultySeries(teamId) {
+    if (typeof EloSystem === 'undefined') return null;
+
+    const startingElo = (typeof getSeasonStartingElo === 'function')
+        ? (getSeasonStartingElo(currentSeason) || {})
+        : {};
+
+    // Historique Elo par équipe (rating après chacun de ses matchs)
+    const replayed = EloSystem.recalculateAllEloRatings(allTeams, allMatches, startingElo);
+    const historyById = {};
+    replayed.forEach(t => { historyById[t.id] = t.eloHistory || []; });
+
+    // Elo d'une équipe à la fin de la journée `day`
+    const eloAt = (id, day) => {
+        const hist = historyById[id] || [];
+        let rating = startingElo[id] ?? (EloSystem.ELO_CONFIG?.INITIAL_RATING || 1500);
+        for (const h of hist) {
+            if ((h.matchDay || 0) <= day) rating = h.rating;
+            else break;
+        }
+        return rating;
+    };
+
+    // Toutes les fixtures de l'équipe : jouées + à venir (dédupliquées)
+    const playedKeys = new Set(allMatches.map(m => `${m.homeTeamId}-${m.awayTeamId}`));
+    const fixtures = [
+        ...allMatches.filter(m => m.homeTeamId == teamId || m.awayTeamId == teamId),
+        ...futureMatches.filter(m =>
+            (m.homeTeamId == teamId || m.awayTeamId == teamId) &&
+            !playedKeys.has(`${m.homeTeamId}-${m.awayTeamId}`))
+    ];
+
+    const maxPlayedDay = Math.max(0, ...allMatches.map(m => m.matchDay || 0));
+
+    const points = [];
+    for (let day = 0; day <= maxPlayedDay; day++) {
+        // Adversaires restants après la journée `day`
+        const remaining = fixtures.filter(f => (f.matchDay || Infinity) > day);
+        if (remaining.length === 0) break;
+
+        const avg = remaining.reduce((sum, f) => {
+            const oppId = f.homeTeamId == teamId ? f.awayTeamId : f.homeTeamId;
+            return sum + eloAt(oppId, day);
+        }, 0) / remaining.length;
+
+        points.push({
+            day,
+            label: day === 0 ? 'Début' : `J${day}`,
+            teamElo: Math.round(eloAt(teamId, day)),
+            difficulty: Math.round(avg),
+            remaining: remaining.length
+        });
+    }
+
+    return points;
+}
+
+function populateDifficultyChartTeams() {
+    const select = document.getElementById('difficultyChartTeam');
+    if (!select) return;
+    const previous = select.value;
+    select.innerHTML = [...allTeams]
+        .sort((a, b) => (a.shortName || '').localeCompare(b.shortName || '', 'fr'))
+        .map(t => `<option value="${t.id}">${t.shortName}</option>`)
+        .join('');
+    if (previous && [...select.options].some(o => o.value === previous)) {
+        select.value = previous;
+    }
+}
+
+function renderDifficultyChart() {
+    const container = document.getElementById('difficultyChartContainer');
+    const select = document.getElementById('difficultyChartTeam');
+    if (!container || !select || !select.value) return;
+
+    const points = computeDifficultySeries(select.value);
+
+    if (!points || points.length < 2) {
+        container.innerHTML = '<p class="difficulty-chart-empty">La courbe apparaîtra après la première journée jouée.</p>';
+        return;
+    }
+
+    // Géométrie du SVG (mêmes conventions que la courbe de la modale de match)
+    const W = 680, H = 260;
+    const M = { top: 24, right: 120, bottom: 28, left: 46 };
+
+    const values = points.flatMap(p => [p.teamElo, p.difficulty]);
+    const minV = Math.min(...values) - 15;
+    const maxV = Math.max(...values) + 15;
+    const minDay = points[0].day;
+    const maxDay = points[points.length - 1].day;
+
+    const x = d => M.left + ((d - minDay) / (maxDay - minDay)) * (W - M.left - M.right);
+    const y = v => M.top + (1 - (v - minV) / (maxV - minV)) * (H - M.top - M.bottom);
+
+    const line = key => points.map(p => `${x(p.day).toFixed(1)},${y(p[key]).toFixed(1)}`).join(' ');
+
+    // Graduations horizontales (4 niveaux arrondis à 10)
+    const gridLines = [];
+    for (let i = 0; i <= 3; i++) {
+        const v = Math.round((minV + (maxV - minV) * (i / 3)) / 10) * 10;
+        gridLines.push(`
+            <line x1="${M.left}" y1="${y(v).toFixed(1)}" x2="${W - M.right}" y2="${y(v).toFixed(1)}" class="df-grid"/>
+            <text x="${M.left - 6}" y="${(y(v) + 3).toFixed(1)}" text-anchor="end" class="md-chart-axis">${v}</text>`);
+    }
+
+    // Libellés X : Début, milieu, dernière journée
+    const midPoint = points[Math.floor(points.length / 2)];
+    const xLabels = [points[0], midPoint, points[points.length - 1]]
+        .filter((p, i, arr) => arr.findIndex(q => q.day === p.day) === i)
+        .map(p => `<text x="${x(p.day).toFixed(1)}" y="${H - 6}" text-anchor="middle" class="md-chart-axis">${p.label}</text>`);
+
+    const last = points[points.length - 1];
+    const team = allTeams.find(t => t.id == select.value);
+
+    container.innerHTML = `
+        <svg viewBox="0 0 ${W} ${H}" class="difficulty-chart-svg" role="img"
+             aria-label="Évolution de la difficulté pour ${team ? team.shortName : ''}">
+            ${gridLines.join('')}
+            <polyline points="${line('teamElo')}" fill="none" stroke="${DIFFICULTY_CHART_COLORS.team}" stroke-width="2.5"/>
+            <polyline points="${line('difficulty')}" fill="none" stroke="${DIFFICULTY_CHART_COLORS.difficulty}" stroke-width="2.5" stroke-dasharray="6 3"/>
+            ${points.map(p => `
+                <circle cx="${x(p.day).toFixed(1)}" cy="${y(p.teamElo).toFixed(1)}" r="3" fill="${DIFFICULTY_CHART_COLORS.team}">
+                    <title>${p.label} — ${team ? team.shortName : ''} : ${p.teamElo}</title>
+                </circle>
+                <circle cx="${x(p.day).toFixed(1)}" cy="${y(p.difficulty).toFixed(1)}" r="3" fill="${DIFFICULTY_CHART_COLORS.difficulty}">
+                    <title>${p.label} — Difficulté restante : ${p.difficulty} (${p.remaining} matchs)</title>
+                </circle>`).join('')}
+            <text x="${W - M.right + 8}" y="${(y(last.teamElo) + 3.5).toFixed(1)}" class="md-chart-label" fill="${DIFFICULTY_CHART_COLORS.team}">${team ? team.shortName : ''} ${last.teamElo}</text>
+            <text x="${W - M.right + 8}" y="${(y(last.difficulty) + 3.5).toFixed(1)}" class="md-chart-label" fill="${DIFFICULTY_CHART_COLORS.difficulty}">Adv. ${last.difficulty}</text>
+            ${xLabels.join('')}
+        </svg>
+        <div class="difficulty-chart-legend">
+            <span><span class="df-dot" style="background:${DIFFICULTY_CHART_COLORS.team}"></span> Elo de l'équipe</span>
+            <span><span class="df-dot df-dot-dashed" style="background:${DIFFICULTY_CHART_COLORS.difficulty}"></span> Elo moyen des adversaires restants (${last.remaining} matchs)</span>
+        </div>
+    `;
 }
