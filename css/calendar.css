@@ -1975,3 +1975,85 @@
     white-space: nowrap;
     font-weight: 600;
 }
+
+/* ===============================
+   ÉVOLUTION DE LA DIFFICULTÉ (onglet Difficulté)
+   =============================== */
+
+.difficulty-chart-block {
+    margin-top: 2rem;
+    background: white;
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.difficulty-chart-block h3 {
+    margin: 0 0 0.35rem;
+    color: #2c3e50;
+}
+
+.difficulty-chart-desc {
+    color: #7f8c8d;
+    font-size: 0.9rem;
+    margin: 0 0 0.9rem;
+}
+
+.difficulty-chart-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.75rem;
+}
+
+.difficulty-chart-controls label {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.difficulty-chart-controls select {
+    padding: 0.45rem 0.75rem;
+    border: 2px solid #ecf0f1;
+    border-radius: 8px;
+    font-size: 0.95rem;
+}
+
+.difficulty-chart-svg {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.df-grid {
+    stroke: #ecf0f1;
+    stroke-width: 1;
+}
+
+.difficulty-chart-legend {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    color: #2c3e50;
+}
+
+.df-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 0.3rem;
+    vertical-align: middle;
+}
+
+.df-dot-dashed {
+    border-radius: 2px;
+    height: 4px;
+}
+
+.difficulty-chart-empty {
+    text-align: center;
+    color: #7f8c8d;
+    padding: 1.5rem;
+}
