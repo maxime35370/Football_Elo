@@ -936,19 +936,24 @@ function updateScorerSuggestions(teamId) {
         return;
     }
 
+    // Buteurs de la saison EN COURS uniquement : les effectifs changent d'une
+    // saison à l'autre, on ne propose pas les buteurs de l'an passé
     const counts = {};
+    const seasonName = typeof getCurrentSeason === 'function' ? getCurrentSeason() : null;
     const matches = typeof getStoredMatches === 'function' ? getStoredMatches() : [];
     matches.forEach(m => {
+        if (seasonName && m.season !== seasonName) return;
         (m.goals || []).forEach(g => {
             if (String(g.teamId) !== String(teamId) || !g.scorer) return;
             counts[g.scorer] = (counts[g.scorer] || 0) + 1;
         });
     });
 
-    // Joueurs du référentiel liés à ce club (même sans but enregistré)
-    if (typeof playersRegistry !== 'undefined') {
+    // Joueurs du référentiel dont le club ACTUEL est celui du but (même sans
+    // but cette saison — un transféré vers ce club est proposé, un parti non)
+    if (typeof playersRegistry !== 'undefined' && typeof plCurrentTeamId === 'function') {
         playersRegistry.forEach(p => {
-            if ((p.stints || []).some(s => String(s.teamId) === String(teamId))) {
+            if (plCurrentTeamId(p) === String(teamId)) {
                 if (!(p.lastName in counts)) counts[p.lastName] = 0;
             }
         });
