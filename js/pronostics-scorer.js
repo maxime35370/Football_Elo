@@ -26,7 +26,7 @@ function getTeamTopScorers(teamId, limit = 10) {
             plBuildLabels(rows, typeof allTeams !== 'undefined' ? allTeams : []);
         }
 
-        return rows
+        const scorers = rows
             .filter(row => {
                 if (row.playerId) {
                     // Joueur du référentiel : proposé uniquement dans son club ACTUEL
@@ -37,12 +37,31 @@ function getTeamTopScorers(teamId, limit = 10) {
                 return row.clubs.some(c => String(c.teamId) === String(teamId));
             })
             .map(row => ({
+                playerId: row.playerId,
                 name: row.label || row.name,
                 goals: row.goals,   // total saison, clubs cumulés si mercato
                 matches: Object.keys(row.matchGoals).length
-            }))
+            }));
+
+        // Joueurs du référentiel dont le club actuel est celui-ci mais sans
+        // but cette saison (recrue du mercato, début de saison...) : proposés
+        // quand même, à 0 but
+        playersRegistry.forEach(p => {
+            if (plCurrentTeamId(p) === String(teamId) &&
+                !scorers.some(s => s.playerId === p.id)) {
+                scorers.push({
+                    playerId: p.id,
+                    name: p.customLabel || p.lastName,
+                    goals: 0,
+                    matches: 0
+                });
+            }
+        });
+
+        return scorers
             .sort((a, b) => b.goals - a.goals)
-            .slice(0, limit);
+            .slice(0, limit)
+            .map(({ name, goals, matches }) => ({ name, goals, matches }));
     }
 
     // Secours si players.js n'est pas chargé : ancien comportement

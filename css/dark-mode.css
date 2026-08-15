@@ -1540,7 +1540,9 @@
 }
 
 [data-theme="dark"] .team-badge {
-    color: var(--dm-ink-muted);
+    /* Le badge garde son fond bleu : l'encre atténuée y était illisible,
+       on force le blanc comme en mode clair */
+    color: white;
 }
 
 [data-theme="dark"] .prediction-score input {
