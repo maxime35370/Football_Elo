@@ -31,13 +31,68 @@ document.addEventListener('DOMContentLoaded', async function() {
     document.getElementById('detectedSearch').addEventListener('input', apRenderDetected);
     document.getElementById('detectedSeason').addEventListener('change', apRefreshAll);
     document.getElementById('mergeSelectionBtn').addEventListener('click', apCreateFromSelection);
+    document.getElementById('attachSelectionBtn').addEventListener('click', apAttachSelection);
 });
 
 function apRefreshAll() {
     apDetected = apComputeDetected();
     apRenderPlayers();
     apRenderDetected();
+    apPopulateAttachSelect();
     apUpdateCounts();
+}
+
+// Liste des joueurs existants pour le rattachement direct d'un buteur détecté
+function apPopulateAttachSelect() {
+    const select = document.getElementById('attachPlayerSelect');
+    if (!select) return;
+    select.innerHTML = [...playersRegistry]
+        .sort((a, b) => (a.lastName || '').localeCompare(b.lastName || '', 'fr'))
+        .map(p => `<option value="${p.id}">${p.lastName}${p.firstName ? ' (' + p.firstName + ')' : ''}</option>`)
+        .join('');
+}
+
+// Rattache les buteurs cochés à un joueur EXISTANT : leurs orthographes
+// deviennent des alias de la fiche, et les clubs manquants sont ajoutés à
+// son historique. Idéal pour les fautes de frappe (« Harnorld » / « Harnold »).
+async function apAttachSelection() {
+    const player = playersRegistry.find(p => p.id === document.getElementById('attachPlayerSelect').value);
+    if (!player) {
+        alert('Aucun joueur dans le référentiel : crée d\'abord une fiche.');
+        return;
+    }
+
+    const checked = [...document.querySelectorAll('.detected-check:checked')]
+        .map(cb => apDetected.find(b => b.key === cb.value))
+        .filter(Boolean);
+
+    if (checked.length === 0) {
+        alert('Coche au moins un buteur détecté à rattacher.');
+        return;
+    }
+
+    const label = `${player.firstName || ''} ${player.lastName}`.trim();
+    const names = checked.map(b => `« ${b.displayName} »`).join(', ');
+    if (!confirm(`Rattacher ${names} à la fiche de ${label} ?`)) return;
+
+    player.aliases = player.aliases || [];
+    player.stints = player.stints || [];
+
+    checked.forEach(b => {
+        b.normKeys.forEach(k => {
+            if (!player.aliases.includes(k)) player.aliases.push(k);
+        });
+        if (!player.stints.some(s => String(s.teamId) === String(b.teamId))) {
+            player.stints.push({
+                teamId: String(b.teamId),
+                season: b.seasons[0] || '',
+                phase: player.stints.length === 0 ? 'start' : 'mercato'
+            });
+        }
+    });
+
+    await savePlayersRegistry();
+    apRefreshAll();
 }
 
 function apUpdateCounts() {
