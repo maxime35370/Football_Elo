@@ -912,11 +912,14 @@ function updateEloEvolutionChart() {
     selectedTeamIds.forEach((teamId, index) => {
         const team = teamsWithElo.find(t => t.id == teamId);
         if (!team || !team.eloHistory || team.eloHistory.length === 0) return;
-        
+
         const color = getTeamColor(index);
-        
-        // Ajouter le point initial (avant J1)
-        const data = [{ x: 0, y: initialRating }];
+
+        // Point initial (avant J1) : l'Elo hérité de la saison précédente,
+        // pas le 1500 de base — sinon une équipe qui perd son 1er match
+        // semble monter sur le graphe
+        const startRating = seasonStartEloMap[team.id] ?? initialRating;
+        const data = [{ x: 0, y: startRating }];
         
         // Ajouter les points après chaque journée
         team.eloHistory.forEach(h => {
