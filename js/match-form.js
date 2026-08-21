@@ -832,6 +832,11 @@ function populateTeamSelects() {
         return;
     }
 
+    // Mémoriser la sélection en cours pour ne pas la perdre au re-remplissage
+    // (rechargement des équipes après synchro Firebase, notamment en édition)
+    const previousHome = homeTeamSelect.value;
+    const previousAway = awayTeamSelect.value;
+
     // Vider les selects d'abord
     homeTeamSelect.innerHTML = '<option value="">Sélectionner une équipe</option>';
     awayTeamSelect.innerHTML = '<option value="">Sélectionner une équipe</option>';
@@ -848,6 +853,14 @@ function populateTeamSelects() {
         awayOption.textContent = `${team.name} (${team.shortName})`;
         awayTeamSelect.appendChild(awayOption);
     });
+
+    // Restaurer la sélection si toujours valable
+    if (previousHome && [...homeTeamSelect.options].some(o => o.value == previousHome)) {
+        homeTeamSelect.value = previousHome;
+    }
+    if (previousAway && [...awayTeamSelect.options].some(o => o.value == previousAway)) {
+        awayTeamSelect.value = previousAway;
+    }
 
     // ← AJOUTER : Filtrer selon la journée si une journée est déjà saisie
     const matchDayInput = document.getElementById('matchDay');
