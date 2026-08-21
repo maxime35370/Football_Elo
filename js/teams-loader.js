@@ -52,6 +52,12 @@ function populateTeamSelects() {
         return; // Sortir de la fonction si les éléments n'existent pas
     }
 
+    // Mémoriser la sélection en cours : le rechargement des équipes après la
+    // synchro Firebase (~2 s après l'ouverture) ne doit pas vider les selects
+    // — en mode édition, les équipes du match disparaissaient sous l'utilisateur
+    const previousHome = homeTeamSelect.value;
+    const previousAway = awayTeamSelect.value;
+
     // Vider les selects d'abord
     homeTeamSelect.innerHTML = '<option value="">Sélectionner une équipe</option>';
     awayTeamSelect.innerHTML = '<option value="">Sélectionner une équipe</option>';
@@ -68,6 +74,14 @@ function populateTeamSelects() {
         awayOption.textContent = `${team.name} (${team.shortName})`;
         awayTeamSelect.appendChild(awayOption);
     });
+
+    // Restaurer la sélection si les équipes existent toujours
+    if (previousHome && [...homeTeamSelect.options].some(o => o.value == previousHome)) {
+        homeTeamSelect.value = previousHome;
+    }
+    if (previousAway && [...awayTeamSelect.options].some(o => o.value == previousAway)) {
+        awayTeamSelect.value = previousAway;
+    }
 }
 
 // Mettre à jour les limites de journée selon le nombre d'équipes
