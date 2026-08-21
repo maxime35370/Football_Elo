@@ -27,6 +27,25 @@ async function initPronosticsApp() {
     initGameEvents();
 }
 
+// Recharger les données quand la synchronisation Firebase de storage.js se
+// termine (~2 s après le chargement) : sur un navigateur neuf, la page
+// s'initialise AVANT que saisons/équipes/matchs/calendrier soient arrivés.
+// Une seule fois : les syncs périodiques (5 min) ne doivent pas re-rendre
+// la page pendant qu'un joueur saisit ses pronos.
+let _pronoSyncRefreshDone = false;
+document.addEventListener('firebaseSyncComplete', async function() {
+    if (_pronoSyncRefreshDone) return;
+    _pronoSyncRefreshDone = true;
+
+    currentSeason = getCurrentSeason();
+    await loadGameData();
+
+    if (currentPlayer) {
+        initMatchDaySelector();
+        loadLeaderboard();
+    }
+});
+
 // Compatible avec chargement direct (<script>) ET dynamique (loader)
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initPronosticsApp);
@@ -41,7 +60,11 @@ async function loadGameData() {
     try {
         allTeams = getTeamsBySeason(currentSeason);
         allMatches = getStoredMatches().filter(m => m.season === currentSeason);
-        futureMatches = loadFutureMatches(currentSeason);
+        // Firebase d'abord : un navigateur fraîchement connecté n'a pas
+        // encore de copie locale du calendrier
+        futureMatches = typeof loadFutureMatchesAsync === 'function'
+            ? await loadFutureMatchesAsync(currentSeason)
+            : loadFutureMatches(currentSeason);
 
         // Référentiel joueurs : fusion des alias et transferts mercato
         // dans le picker "1er buteur"
