@@ -585,6 +585,21 @@ async function syncFromFirebase() {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(firebaseMatches));
         }
 
+        // Récupérer le calendrier (matchs à venir) de la saison active :
+        // sans lui, un navigateur qui n'a jamais visité la page Calendrier
+        // n'a aucun match à pronostiquer
+        try {
+            const activeSeasonName = localStorage.getItem('footballEloCurrentSeason');
+            if (activeSeasonName) {
+                const firebaseFuture = await loadFutureMatchesFromFirebase(activeSeasonName);
+                if (firebaseFuture.length > 0) {
+                    localStorage.setItem(`footballEloFutureMatches_${activeSeasonName}`, JSON.stringify(firebaseFuture));
+                }
+            }
+        } catch (e) {
+            console.warn('Erreur sync calendrier Firebase:', e);
+        }
+
         console.log('Synchronisation depuis Firebase terminée');
 
         // Notifier les autres modules que la sync est terminée afin qu'ils rechargent leurs données.
