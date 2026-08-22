@@ -68,6 +68,17 @@ const TEAM_MAPPING = {
     'Reims':               { id: null, short: 'SDR' },
 };
 
+// Alias nom ESPN → nom court local, résolus dynamiquement dans allTeams
+// (pas d'id en dur : pratique pour les promus dont l'id dépend de la base).
+const TEAM_NAME_ALIASES = {
+    'Le Mans':      'MUC',
+    'Le Mans FC':   'MUC',
+    'Le Mans UC 72':'MUC',
+    'Troyes':       'ESTAC',
+    'ESTAC Troyes': 'ESTAC',
+    'ES Troyes AC': 'ESTAC',
+};
+
 function findLocalTeamId(espnName) {
     if (!espnName) return null;
     
@@ -83,6 +94,14 @@ function findLocalTeamId(espnName) {
         }
     }
     
+    // Alias explicites (promus...) : résolus par nom court dans allTeams
+    const aliasShort = TEAM_NAME_ALIASES[espnName] ||
+        Object.entries(TEAM_NAME_ALIASES).find(([n]) => n.toLowerCase() === lower)?.[1];
+    if (aliasShort && typeof allTeams !== 'undefined') {
+        const team = allTeams.find(t => (t.shortName || '').toLowerCase() === aliasShort.toLowerCase());
+        if (team) return { id: team.id, short: team.shortName };
+    }
+
     if (typeof allTeams !== 'undefined') {
         const team = allTeams.find(t => {
             const tName = (t.name || t.fullName || '').toLowerCase();
@@ -91,7 +110,7 @@ function findLocalTeamId(espnName) {
         });
         if (team) return { id: team.id, short: team.shortName };
     }
-    
+
     return null;
 }
 

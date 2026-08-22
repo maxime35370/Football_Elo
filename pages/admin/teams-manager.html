@@ -250,11 +250,16 @@
             console.log(`✅ ${window.allMatches.length} matchs chargés`);
         }
 
-        // Charger les équipes
+        // Charger les équipes : elles vivent dans le document data/teams
+        // (firebaseService.getTeams), pas dans une collection "teams" —
+        // l'ancien chemin renvoyait une liste vide et cassait le mapping
+        // par nom des équipes hors TEAM_MAPPING (promus notamment)
         if (typeof allTeams === 'undefined' || !window.allTeams || window.allTeams.length === 0) {
             console.log('📥 Chargement des équipes depuis Firebase...');
-            const teamSnap = await db.collection('teams').get();
-            window.allTeams = teamSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            window.allTeams = await firebaseService.getTeams();
+            if (!window.allTeams || window.allTeams.length === 0) {
+                window.allTeams = (typeof getStoredTeams === 'function') ? getStoredTeams() : [];
+            }
             console.log(`✅ ${window.allTeams.length} équipes chargées`);
         }
 
