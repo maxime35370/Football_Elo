@@ -401,6 +401,14 @@ function parseESPNEvent(event) {
 // 8. DÉTAILS (buteurs, cartons, stats)
 // ===============================
 
+// L'horloge ESPN inclut le temps additionnel : "90'+6'" → minute 90, +6.
+// parseInt seul s'arrêtait à 90 et perdait le temps additionnel.
+function parseEspnClock(displayValue) {
+    const m = String(displayValue || '').match(/(\d+)\s*'?\s*(?:\+\s*(\d+))?/);
+    if (!m) return { minute: 0, extraTime: 0 };
+    return { minute: parseInt(m[1]) || 0, extraTime: parseInt(m[2]) || 0 };
+}
+
 async function fetchMatchDetail(espnId) {
     const data = await espnFetch(`${ESPN_API.summaryUrl}?event=${espnId}`);
     
@@ -411,14 +419,15 @@ async function fetchMatchDetail(espnId) {
     keyEvents.forEach(ke => {
         const play = ke.play || ke;
         const type = play.type?.text || '';
-        const minute = parseInt(play.clock?.displayValue) || 0;
-        
+        const clock = parseEspnClock(play.clock?.displayValue);
+        const minute = clock.minute;
+
         if (type.includes('Goal') || play.scoringPlay) {
             const scorer = (play.participants || []).find(p => p.type === 'scorer' || p.athlete);
             result.goals.push({
                 scorer: scorer?.athlete?.displayName || 'Inconnu',
                 minute,
-                extraTime: 0,
+                extraTime: clock.extraTime,
                 team: play.team?.displayName || '?',
                 type: type.includes('Penalty') ? 'Penalty' : type.includes('Own') ? 'Own Goal' : 'Normal Goal',
                 assist: null
@@ -442,8 +451,9 @@ async function fetchMatchDetail(espnId) {
         details.forEach(d => {
             const athletes = d.athletesInvolved || [];
             const name = athletes[0]?.displayName || 'Inconnu';
-            const minute = parseInt(d.clock?.displayValue) || 0;
-            
+            const clock = parseEspnClock(d.clock?.displayValue);
+            const minute = clock.minute;
+
             if (d.redCard || d.yellowCard) {
                 result.cards.push({
                     player: name,
@@ -455,7 +465,7 @@ async function fetchMatchDetail(espnId) {
                 result.goals.push({
                     scorer: name,
                     minute,
-                    extraTime: 0,
+                    extraTime: clock.extraTime,
                     team: d.team?.displayName || '?',
                     type: d.penaltyKick ? 'Penalty' : d.ownGoal ? 'Own Goal' : 'Normal Goal',
                     assist: athletes[1]?.displayName || null
