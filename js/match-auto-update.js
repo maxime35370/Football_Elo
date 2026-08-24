@@ -149,11 +149,18 @@ function convertGoalsToLocalFormat(espnGoals, espnMatch) {
         const extra = goal.extraTime || 0;
         const displayTime = extra > 0 ? `${goal.minute}+${extra}'` : `${goal.minute}'`;
 
+        // Un but contre son camp est préfixé « (CSC) » : son auteur joue dans
+        // l'équipe adverse et ne doit apparaître ni dans les classements de
+        // buteurs, ni dans les suggestions, ni au défi 1er buteur
+        const isOwnGoal = goal.type === 'Own Goal';
+        const prefix = isOwnGoal ? '(CSC) ' : '';
+
         return {
-            scorer: extractLastName(goal.scorer),
+            scorer: prefix + extractLastName(goal.scorer),
             // Nom complet ESPN conservé : permet de différencier deux joueurs
             // du même nom de famille dans le même club (référentiel joueurs)
-            scorerFull: goal.scorer && goal.scorer !== 'Inconnu' ? goal.scorer : null,
+            scorerFull: goal.scorer && goal.scorer !== 'Inconnu' ? prefix + goal.scorer : null,
+            isOwnGoal: isOwnGoal,
             minute: goal.minute,
             extraTime: extra,
             teamId: teamId,

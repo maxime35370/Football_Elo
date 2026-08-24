@@ -72,6 +72,7 @@ function getTeamTopScorers(teamId, limit = 10) {
 
         match.goals.forEach(goal => {
             if (goal.teamId != teamId) return;
+            if (typeof plIsOwnGoal === 'function' && plIsOwnGoal(goal)) return;
 
             // Normaliser le nom
             const name = normalizeScorer(goal.scorer);
@@ -492,14 +493,22 @@ function calculateScorerResult(scorerPick, match) {
         return { points: 0, label: '⚽❌ Pas de but dans le match', isFirstScorer: false, participated: true };
     }
     
-    // Trier les buts par minute
-    const sortedGoals = [...match.goals].sort((a, b) => {
-        if (a.minute !== b.minute) return a.minute - b.minute;
-        return (a.extraTime || 0) - (b.extraTime || 0);
-    });
-    
+    // Trier les buts par minute, en écartant les CSC : un but contre son
+    // camp ne compte ni comme « 1er buteur » ni comme « a marqué »
+    const sortedGoals = [...match.goals]
+        .filter(g => !(typeof plIsOwnGoal === 'function' && plIsOwnGoal(g)))
+        .sort((a, b) => {
+            if (a.minute !== b.minute) return a.minute - b.minute;
+            return (a.extraTime || 0) - (b.extraTime || 0);
+        });
+
+    if (sortedGoals.length === 0) {
+        // Tous les buts du match sont des CSC
+        return { points: 0, label: '⚽❌ Pas de buteur dans le match', isFirstScorer: false, participated: true };
+    }
+
     const firstGoal = sortedGoals[0];
-    
+
     // Vérifier si c'est le premier buteur
     if (matchScorerNames(scorerPick, firstGoal.scorer)) {
         return {
