@@ -344,22 +344,30 @@ function calculateCombineResult(combineData, predictions, matchDayOrMatches) {
         const result = calculatePredictionResult(
             pred.homeScore, pred.awayScore,
             match.finalScore.home, match.finalScore.away,
-            pred.savedAt, match
+            pred.savedAt, match,
+            pred.odds
         );
-        
+
         const basePoints = result.points || 0;
-        
+        // Points réellement acquis sur le match (cote incluse) : c'est sur
+        // eux que porte le multiplicateur du combiné, pas sur les points
+        // bruts — un 3 × 0.76 = 2.3 contribue 2.3 au total multiplié
+        const earnedPoints = result.finalPoints ?? basePoints;
+
+        // L'éligibilité (« au moins bon résultat ») reste jugée sur les
+        // points bruts : une cote défavorable ne fait pas rater le combiné
         if (basePoints < COMBINE_CONFIG.minPointsPerMatch) {
             allCorrect = false;
         }
         if (basePoints !== 9) {
             allExact = false;
         }
-        
-        combineBasePoints += basePoints;
+
+        combineBasePoints += earnedPoints;
         matchResults.push({
             match: combineMatch,
             points: basePoints,
+            earnedPoints,
             class: result.class
         });
     }
