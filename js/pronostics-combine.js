@@ -8,9 +8,9 @@ const COMBINE_CONFIG = {
     minMatches: 2,
     maxMatches: 4,
     multipliers: {
-        2: 1.3,   // 2 matchs combinés = x1.3
-        3: 1.6,   // 3 matchs combinés = x1.6
-        4: 2.0    // 4 matchs combinés = x2.0
+        2: 1.5,   // 2 matchs combinés = x1.5
+        3: 2.0,   // 3 matchs combinés = x2
+        4: 3.5    // 4 matchs combinés = x3.5 — le gros risque paie gros
     },
     allExactBonus: 1.2,  // Bonus supplémentaire si tous les matchs sont score exact
     minPointsPerMatch: 3  // Minimum 3 pts (bon résultat) pour que le combiné soit validé
