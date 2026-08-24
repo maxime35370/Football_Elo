@@ -8,9 +8,9 @@ const COMBINE_CONFIG = {
     minMatches: 2,
     maxMatches: 4,
     multipliers: {
-        2: 1.5,   // 2 matchs combinés = x1.5
-        3: 2.0,   // 3 matchs combinés = x2
-        4: 3.5    // 4 matchs combinés = x3.5 — le gros risque paie gros
+        2: 1.3,   // 2 matchs combinés = x1.3
+        3: 1.6,   // 3 matchs combinés = x1.6
+        4: 2.0    // 4 matchs combinés = x2.0
     },
     allExactBonus: 1.2,  // Bonus supplémentaire si tous les matchs sont score exact
     minPointsPerMatch: 3  // Minimum 3 pts (bon résultat) pour que le combiné soit validé
@@ -344,22 +344,30 @@ function calculateCombineResult(combineData, predictions, matchDayOrMatches) {
         const result = calculatePredictionResult(
             pred.homeScore, pred.awayScore,
             match.finalScore.home, match.finalScore.away,
-            pred.savedAt, match
+            pred.savedAt, match,
+            pred.odds
         );
-        
+
         const basePoints = result.points || 0;
-        
+        // Points réellement acquis sur le match (cote incluse) : c'est sur
+        // eux que porte le multiplicateur du combiné, pas sur les points
+        // bruts — un 3 × 0.76 = 2.3 contribue 2.3 au total multiplié
+        const earnedPoints = result.finalPoints ?? basePoints;
+
+        // L'éligibilité (« au moins bon résultat ») reste jugée sur les
+        // points bruts : une cote défavorable ne fait pas rater le combiné
         if (basePoints < COMBINE_CONFIG.minPointsPerMatch) {
             allCorrect = false;
         }
         if (basePoints !== 9) {
             allExact = false;
         }
-        
-        combineBasePoints += basePoints;
+
+        combineBasePoints += earnedPoints;
         matchResults.push({
             match: combineMatch,
             points: basePoints,
+            earnedPoints,
             class: result.class
         });
     }
