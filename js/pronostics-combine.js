@@ -379,7 +379,7 @@ function calculateCombineResult(combineData, predictions, matchDayOrMatches) {
             isSuccess: false,
             active: true,
             pending: false,
-            message: '❌ Combiné raté — au moins un match en dessous de 3 pts'
+            message: '❌ Combiné raté — au moins un match avec un mauvais résultat'
         });
     }
     
