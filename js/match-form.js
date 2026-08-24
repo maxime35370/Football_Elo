@@ -903,7 +903,7 @@ function addGoalForm() {
             </div>
             <div class="form-group">
                 <label>Buteur :</label>
-                <input type="text" name="goalScorer" placeholder="Nom du buteur" required
+                <input type="text" name="goalScorer" placeholder="Nom du buteur — « (CSC) Nom » si contre son camp" required
                        list="scorerSuggestions" autocomplete="off">
             </div>
             <div class="form-group minute-group">
@@ -970,6 +970,8 @@ function updateScorerSuggestions(teamId) {
         if (seasonName && m.season !== seasonName) return;
         (m.goals || []).forEach(g => {
             if (String(g.teamId) !== String(teamId) || !g.scorer) return;
+            // Les CSC ne sont pas des buteurs de l'équipe
+            if (typeof plIsOwnGoal === 'function' && plIsOwnGoal(g)) return;
             counts[g.scorer] = (counts[g.scorer] || 0) + 1;
         });
     });

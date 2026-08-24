@@ -123,6 +123,7 @@ function apComputeDetected() {
         if (seasonFilter !== 'all' && match.season !== seasonFilter) return;
         (match.goals || []).forEach(goal => {
             if (!goal.scorer) return;
+            if (plIsOwnGoal(goal)) return; // un CSC n'est pas un buteur à référencer
             const teamId = String(goal.teamId);
             if (plResolvePlayer(goal.scorer, teamId, goal.scorerFull)) return; // déjà lié
 

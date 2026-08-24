@@ -133,6 +133,20 @@ function plCurrentTeamId(player) {
 }
 
 // ===============================
+// BUTS CONTRE SON CAMP (CSC)
+// ===============================
+
+// Un CSC compte pour le score du match mais son « buteur » joue dans l'équipe
+// adverse : il est exclu des classements de buteurs, des suggestions et du
+// défi 1er buteur. Détection : flag isOwnGoal (import ESPN) ou préfixe
+// « (CSC) » dans le nom (saisie manuelle : taper « (CSC) Nom »).
+function plIsOwnGoal(goal) {
+    if (!goal) return false;
+    if (goal.isOwnGoal === true || goal.type === 'Own Goal') return true;
+    return /^\s*\(?\s*csc\b/i.test(String(goal.scorerFull || goal.scorer || ''));
+}
+
+// ===============================
 // AGRÉGATION DES BUTEURS
 // ===============================
 
@@ -147,7 +161,7 @@ function plComputeScorerRows(matches) {
 
     matches.forEach(match => {
         (match.goals || []).forEach(goal => {
-            if (!goal.scorer) return;
+            if (!goal.scorer || plIsOwnGoal(goal)) return;
             const teamId = String(goal.teamId);
             const player = plResolvePlayer(goal.scorer, teamId, goal.scorerFull);
 
@@ -279,6 +293,7 @@ function plSeasonGoals(player, matches) {
     let total = 0;
     matches.forEach(match => {
         (match.goals || []).forEach(goal => {
+            if (plIsOwnGoal(goal)) return;
             if (plResolvePlayer(goal.scorer, String(goal.teamId), goal.scorerFull) === player) total++;
         });
     });
@@ -314,7 +329,7 @@ function plOpenScorerModal(listId, index) {
     const playerGoalsIn = (m, clubTeamId) => {
         let count = 0;
         (m.goals || []).forEach(g => {
-            if (String(g.teamId) !== String(clubTeamId)) return;
+            if (String(g.teamId) !== String(clubTeamId) || plIsOwnGoal(g)) return;
             if (row.playerId) {
                 const p = plResolvePlayer(g.scorer, String(g.teamId), g.scorerFull);
                 if (p && p.id === row.playerId) count++;
