@@ -301,12 +301,21 @@ async function saveCombineWithPredictions(playerId, season, matchDay) {
  * Calcule le bonus combiné pour une journée
  * @returns {bonus, breakdown, isSuccess}
  */
-function calculateCombineResult(combineData, predictions, matchDay) {
+// matchDayOrMatches : numéro de journée OU tableau de matchs (les deux formes
+// sont utilisées par les appelants — classements, stats, récap).
+// Le retour expose bonus/bonusPoints et isSuccess/success (alias) : des
+// appelants lisaient bonusPoints/success qui n'existaient pas, et le bonus
+// du combiné n'était jamais compté dans les totaux.
+function calculateCombineResult(combineData, predictions, matchDayOrMatches) {
+    const finalize = r => ({ ...r, bonusPoints: r.bonus, success: r.isSuccess });
+
     if (!combineData || !combineData.matches || combineData.matches.length < COMBINE_CONFIG.minMatches) {
-        return { bonus: 0, breakdown: null, isSuccess: false, active: false };
+        return finalize({ bonus: 0, breakdown: null, isSuccess: false, active: false });
     }
-    
-    const matchesThisDay = allMatches.filter(m => m.matchDay === matchDay && m.finalScore);
+
+    const matchesThisDay = Array.isArray(matchDayOrMatches)
+        ? matchDayOrMatches.filter(m => m.finalScore)
+        : allMatches.filter(m => m.matchDay === matchDayOrMatches && m.finalScore);
     let allCorrect = true;
     let allExact = true;
     let combineBasePoints = 0;
@@ -319,7 +328,7 @@ function calculateCombineResult(combineData, predictions, matchDay) {
         
         if (!match) {
             // Match pas encore joué
-            return { bonus: 0, breakdown: null, isSuccess: false, active: true, pending: true };
+            return finalize({ bonus: 0, breakdown: null, isSuccess: false, active: true, pending: true });
         }
         
         const pred = predictions?.find(p =>
@@ -356,14 +365,14 @@ function calculateCombineResult(combineData, predictions, matchDay) {
     }
     
     if (!allCorrect) {
-        return {
+        return finalize({
             bonus: 0,
             breakdown: matchResults,
             isSuccess: false,
             active: true,
             pending: false,
             message: '❌ Combiné raté — au moins un match en dessous de 3 pts'
-        };
+        });
     }
     
     // Combiné réussi !
@@ -377,7 +386,7 @@ function calculateCombineResult(combineData, predictions, matchDay) {
         bonusPoints += allExactBonus;
     }
     
-    return {
+    return finalize({
         bonus: bonusPoints,
         breakdown: matchResults,
         isSuccess: true,
@@ -388,7 +397,7 @@ function calculateCombineResult(combineData, predictions, matchDay) {
         allExactBonus,
         combineBasePoints,
         message: `✅ Combiné réussi ! +${bonusPoints} pts bonus`
-    };
+    });
 }
 
 // ===============================
