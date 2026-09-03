@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suivi des pronos - Admin Football Elo</title>
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="../../css/admin.css">
+    <link rel="stylesheet" href="../../css/statistics.css">
+    <link rel="stylesheet" href="../../css/mobile.css">
+    <link rel="stylesheet" href="../../css/dark-mode.css">
+    <script src="../../js/theme.js"></script>
+</head>
+<body>
+
+    <nav>
+        <button class="burger-menu" onclick="toggleMenu()">☰</button>
+            <button class="theme-toggle" onclick="toggleTheme()" title="Changer de thème">☀️</button>
+        <div class="nav-container">
+            <a href="../../index.html" class="nav-btn">🏠 Accueil</a>
+            <a href="../../pages/add-match.html" class="nav-btn">➕ Ajouter un match</a>
+            <a href="../../pages/matches.html" class="nav-btn">📋 Historique</a>
+            <a href="../../pages/results-table.html" class="nav-btn">📊 Tableau</a>
+            <a href="../../pages/rankings.html" class="nav-btn">🏆 Classements</a>
+            <a href="../../pages/statistics.html" class="nav-btn">📈 Stats</a>
+            <a href="../../pages/calendar.html" class="nav-btn">📅 Calendrier</a>
+            <a href="../../pages/pronostics-game.html" class="nav-btn">🎮 Pronos</a>
+            <a href="../../pages/archives.html" class="nav-btn">📚 Archives</a>
+            <a href="../../pages/admin/teams-manager.html" class="nav-btn active">⚙️ Admin</a>
+        </div>
+    </nav>
+
+    <main>
+        <div class="admin-container">
+            <div class="admin-banner">
+                <h2>📣 Administration - Suivi des pronos</h2>
+                <div class="admin-stats">
+                    <span>Saison : <span id="trackerSeason"></span></span>
+                </div>
+            </div>
+
+            <div class="quick-actions">
+                <label for="trackerDay" style="align-self:center;font-weight:600;">Journée :</label>
+                <select id="trackerDay" class="tracker-day-select"></select>
+                <a href="teams-manager.html" class="btn btn-secondary">⚙️ Gestion des équipes</a>
+                <a href="players-manager.html" class="btn btn-secondary">👤 Référentiel joueurs</a>
+            </div>
+
+            <div class="teams-list-section">
+                <h3>🎯 Participation de la journée</h3>
+                <p style="color:#7f8c8d;margin-bottom:0.75rem;">
+                    Qui a saisi ses pronostics — aucun score n'est affiché ici.
+                </p>
+                <div id="trackerContent"></div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Football Elo - Administration</p>
+    </footer>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="../../js/firebase-config.js"></script>
+    <script>
+    firebase.auth().onAuthStateChanged((user) => {
+        if (!user || user.email !== 'maxime.theard@gmail.com') {
+            alert('⛔ Accès réservé aux administrateurs');
+            window.location.href = '../../index.html';
+        }
+    });
+    </script>
+
+    <script src="../../js/firebase-service.js"></script>
+    <script src="../../js/seasons.js"></script>
+    <script src="../../js/storage.js"></script>
+    <script src="../../js/admin-pronos-tracker.js"></script>
+
+    <script>
+    function toggleMenu() {
+        document.querySelector('.nav-container').classList.toggle('open');
+    }
+    </script>
+</body>
+</html>

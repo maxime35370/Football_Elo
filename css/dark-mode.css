@@ -3170,3 +3170,15 @@
     border-color: var(--dm-border);
     color: var(--dm-ink-muted);
 }
+
+/* Suivi des pronos (page Admin) */
+[data-theme="dark"] .tracker-day-select {
+    background: var(--dm-surface-2);
+    border-color: var(--dm-border);
+    color: var(--dm-ink);
+}
+
+[data-theme="dark"] .tracker-summary,
+[data-theme="dark"] .tracker-relance {
+    color: var(--dm-ink);
+}
