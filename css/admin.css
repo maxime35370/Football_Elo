@@ -606,3 +606,55 @@
         width: 100%;
     }
 }
+
+/* ===============================
+   SUIVI DES PRONOS
+   =============================== */
+
+.tracker-day-select {
+    padding: 0.6rem 0.85rem;
+    border: 2px solid #ecf0f1;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    background: white;
+}
+
+.tracker-summary {
+    font-size: 1.05rem;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.tracker-big {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #27ae60;
+}
+
+.tracker-deadline {
+    color: #7f8c8d;
+    margin: 0.25rem 0 0.5rem;
+}
+
+.tracker-relance {
+    background: rgba(243, 156, 18, 0.12);
+    border-left: 4px solid #f39c12;
+    border-radius: 8px;
+    padding: 0.6rem 0.9rem;
+    margin: 0.5rem 0 1rem;
+    color: #2c3e50;
+}
+
+.tracker-allgood {
+    color: #27ae60;
+    font-weight: 600;
+    margin: 0.5rem 0 1rem;
+}
+
+.tracker-table {
+    width: 100%;
+}
+
+.tracker-ok { color: #27ae60; font-weight: 600; }
+.tracker-partial { color: #f39c12; font-weight: 600; }
+.tracker-missing { color: #e74c3c; font-weight: 600; }
