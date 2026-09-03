@@ -145,7 +145,7 @@ function displayDifficulty() {
 // Tout est recalculé à la volée en rejouant la saison : rien n'est stocké,
 // donc les courbes restent justes si un match est modifié ou supprimé.
 
-const DIFFICULTY_CHART_COLORS = { team: '#3498db', difficulty: '#e67e22' };
+const DIFFICULTY_CHART_COLORS = { team: '#3498db', difficulty: '#e67e22', opponent: '#9b59b6' };
 
 function computeDifficultySeries(teamId) {
     if (typeof EloSystem === 'undefined') return null;
@@ -192,12 +192,28 @@ function computeDifficultySeries(teamId) {
             return sum + eloAt(oppId, day);
         }, 0) / remaining.length;
 
+        // Adversaire affronté à cette journée, évalué à son Elo d'AVANT le
+        // match : c'est lui qui explique le gain/la perte d'Elo du point
+        let opponentElo = null, opponentShort = null;
+        if (day >= 1) {
+            const dayMatch = allMatches.find(m => m.matchDay === day &&
+                (m.homeTeamId == teamId || m.awayTeamId == teamId));
+            if (dayMatch) {
+                const oppId = dayMatch.homeTeamId == teamId ? dayMatch.awayTeamId : dayMatch.homeTeamId;
+                opponentElo = Math.round(eloAt(oppId, day - 1));
+                const oppTeam = allTeams.find(t => t.id == oppId);
+                opponentShort = oppTeam ? oppTeam.shortName : '?';
+            }
+        }
+
         points.push({
             day,
             label: day === 0 ? 'Début' : `J${day}`,
             teamElo: Math.round(eloAt(teamId, day)),
             difficulty: Math.round(avg),
-            remaining: remaining.length
+            remaining: remaining.length,
+            opponentElo,
+            opponentShort
         });
     }
 
@@ -233,7 +249,9 @@ function renderDifficultyChart() {
     const W = 680, H = 260;
     const M = { top: 24, right: 120, bottom: 28, left: 46 };
 
-    const values = points.flatMap(p => [p.teamElo, p.difficulty]);
+    const oppPoints = points.filter(p => p.opponentElo != null);
+    const values = points.flatMap(p => [p.teamElo, p.difficulty])
+        .concat(oppPoints.map(p => p.opponentElo));
     const minV = Math.min(...values) - 15;
     const maxV = Math.max(...values) + 15;
     const minDay = points[0].day;
@@ -268,6 +286,11 @@ function renderDifficultyChart() {
             ${gridLines.join('')}
             <polyline points="${line('teamElo')}" fill="none" stroke="${DIFFICULTY_CHART_COLORS.team}" stroke-width="2.5"/>
             <polyline points="${line('difficulty')}" fill="none" stroke="${DIFFICULTY_CHART_COLORS.difficulty}" stroke-width="2.5" stroke-dasharray="6 3"/>
+            ${oppPoints.length > 1 ? `<polyline points="${oppPoints.map(p => `${x(p.day).toFixed(1)},${y(p.opponentElo).toFixed(1)}`).join(' ')}" fill="none" stroke="${DIFFICULTY_CHART_COLORS.opponent}" stroke-width="1.5" stroke-dasharray="2 3" opacity="0.9"/>` : ''}
+            ${oppPoints.map(p => `
+                <circle cx="${x(p.day).toFixed(1)}" cy="${y(p.opponentElo).toFixed(1)}" r="3.5" fill="${DIFFICULTY_CHART_COLORS.opponent}">
+                    <title>${p.label} — Adversaire : ${p.opponentShort} (${p.opponentElo})</title>
+                </circle>`).join('')}
             ${points.map(p => `
                 <circle cx="${x(p.day).toFixed(1)}" cy="${y(p.teamElo).toFixed(1)}" r="3" fill="${DIFFICULTY_CHART_COLORS.team}">
                     <title>${p.label} — ${team ? team.shortName : ''} : ${p.teamElo}</title>
@@ -282,6 +305,7 @@ function renderDifficultyChart() {
         <div class="difficulty-chart-legend">
             <span><span class="df-dot" style="background:${DIFFICULTY_CHART_COLORS.team}"></span> Elo de l'équipe</span>
             <span><span class="df-dot df-dot-dashed" style="background:${DIFFICULTY_CHART_COLORS.difficulty}"></span> Elo moyen des adversaires restants (${last.remaining} matchs)</span>
+            <span><span class="df-dot" style="background:${DIFFICULTY_CHART_COLORS.opponent}"></span> Elo de l'adversaire de la journée (survole les points)</span>
         </div>
     `;
 }
