@@ -493,48 +493,63 @@ function calculateScorerResult(scorerPick, match) {
         return { points: 0, label: '⚽❌ Pas de but dans le match', isFirstScorer: false, participated: true };
     }
     
-    // Trier les buts par minute, en écartant les CSC : un but contre son
-    // camp ne compte ni comme « 1er buteur » ni comme « a marqué »
-    const sortedGoals = [...match.goals]
-        .filter(g => !(typeof plIsOwnGoal === 'function' && plIsOwnGoal(g)))
-        .sort((a, b) => {
-            if (a.minute !== b.minute) return a.minute - b.minute;
-            return (a.extraTime || 0) - (b.extraTime || 0);
-        });
+    // Trier tous les buts par minute (CSC inclus : leur position chronologique
+    // compte pour savoir si le match a un « 1er buteur »)
+    const allSorted = [...match.goals].sort((a, b) => {
+        if (a.minute !== b.minute) return a.minute - b.minute;
+        return (a.extraTime || 0) - (b.extraTime || 0);
+    });
 
-    if (sortedGoals.length === 0) {
+    // Les CSC ne rapportent jamais rien : ni « 1er buteur », ni « a marqué »
+    const isCsc = g => typeof plIsOwnGoal === 'function' && plIsOwnGoal(g);
+    const realGoals = allSorted.filter(g => !isCsc(g));
+
+    if (realGoals.length === 0) {
         // Tous les buts du match sont des CSC
-        return { points: 0, label: '⚽❌ Pas de buteur dans le match', isFirstScorer: false, participated: true };
+        return { points: 0, label: '⚽❌ Pas de buteur dans le match', isFirstScorer: false, goalCount: 0, participated: true };
     }
 
-    const firstGoal = sortedGoals[0];
+    // Chaque VRAI but du joueur choisi compte : +1 pt par but, et +4 au lieu
+    // de +1 pour le 1er but du match s'il en est l'auteur.
+    // Ex : 1er buteur + un 2e but = 4 + 1 = 5 pts ; triplé sans être 1er
+    // buteur = 3 pts. Si le 1er but chronologique du match est un CSC, il
+    // n'y a PAS de « 1er buteur » ce match-là — seuls les +1 par but tombent.
+    const firstChrono = allSorted[0];
+    const goalCount = realGoals.filter(g => matchScorerNames(scorerPick, g.scorer)).length;
+    const isFirst = !isCsc(firstChrono) && matchScorerNames(scorerPick, firstChrono.scorer);
 
-    // Vérifier si c'est le premier buteur
-    if (matchScorerNames(scorerPick, firstGoal.scorer)) {
+    if (isFirst) {
+        const extraGoals = goalCount - 1;
+        const points = SCORER_FIRST_EXACT + extraGoals * SCORER_SCORED;
         return {
-            points: SCORER_FIRST_EXACT,
-            label: `⚽🎯 1er buteur ! (+${SCORER_FIRST_EXACT} pts)`,
+            points,
+            label: extraGoals > 0
+                ? `⚽🎯 1er buteur + ${extraGoals} autre${extraGoals > 1 ? 's' : ''} but${extraGoals > 1 ? 's' : ''} ! (+${points} pts)`
+                : `⚽🎯 1er buteur ! (+${points} pts)`,
             isFirstScorer: true,
+            goalCount,
             participated: true
         };
     }
-    
-    // Vérifier si le joueur a marqué dans le match (mais pas en premier)
-    const hasScored = sortedGoals.some(g => matchScorerNames(scorerPick, g.scorer));
-    
-    if (hasScored) {
+
+    if (goalCount > 0) {
+        const points = goalCount * SCORER_SCORED;
         return {
-            points: SCORER_SCORED,
-            label: `⚽✅ A marqué (+${SCORER_SCORED} pt)`,
+            points,
+            label: goalCount > 1
+                ? `⚽✅ A marqué ${goalCount} buts (+${points} pts)`
+                : `⚽✅ A marqué (+${points} pt)`,
             isFirstScorer: false,
+            goalCount,
             participated: true
         };
     }
-    
+
     return {
         points: 0,
         label: '⚽❌ N\'a pas marqué',
         isFirstScorer: false,
+        goalCount: 0,
         participated: true
     };
 }
@@ -623,7 +638,7 @@ function renderScorerSummary(predictions, matchDay) {
     if (details.length === 0) return '';
     
     const firstScorers = details.filter(d => d.result.isFirstScorer).length;
-    const scoredButNotFirst = details.filter(d => d.result.points === SCORER_SCORED).length;
+    const scoredButNotFirst = details.filter(d => !d.result.isFirstScorer && d.result.points > 0).length;
     const missed = details.filter(d => d.result.points === 0).length;
     
     return `
