@@ -6,6 +6,79 @@
 // (avec bonus consolidés — ex-pronostics-consolidation.js §2)
 // ===============================
 
+// ===============================
+// BONUS D'UNE JOURNÉE (helper partagé)
+// ===============================
+//
+// Tous les points d'une journée qui ne viennent pas directement des matchs :
+// Super Joker (×1.5 sur la journée), défi buteur, pari combiné, défis IA,
+// MVP. Utilisé par les duels, la heatmap, la comparaison et l'historique
+// pour compter EXACTEMENT comme le classement de journée et le récap.
+// basePoints = points de matchs déjà calculés (cotes + joker inclus),
+// nécessaires au Super Joker. Mémoïsé par (joueur, journée, base).
+const _dayBonusCache = new Map();
+
+async function computeDayBonuses(playerId, matchDay, predictionsArr, basePoints) {
+    const cacheKey = `${playerId}_${currentSeason}_J${matchDay}_${Math.round((basePoints || 0) * 10)}`;
+    if (_dayBonusCache.has(cacheKey)) return _dayBonusCache.get(cacheKey);
+
+    const parts = { superJoker: 0, scorer: 0, combine: 0, challenges: 0, mvp: 0 };
+
+    if (typeof getSuperJoker === 'function') {
+        try {
+            const sj = await getSuperJoker(playerId, currentSeason);
+            if (sj && sj.used && sj.matchDay === matchDay) {
+                parts.superJoker = Math.round((basePoints || 0) * 0.5 * 10) / 10;
+            }
+        } catch (e) {}
+    }
+
+    if (typeof calculateScorerPointsForMatchDay === 'function' && predictionsArr) {
+        try {
+            parts.scorer = calculateScorerPointsForMatchDay(predictionsArr, matchDay)?.totalPoints || 0;
+        } catch (e) {}
+    }
+
+    if (typeof calculateCombineResult === 'function' && typeof getPlayerCombine === 'function' && predictionsArr) {
+        try {
+            const combine = await getPlayerCombine(playerId, currentSeason, matchDay);
+            if (combine && combine.matches) {
+                parts.combine = calculateCombineResult(combine, predictionsArr, matchDay)?.bonusPoints || 0;
+            }
+        } catch (e) {}
+    }
+
+    if (typeof calculateAllChallengePoints === 'function') {
+        try {
+            parts.challenges = (await calculateAllChallengePoints(playerId, currentSeason, matchDay))?.points || 0;
+        } catch (e) {}
+    }
+
+    if (typeof getMVPBonusForPlayer === 'function') {
+        try {
+            parts.mvp = (await getMVPBonusForPlayer(playerId, currentSeason, matchDay)) || 0;
+        } catch (e) {}
+    }
+
+    const result = {
+        parts,
+        total: Math.round((parts.superJoker + parts.scorer + parts.combine + parts.challenges + parts.mvp) * 10) / 10
+    };
+    _dayBonusCache.set(cacheKey, result);
+    return result;
+}
+
+// Libellé compact des bonus non nuls : "🃏✨5 ⚽2 🎰14.1 🎲3 🏆2"
+function formatDayBonuses(parts) {
+    const chunks = [];
+    if (parts.superJoker) chunks.push(`🃏✨${parts.superJoker}`);
+    if (parts.scorer) chunks.push(`⚽${parts.scorer}`);
+    if (parts.combine) chunks.push(`🎰${parts.combine}`);
+    if (parts.challenges) chunks.push(`🎲${parts.challenges}`);
+    if (parts.mvp) chunks.push(`🏆${parts.mvp}`);
+    return chunks.join(' ');
+}
+
 /**
  * Récupère le classement détaillé pour une journée spécifique
  * Inclut les bonus : Super Joker, Buteur, Combiné, MVP, Défis
@@ -48,12 +121,13 @@ async function getMatchDayRanking(matchDay) {
                 match.finalScore.home, match.finalScore.away,
                 pred.savedAt,
                 match,
-                pred.odds
+                pred.odds,
+                pred.joker || false
             );
-            
+
             const points = result.finalPoints || result.points;
             dayPoints += points;
-            
+
             if (result.points === 9) exactScores++;
             else if (result.points === 6) closeScores++;
             else if (result.points > 0) correctResults++;
