@@ -213,9 +213,10 @@ function renderMatchResult(prediction, match) {
         match.finalScore.away,
         prediction?.savedAt,
         match,
-        prediction?.odds
+        prediction?.odds,
+        prediction?.joker || false
     );
-    
+
     let pointsDisplay = `${result.finalPoints} pts`;
     if (result.oddsMultiplier !== 1) {
         pointsDisplay = `${result.points} × ${result.oddsMultiplier} = ${result.finalPoints} pts`;
@@ -490,13 +491,13 @@ function updatePlayerRankDisplay(playersWithStats, currentPlayerObj) {
  * @param {Array} allTeamsArr - toutes les équipes
  * @returns {string} HTML
  */
-function renderHistoryHTML(history, allMatchesArr, allTeamsArr) {
+async function renderHistoryHTML(history, allMatchesArr, allTeamsArr) {
     if (history.length === 0) {
         return '<p style="text-align:center;color:#7f8c8d;">Aucun historique disponible</p>';
     }
-    
+
     let html = '';
-    
+
     for (const entry of history) {
         const matchesThisDay = allMatchesArr.filter(m => m.matchDay === entry.matchDay);
         
@@ -538,6 +539,26 @@ function renderHistoryHTML(history, allMatchesArr, allTeamsArr) {
             `;
         });
         
+        // Bonus de la journée (Super Joker, buteur, combiné, défis, MVP) :
+        // ajoutés au total affiché, avec une ligne de détail
+        let bonusHtml = '';
+        if (typeof computeDayBonuses === 'function' && typeof currentPlayer !== 'undefined' && currentPlayer) {
+            try {
+                const bonuses = await computeDayBonuses(currentPlayer.id, entry.matchDay, entry.predictions, totalPoints);
+                if (bonuses.total > 0) {
+                    totalPoints += bonuses.total;
+                    bonusHtml = `
+                        <div class="history-match history-bonus-line">
+                            <span class="history-match-teams">🎁 Bonus : ${formatDayBonuses(bonuses.parts)}</span>
+                            <div class="history-match-scores">
+                                <span class="history-points-match correct">+${bonuses.total}</span>
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (e) {}
+        }
+
         html += `
             <div class="history-card">
                 <div class="history-card-header">
@@ -546,11 +567,12 @@ function renderHistoryHTML(history, allMatchesArr, allTeamsArr) {
                 </div>
                 <div class="history-card-body">
                     ${matchesHtml}
+                    ${bonusHtml}
                 </div>
             </div>
         `;
     }
-    
+
     return html;
 }
 

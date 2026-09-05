@@ -1030,3 +1030,10 @@
         justify-content: space-between;
     }
 }
+
+/* Ligne bonus dans les cartes d'historique (joker, buteur, combiné, défis) */
+.history-bonus-line {
+    background: rgba(39, 174, 96, 0.08);
+    border-radius: 6px;
+    font-weight: 600;
+}

@@ -550,7 +550,7 @@ async function loadHistory() {
     
     try {
         const history = await getPlayerHistory(currentPlayer.id);
-        container.innerHTML = renderHistoryHTML(history, allMatches, allTeams);
+        container.innerHTML = await renderHistoryHTML(history, allMatches, allTeams);
     } catch (error) {
         console.error('Erreur loadHistory:', error);
         container.innerHTML = '<p style="text-align:center;color:#e74c3c;">Erreur de chargement</p>';

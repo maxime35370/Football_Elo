@@ -96,12 +96,12 @@ async function comparePlayers() {
                 const result1 = calculatePredictionResult(
                     pred1.homeScore, pred1.awayScore,
                     match.finalScore.home, match.finalScore.away,
-                    pred1.savedAt, match, pred1.odds
+                    pred1.savedAt, match, pred1.odds, pred1.joker || false
                 );
                 const result2 = calculatePredictionResult(
                     pred2.homeScore, pred2.awayScore,
                     match.finalScore.home, match.finalScore.away,
-                    pred2.savedAt, match, pred2.odds
+                    pred2.savedAt, match, pred2.odds, pred2.joker || false
                 );
                 
                 const pts1 = result1.finalPoints || result1.points;
@@ -124,13 +124,36 @@ async function comparePlayers() {
                 });
             }
             
+            // Bonus de la journée (Super Joker, buteur, combiné, défis, MVP) :
+            // comptés comme dans le classement de journée
+            if (typeof computeDayBonuses === 'function') {
+                const dayNum = parseInt(matchDay);
+                const b1 = await computeDayBonuses(player1Id, dayNum, preds1[matchDay], p1DayPoints);
+                const b2 = await computeDayBonuses(player2Id, dayNum, preds2[matchDay], p2DayPoints);
+                if (b1.total > 0 || b2.total > 0) {
+                    dayDetails.push({
+                        match: '🎁 Bonus journée',
+                        score: '—',
+                        pred1: formatDayBonuses(b1.parts) || '—',
+                        pred2: formatDayBonuses(b2.parts) || '—',
+                        pts1: b1.total,
+                        pts2: b2.total,
+                        winner: b1.total > b2.total ? 1 : b2.total > b1.total ? 2 : 0
+                    });
+                    p1DayPoints += b1.total;
+                    p2DayPoints += b2.total;
+                }
+            }
+
+            p1DayPoints = Math.round(p1DayPoints * 10) / 10;
+            p2DayPoints = Math.round(p2DayPoints * 10) / 10;
             p1TotalPoints += p1DayPoints;
             p2TotalPoints += p2DayPoints;
-            
+
             if (p1DayPoints > p2DayPoints) p1Wins++;
             else if (p2DayPoints > p1DayPoints) p2Wins++;
             else ties++;
-            
+
             matchDetails.push({
                 matchDay: matchDay,
                 p1Points: p1DayPoints,
@@ -390,17 +413,24 @@ async function renderHeatmapTab() {
                 const result = calculatePredictionResult(
                     pred.homeScore, pred.awayScore,
                     match.finalScore.home, match.finalScore.away,
-                    pred.savedAt, match, pred.odds
+                    pred.savedAt, match, pred.odds, pred.joker || false
                 );
-                
+
                 const pts = result.finalPoints || result.points;
                 dayPoints += pts;
-                
+
                 if (result.points === 9) exactCount++;
                 else if (result.points >= 3) goodCount++;
                 else wrongCount++;
             }
-            
+
+            // Total de la journée = matchs + tous les bonus (Super Joker,
+            // buteur, combiné, défis, MVP), comme au classement de journée
+            if (typeof computeDayBonuses === 'function') {
+                const bonuses = await computeDayBonuses(currentPlayer.id, matchDay, playerPreds[matchDay], dayPoints);
+                dayPoints += bonuses.total;
+            }
+
             heatmapData.push({
                 matchDay: matchDay,
                 points: Math.round(dayPoints * 10) / 10,
@@ -547,17 +577,24 @@ async function compareHeatmaps() {
                 );
                 
                 if (myPred) {
-                    const r = calculatePredictionResult(myPred.homeScore, myPred.awayScore, 
-                        match.finalScore.home, match.finalScore.away, myPred.savedAt, match, myPred.odds);
+                    const r = calculatePredictionResult(myPred.homeScore, myPred.awayScore,
+                        match.finalScore.home, match.finalScore.away, myPred.savedAt, match, myPred.odds, myPred.joker || false);
                     myPoints += r.finalPoints || r.points;
                 }
                 if (theirPred) {
                     const r = calculatePredictionResult(theirPred.homeScore, theirPred.awayScore,
-                        match.finalScore.home, match.finalScore.away, theirPred.savedAt, match, theirPred.odds);
+                        match.finalScore.home, match.finalScore.away, theirPred.savedAt, match, theirPred.odds, theirPred.joker || false);
                     theirPoints += r.finalPoints || r.points;
                 }
             }
-            
+
+            // Bonus de la journée pour les deux joueurs (mêmes règles que le
+            // classement de journée)
+            if (typeof computeDayBonuses === 'function') {
+                myPoints += (await computeDayBonuses(currentPlayer.id, day, myPreds[day], myPoints)).total;
+                theirPoints += (await computeDayBonuses(comparePlayerId, day, theirPreds[day], theirPoints)).total;
+            }
+
             if (myPoints > theirPoints) myWins++;
             else if (theirPoints > myPoints) theirWins++;
             else ties++;
