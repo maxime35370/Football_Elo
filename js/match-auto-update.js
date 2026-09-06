@@ -329,8 +329,13 @@ async function fetchLigue1Matches(date) {
 async function fetchMatchDayFromESPN(matchDay) {
     console.log(`🔍 Recherche des matchs de la Journée ${matchDay}...`);
     
+    // Saison en cours uniquement : sans ce filtre, la J3 de la saison
+    // passée faisait passer le match du jour pour « déjà enregistré »
+    // (et il n'aurait jamais été importé)
+    const currentSeasonName = typeof getCurrentSeason === 'function' ? getCurrentSeason() : null;
     const localMatches = [
-        ...allMatches.filter(m => m.matchDay === matchDay),
+        ...allMatches.filter(m => m.matchDay === matchDay &&
+            (!currentSeasonName || m.season === currentSeasonName)),
         ...(typeof futureMatches !== 'undefined' ? futureMatches.filter(m => m.matchDay === matchDay) : [])
     ];
     
@@ -741,9 +746,12 @@ async function importESPNDate(date, forceMatchDay, dryRun) {
         console.log(`📅 Journée forcée : J${matchDay}`);
     }
     
-    // 3. Récupérer les matchs locaux de cette journée
+    // 3. Récupérer les matchs locaux de cette journée — SAISON EN COURS
+    // uniquement (le même SCO-SRFC J3 existe dans la saison passée : sans
+    // ce filtre il était classé « déjà enregistré » et jamais importé)
+    const seasonName = typeof getCurrentSeason === 'function' ? getCurrentSeason() : null;
     const localPlayed = (typeof allMatches !== 'undefined' ? allMatches : [])
-        .filter(m => m.matchDay === matchDay);
+        .filter(m => m.matchDay === matchDay && (!seasonName || m.season === seasonName));
     const localFuture = (typeof futureMatches !== 'undefined' ? futureMatches : [])
         .filter(m => m.matchDay === matchDay);
     

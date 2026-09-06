@@ -264,20 +264,20 @@
             console.log(`✅ ${window.allTeams.length} équipes chargées`);
         }
 
-        // Charger futureMatches si disponible
+        // Charger futureMatches si disponible. Le calendrier est stocké dans
+        // UN document par saison (futureMatches/<saison> → champ matches) :
+        // l'ancienne requête where() renvoyait le document entier au lieu de
+        // la liste des matchs
         if (typeof futureMatches === 'undefined' || !window.futureMatches) {
             try {
                 const season = typeof getCurrentSeason === 'function' ? getCurrentSeason() : '2025-2026';
-                const futureSnap = await db.collection('futureMatches').where('season', '==', season).get();
-                if (!futureSnap.empty) {
-                    window.futureMatches = futureSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-                    window.futureMatches.forEach(m => {
-                        if (m.matchDay) m.matchDay = parseInt(m.matchDay) || m.matchDay;
-                    });
-                    console.log(`✅ ${window.futureMatches.length} futureMatches chargés`);
-                } else {
-                    window.futureMatches = [];
-                }
+                window.futureMatches = (typeof loadFutureMatchesFromFirebase === 'function')
+                    ? await loadFutureMatchesFromFirebase(season)
+                    : [];
+                window.futureMatches.forEach(m => {
+                    if (m.matchDay) m.matchDay = parseInt(m.matchDay) || m.matchDay;
+                });
+                console.log(`✅ ${window.futureMatches.length} futureMatches chargés`);
             } catch (e) {
                 console.warn('⚠️ futureMatches non chargés:', e.message);
                 window.futureMatches = [];
