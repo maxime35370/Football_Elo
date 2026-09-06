@@ -430,6 +430,10 @@ function updateTeamNames() {
     }
     
     updateGoalFormOptions();
+    // Recalculer les scores affichés (dont la mi-temps, sauvegardée telle
+    // quelle) : en cas d'inversion domicile/extérieur en édition, la
+    // mi-temps restait calculée avec l'ancien sens (ex. 0-2 au lieu de 2-0)
+    calculateScore();
     updateEloPrediction();
 }
 

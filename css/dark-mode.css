@@ -326,6 +326,22 @@
     background: var(--dm-surface-1);
 }
 
+[data-theme="dark"] .swap-match {
+    background: rgba(66, 153, 225, 0.25);
+}
+
+[data-theme="dark"] .swap-match:hover {
+    background: rgba(66, 153, 225, 0.45);
+}
+
+[data-theme="dark"] .delete-match {
+    background: rgba(252, 129, 129, 0.25);
+}
+
+[data-theme="dark"] .delete-match:hover {
+    background: rgba(252, 129, 129, 0.5);
+}
+
 [data-theme="dark"] .empty-matches {
     color: var(--dm-ink-muted);
 }

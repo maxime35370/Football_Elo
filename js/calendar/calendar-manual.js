@@ -234,7 +234,8 @@ function renderCreatedMatches() {
                            onchange="updateMatchScheduledAt(${index}, this.value)"
                            title="Date et heure du match">
                 </div>
-                <button class="delete-match" onclick="deleteManualMatch(${index})">🗑️</button>
+                <button class="swap-match" onclick="swapCreatedMatch(${index})" title="Inverser domicile / extérieur">🔄</button>
+                <button class="delete-match" onclick="deleteManualMatch(${index})" title="Supprimer cette affiche">🗑️</button>
             </div>
         `;
     }).join('');
@@ -246,6 +247,34 @@ function updateMatchScheduledAt(index, value) {
             ? new Date(value).toISOString() 
             : null;
     }
+}
+
+// Inverser domicile / extérieur d'une affiche (ex. la ligue a inversé la
+// rencontre) — refusé si le sens inverse existe déjà ailleurs dans la saison
+function swapCreatedMatch(index) {
+    const match = createdManualMatches[index];
+    if (!match) return;
+
+    const reversedKey = `${match.awayTeamId}-${match.homeTeamId}`;
+    const existsInPlayed = allMatches.some(m => `${m.homeTeamId}-${m.awayTeamId}` === reversedKey);
+    const existsInFuture = futureMatches.some(m =>
+        `${m.homeTeamId}-${m.awayTeamId}` === reversedKey && m.matchDay !== manualMatchDay);
+    const existsInCreated = createdManualMatches.some((m, i) =>
+        i !== index && `${m.homeTeamId}-${m.awayTeamId}` === reversedKey);
+
+    if (existsInPlayed || existsInFuture || existsInCreated) {
+        const home = allTeams.find(t => t.id === match.awayTeamId);
+        const away = allTeams.find(t => t.id === match.homeTeamId);
+        alert(`⚠️ Impossible d'inverser : ${home ? home.shortName : '?'} - ${away ? away.shortName : '?'} existe déjà cette saison (match joué ou affiche du calendrier).`);
+        return;
+    }
+
+    const previousHome = match.homeTeamId;
+    match.homeTeamId = match.awayTeamId;
+    match.awayTeamId = previousHome;
+
+    renderAvailableTeams();
+    renderCreatedMatches();
 }
 
 function deleteManualMatch(index) {
@@ -281,11 +310,20 @@ function applyBulkDatetime() {
 }
 
 function saveManualMatches() {
+    // Journée vidée : autoriser la sauvegarde pour supprimer les affiches
+    // restantes (ex. affiche inversée par la ligue à recréer ailleurs)
     if (createdManualMatches.length === 0) {
-        alert('Aucun match à sauvegarder !');
-        return;
+        const existing = futureMatches.filter(m => m.matchDay === manualMatchDay);
+        if (existing.length === 0) {
+            alert('Aucun match à sauvegarder !');
+            return;
+        }
+        if (!confirm(`Aucun match dans la liste : sauvegarder supprimera ${existing.length > 1 ? `les ${existing.length} affiches restantes` : `l'affiche restante`} de la journée ${manualMatchDay} du calendrier. Continuer ?`)) {
+            return;
+        }
     }
-    
+
+
     // Supprimer les anciens matchs de cette journée
     futureMatches = futureMatches.filter(m => m.matchDay !== manualMatchDay);
     
@@ -310,8 +348,15 @@ function saveManualMatches() {
     updateCalendarStatus();
     populateManualMatchDaySelector();
     
+    if (createdManualMatches.length === 0) {
+        alert(`✅ Affiches supprimées : la journée ${manualMatchDay} ne contient plus de match à venir.`);
+        // Rester sur la journée pour vérifier le résultat
+        onManualMatchDayChange({ target: { value: manualMatchDay } });
+        return;
+    }
+
     alert(`✅ ${createdManualMatches.length} matchs sauvegardés pour la journée ${manualMatchDay} !`);
-    
+
     // Passer à la journée suivante
     manualMatchDay++;
     document.getElementById('manualMatchDay').value = manualMatchDay;
