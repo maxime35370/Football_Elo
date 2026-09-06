@@ -574,9 +574,14 @@ async function previewMatchUpdates(matchDay) {
         const localMatch = localMatches.find(m =>
             m.homeTeamId == espnMatch.homeTeamId && m.awayTeamId == espnMatch.awayTeamId
         );
-        
+
         if (!localMatch) continue;
-        
+
+        // Une affiche du calendrier n'est pas un document de la collection
+        // matches : ce flux (mise à jour uniquement) l'ignore — la création
+        // passe par importESPNDate (panneau admin)
+        if (!localMatch.finalScore && !allMatches.some(am => am.id === localMatch.id)) continue;
+
         if (localMatch.finalScore) {
             alreadyDone.push(`${espnMatch.homeShort} ${localMatch.finalScore.home}-${localMatch.finalScore.away} ${espnMatch.awayShort} ✅`);
             continue;
@@ -755,11 +760,18 @@ async function importESPNDate(date, forceMatchDay, dryRun) {
     const localFuture = (typeof futureMatches !== 'undefined' ? futureMatches : [])
         .filter(m => m.matchDay === matchDay);
     
-    // Dédupliquer
+    // Dédupliquer, en gardant la provenance : une affiche du CALENDRIER
+    // n'est pas un document de la collection matches — la « mettre à jour »
+    // échouait (NOT_FOUND) et le match n'était jamais créé. Elle doit
+    // déclencher une CRÉATION.
     const localAll = new Map();
-    [...localPlayed, ...localFuture].forEach(m => {
+    localPlayed.forEach(m => {
         const key = `${m.homeTeamId}-${m.awayTeamId}`;
-        if (!localAll.has(key)) localAll.set(key, m);
+        if (!localAll.has(key)) localAll.set(key, { match: m, fromCalendar: false });
+    });
+    localFuture.forEach(m => {
+        const key = `${m.homeTeamId}-${m.awayTeamId}`;
+        if (!localAll.has(key)) localAll.set(key, { match: m, fromCalendar: true });
     });
     
     const season = typeof getCurrentSeason === 'function' ? getCurrentSeason() : '2025-2026';
@@ -779,8 +791,9 @@ async function importESPNDate(date, forceMatchDay, dryRun) {
         }
         
         const key = `${espnMatch.homeTeamId}-${espnMatch.awayTeamId}`;
-        const localMatch = localAll.get(key);
-        
+        const localEntry = localAll.get(key);
+        const localMatch = localEntry && !localEntry.fromCalendar ? localEntry.match : null;
+
         if (localMatch && localMatch.finalScore) {
             // Déjà enregistré avec un score
             alreadyDone.push({ espnMatch, localMatch });
@@ -805,7 +818,7 @@ async function importESPNDate(date, forceMatchDay, dryRun) {
         const halftimeScore = calculateHalftimeScore(goals, espnMatch.homeTeamId);
         
         if (localMatch) {
-            // Existe localement mais pas de score → MISE À JOUR
+            // Match joué existant sans score → MISE À JOUR
             toUpdate.push({
                 localMatch,
                 espnMatch,
@@ -814,14 +827,16 @@ async function importESPNDate(date, forceMatchDay, dryRun) {
                 halftimeScore
             });
         } else {
-            // N'existe PAS localement → CRÉATION
+            // Pas de match joué (au mieux une affiche du calendrier) → CRÉATION
+            // en conservant l'horaire prévu au calendrier s'il existe
             toCreate.push({
                 espnMatch,
                 detail,
                 goals,
                 halftimeScore,
                 matchDay,
-                season
+                season,
+                scheduledAt: localEntry?.fromCalendar ? (localEntry.match.scheduledAt || null) : null
             });
         }
     }
@@ -934,8 +949,8 @@ async function importESPNDate(date, forceMatchDay, dryRun) {
                 homeTeamId: String(s.homeTeamId),
                 awayTeamId: String(s.awayTeamId),
                 matchDay: c.matchDay,
-                date: espnDate.split('T')[0],
-                scheduledAt: espnDate,
+                date: (c.scheduledAt || espnDate).split('T')[0],
+                scheduledAt: c.scheduledAt || espnDate,
                 playedAt: espnDate,
                 createdAt: now,
                 updatedAt: now,

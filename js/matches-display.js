@@ -14,9 +14,10 @@ document.addEventListener('DOMContentLoaded', function() {
 function loadAndDisplayMatches() {
     allMatches = getStoredMatches();
     filteredMatches = [...allMatches];
-    
-    updateStats();
+
     populateSeasonFilter();
+    // Après populateSeasonFilter : les compteurs suivent la saison présélectionnée
+    updateStats();
     populateTeamFilter();
     // Appliquer les filtres dès le chargement : populateSeasonFilter
     // présélectionne la saison active, displayMatches() l'ignorait et
@@ -24,19 +25,24 @@ function loadAndDisplayMatches() {
     applyFilters();
 }
 
-// Afficher les statistiques
+// Afficher les statistiques — sur la saison sélectionnée dans le filtre
+// (avant : toutes saisons confondues, ex. « 331 matchs | 939 buts »)
 function updateStats() {
-    const stats = getMatchesStats();
-    
+    const seasonFilter = document.getElementById('seasonFilter');
+    const season = (seasonFilter && seasonFilter.value) || getCurrentSeason();
+
+    const matches = getStoredMatches().filter(m => !season || m.season === season);
+    const totalGoals = matches.reduce((sum, match) => sum + (match.goals ? match.goals.length : 0), 0);
+
     const matchCountEl = document.getElementById('matchCount');
     const goalCountEl = document.getElementById('goalCount');
-    
+
     if (matchCountEl) {
-        matchCountEl.textContent = `${stats.totalMatches} match${stats.totalMatches > 1 ? 's' : ''}`;
+        matchCountEl.textContent = `${matches.length} match${matches.length > 1 ? 's' : ''}`;
     }
-    
+
     if (goalCountEl) {
-        goalCountEl.textContent = `${stats.totalGoals} but${stats.totalGoals > 1 ? 's' : ''}`;
+        goalCountEl.textContent = `${totalGoals} but${totalGoals > 1 ? 's' : ''}`;
     }
 }
 
@@ -95,7 +101,10 @@ function applyFilters() {
     const seasonFilter = document.getElementById('seasonFilter'); // ← AJOUTER
     const teamFilter = document.getElementById('teamFilter');
     const dateFilter = document.getElementById('dateFilter');
-    
+
+    // Les compteurs du bandeau suivent la saison sélectionnée
+    updateStats();
+
     let filtered = [...allMatches];
     
     // ← AJOUTER CE BLOC : Filtrer par saison
