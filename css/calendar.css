@@ -1867,6 +1867,19 @@
     background: #fc8181;
 }
 
+.swap-match {
+    background: #e8f4fd;
+    border: none;
+    padding: 0.4rem 0.6rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.swap-match:hover {
+    background: #90cdf4;
+}
+
 /* Section appliquer date à tous */
 .bulk-datetime {
     display: flex;
