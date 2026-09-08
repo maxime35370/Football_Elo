@@ -3198,3 +3198,22 @@
 [data-theme="dark"] .tracker-relance {
     color: var(--dm-ink);
 }
+
+/* Multiplex — le film de la journée */
+[data-theme="dark"] .replay-description { color: var(--dm-ink-muted); }
+[data-theme="dark"] .replay-controls select {
+    background: var(--dm-surface-1);
+    border-color: var(--dm-border);
+    color: var(--dm-ink);
+}
+[data-theme="dark"] .replay-clock { background: var(--dm-surface-2); color: var(--dm-ink); }
+[data-theme="dark"] .replay-timeline { border-bottom-color: var(--dm-border); }
+[data-theme="dark"] .replay-match { background: var(--dm-surface-1); border-left-color: var(--dm-border); }
+[data-theme="dark"] .replay-match.live { background: rgba(231, 76, 60, 0.12); border-left-color: #e74c3c; }
+[data-theme="dark"] .replay-match.finished { border-left-color: #27ae60; }
+[data-theme="dark"] .replay-match-status { color: var(--dm-ink-muted); }
+[data-theme="dark"] .replay-score.upcoming { background: var(--dm-surface-2); color: var(--dm-ink-muted); }
+[data-theme="dark"] .replay-feed-item { background: var(--dm-surface-2); }
+[data-theme="dark"] .replay-feed-item.goal { background: rgba(241, 196, 15, 0.15); }
+[data-theme="dark"] .replay-feed-item.muted { color: var(--dm-ink-muted); }
+[data-theme="dark"] .replay-note { color: #d69e2e; }

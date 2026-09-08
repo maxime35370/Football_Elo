@@ -768,3 +768,187 @@ tr.relegation .pos-badge {
     color: #b03a2e;
     border: 1px solid rgba(231, 76, 60, 0.35);
 }
+
+/* ===============================
+   Multiplex — le film de la journée
+   =============================== */
+
+.replay-description {
+    color: #666;
+    font-size: 0.92rem;
+    margin-bottom: 1rem;
+}
+
+.replay-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.75rem;
+}
+
+.replay-controls select {
+    padding: 0.45rem 0.75rem;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    background: white;
+}
+
+.replay-clock {
+    margin-left: auto;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: #2c3e50;
+    background: #f0f4f8;
+    padding: 0.4rem 0.9rem;
+    border-radius: 8px;
+    white-space: nowrap;
+}
+
+.replay-slider {
+    width: 100%;
+    margin: 0.25rem 0 0;
+    accent-color: #3498db;
+}
+
+.replay-timeline {
+    position: relative;
+    height: 34px;
+    margin: 0.25rem 0 1rem;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.replay-dot {
+    position: absolute;
+    top: 4px;
+    transform: translateX(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.85rem;
+    opacity: 0.35;
+    padding: 2px;
+    transition: opacity 0.2s, transform 0.15s;
+}
+
+.replay-dot.done { opacity: 1; }
+.replay-dot.current { transform: translateX(-50%) scale(1.5); }
+.replay-dot:hover { opacity: 1; transform: translateX(-50%) scale(1.4); }
+
+.replay-layout {
+    display: grid;
+    grid-template-columns: minmax(230px, 1fr) minmax(280px, 1.2fr);
+    gap: 1.25rem;
+    align-items: start;
+}
+
+.replay-matches {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-bottom: 0.75rem;
+}
+
+.replay-match {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.45rem 0.7rem;
+    border-radius: 8px;
+    background: #f8f9fa;
+    border-left: 4px solid #cbd5e0;
+    font-size: 0.92rem;
+}
+
+.replay-match.live { border-left-color: #e74c3c; background: #fff8f6; }
+.replay-match.finished { border-left-color: #27ae60; }
+
+.replay-match-status {
+    font-size: 0.8rem;
+    color: #666;
+    min-width: 4.6rem;
+    white-space: nowrap;
+}
+
+.replay-match-teams {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+}
+
+.replay-score {
+    background: #2c3e50;
+    color: white;
+    padding: 0.1rem 0.5rem;
+    border-radius: 6px;
+    font-variant-numeric: tabular-nums;
+}
+
+.replay-score.live { background: #e74c3c; }
+.replay-score.upcoming { background: #cbd5e0; color: #4a5568; }
+
+.replay-feed {
+    max-height: 180px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.replay-feed-item {
+    font-size: 0.88rem;
+    padding: 0.35rem 0.6rem;
+    border-radius: 6px;
+    background: #f0f4f8;
+}
+
+.replay-feed-item.goal { background: #fff3cd; font-weight: 600; }
+.replay-feed-item.muted { color: #888; font-style: italic; }
+
+.replay-table td { padding: 0.35rem 0.5rem; }
+.replay-table .pos { font-weight: 700; }
+.replay-table .team { text-align: left; }
+
+.replay-move { font-size: 0.8rem; font-weight: 700; }
+.replay-move.up { color: #27ae60; }
+.replay-move.down { color: #e74c3c; }
+.replay-move.same { color: #b0b8c0; }
+
+.replay-daydelta {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.05rem 0.35rem;
+    border-radius: 10px;
+    margin-left: 0.3rem;
+    vertical-align: middle;
+}
+
+.replay-daydelta.up { background: rgba(39, 174, 96, 0.15); color: #1e8449; }
+.replay-daydelta.down { background: rgba(231, 76, 60, 0.15); color: #b03a2e; }
+
+@keyframes replayFlashUp {
+    0% { background: rgba(39, 174, 96, 0.35); }
+    100% { background: transparent; }
+}
+
+@keyframes replayFlashDown {
+    0% { background: rgba(231, 76, 60, 0.3); }
+    100% { background: transparent; }
+}
+
+.replay-table tr.moved-up td { animation: replayFlashUp 1.2s ease-out; }
+.replay-table tr.moved-down td { animation: replayFlashDown 1.2s ease-out; }
+
+.replay-note {
+    margin-top: 0.6rem;
+    font-size: 0.82rem;
+    color: #b7791f;
+}
+
+@media (max-width: 768px) {
+    .replay-layout { grid-template-columns: 1fr; }
+    .replay-clock { margin-left: 0; }
+}

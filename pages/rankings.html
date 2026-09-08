@@ -111,6 +111,55 @@
                     </div>
                 </div>
 
+                <!-- Multiplex : le film de la journée -->
+                <div class="ranking-section" id="replaySection">
+                    <h3>🎬 Multiplex — le film de la journée</h3>
+                    <p class="replay-description">
+                        Revivez la journée but par but, à l'heure réelle de chaque événement
+                        (coup d'envoi + minute de jeu, pause de 15 min comprise en 2ème mi-temps) :
+                        le classement évolue en direct comme pendant un multiplex.
+                    </p>
+
+                    <div class="replay-controls">
+                        <label for="replayMatchDay">Journée :</label>
+                        <select id="replayMatchDay"></select>
+                        <button id="replayPlayBtn" class="btn btn-primary">▶️ Lecture</button>
+                        <select id="replaySpeed" title="Vitesse de lecture">
+                            <option value="2000">🐢 Lente</option>
+                            <option value="1200" selected>▶️ Normale</option>
+                            <option value="500">🐇 Rapide</option>
+                        </select>
+                        <span id="replayClock" class="replay-clock">—</span>
+                    </div>
+
+                    <input type="range" id="replaySlider" class="replay-slider" min="0" max="0" value="0" step="1">
+                    <div id="replayTimeline" class="replay-timeline"></div>
+
+                    <div class="replay-layout">
+                        <div class="replay-left">
+                            <div id="replayMatches" class="replay-matches"></div>
+                            <div id="replayFeed" class="replay-feed"></div>
+                        </div>
+                        <div class="table-wrapper replay-table-wrapper">
+                            <table id="replayTable" class="ranking-table replay-table">
+                                <thead>
+                                    <tr>
+                                        <th>Pos.</th>
+                                        <th></th>
+                                        <th>Équipe</th>
+                                        <th>J</th>
+                                        <th>Pts</th>
+                                        <th>Diff</th>
+                                        <th>BP</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="replayNote" class="replay-note"></div>
+                </div>
+
                 <!-- NOUVEAU : Classement Elo -->
                 <div class="ranking-section">
                     <h3>🎯 Classement Elo</h3>
@@ -286,6 +335,7 @@
         <script src="../js/elo.js"></script>
         <script src="../js/elo-system.js"></script>
         <script src="../js/rankings.js"></script>
+        <script src="../js/matchday-replay.js"></script>
         <script src="../js/head-to-head.js"></script>
     <script>
     function toggleMenu() {
