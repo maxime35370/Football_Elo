@@ -115,19 +115,24 @@
                 <div class="ranking-section" id="replaySection">
                     <h3>🎬 Multiplex — le film de la journée</h3>
                     <p class="replay-description">
-                        Revivez la journée but par but, à l'heure réelle de chaque événement
-                        (coup d'envoi + minute de jeu, pause de 15 min comprise en 2ème mi-temps) :
-                        le classement évolue en direct comme pendant un multiplex.
+                        Revivez une journée, une série de journées ou toute la saison but par but,
+                        à l'heure réelle de chaque événement (coup d'envoi + minute de jeu, pause
+                        de 15 min comprise en 2ème mi-temps) : le classement évolue en direct comme
+                        pendant un multiplex. Une journée en cours s'arrête au dernier match joué.
                     </p>
 
                     <div class="replay-controls">
-                        <label for="replayMatchDay">Journée :</label>
-                        <select id="replayMatchDay"></select>
+                        <label for="replayFromDay">De J :</label>
+                        <select id="replayFromDay"></select>
+                        <label for="replayToDay">à J :</label>
+                        <select id="replayToDay"></select>
+                        <button id="replaySeasonBtn" class="btn btn-secondary" title="Rejouer toute la saison jusqu'au dernier match joué">📅 Toute la saison</button>
                         <button id="replayPlayBtn" class="btn btn-primary">▶️ Lecture</button>
                         <select id="replaySpeed" title="Vitesse de lecture">
                             <option value="2000">🐢 Lente</option>
                             <option value="1200" selected>▶️ Normale</option>
                             <option value="500">🐇 Rapide</option>
+                            <option value="150">⚡ Très rapide</option>
                         </select>
                         <span id="replayClock" class="replay-clock">—</span>
                     </div>

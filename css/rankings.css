@@ -952,3 +952,47 @@ tr.relegation .pos-badge {
     .replay-layout { grid-template-columns: 1fr; }
     .replay-clock { margin-left: 0; }
 }
+
+/* Frise en mode plage : chips de journées */
+.replay-timeline.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    height: auto;
+    min-height: 34px;
+    border-bottom: none;
+    align-items: center;
+}
+
+.replay-day-chip {
+    border: 1px solid #cbd5e0;
+    background: #f8f9fa;
+    color: #718096;
+    border-radius: 14px;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.replay-day-chip.done {
+    background: #e8f4fd;
+    border-color: #90cdf4;
+    color: #2b6cb0;
+}
+
+.replay-day-chip.current {
+    background: #3498db;
+    border-color: #3498db;
+    color: white;
+}
+
+.replay-day-chip:hover { border-color: #3498db; }
+
+.replay-matches-header {
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #2c3e50;
+    padding: 0.2rem 0.1rem 0.3rem;
+}

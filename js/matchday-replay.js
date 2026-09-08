@@ -1,14 +1,16 @@
-// matchday-replay.js - Multiplex : le film de la journée
-// Rejoue une journée but par but, à l'heure réelle de chaque événement :
-// heure du coup d'envoi + minute de jeu (+ 15 min de pause pour les buts
-// de 2ème mi-temps : un but à la 60' d'un match de 18h a lieu à 19h15).
-// Le classement est recalculé à chaque événement, comme un multiplex.
+// matchday-replay.js - Multiplex : le film de la journée (ou d'une série)
+// Rejoue une plage de journées but par but, à l'heure réelle de chaque
+// événement : heure du coup d'envoi + minute de jeu (+ 15 min de pause pour
+// les buts de 2ème mi-temps : un but à la 60' d'un match de 18h a lieu à
+// 19h15). Le classement est recalculé à chaque événement, comme un multiplex.
+// Seuls les matchs joués sont inclus : une journée en cours s'arrête au
+// dernier match joué — « là où on est rendu ».
 
 const REPLAY_HALFTIME_BREAK_MIN = 15;   // Pause entre les deux mi-temps
 const REPLAY_DEFAULT_KICKOFF = 'T17:00:00'; // Matchs sans heure connue
 const REPLAY_MATCH_DURATION_MIN = 90 + REPLAY_HALFTIME_BREAK_MIN;
 
-let replayData = null;      // { steps, dayMatches, baselinePos, estimatedCount }
+let replayData = null;      // { steps, dayMatches, otherMatches, baselinePos, days, fromDay, toDay, estimatedCount }
 let replayIndex = 0;
 let replayTimer = null;
 let replayPrevPositions = null; // positions du pas précédent (flèches)
@@ -31,34 +33,62 @@ function replaySeason() {
 }
 
 function initMatchdayReplay() {
-    const select = document.getElementById('replayMatchDay');
-    if (!select) return;
+    const fromSelect = document.getElementById('replayFromDay');
+    const toSelect = document.getElementById('replayToDay');
+    if (!fromSelect || !toSelect) return;
 
     const season = replaySeason();
     const played = getStoredMatches().filter(m => m.season === season && m.finalScore);
     const days = [...new Set(played.map(m => m.matchDay || 0))].filter(d => d > 0).sort((a, b) => a - b);
 
     if (days.length === 0) {
-        select.innerHTML = '<option value="">Aucune journée jouée</option>';
+        fromSelect.innerHTML = '<option value="">—</option>';
+        toSelect.innerHTML = '<option value="">—</option>';
         replayStop();
         replayData = null;
         renderReplayEmpty('Aucune journée jouée pour cette saison.');
         return;
     }
 
-    const previous = parseInt(select.value);
-    select.innerHTML = days.map(d => `<option value="${d}">Journée ${d}</option>`).join('');
-    // Journée par défaut : la dernière jouée (ou celle déjà choisie)
-    select.value = days.includes(previous) ? previous : days[days.length - 1];
+    const prevFrom = parseInt(fromSelect.value);
+    const prevTo = parseInt(toSelect.value);
+    const options = days.map(d => `<option value="${d}">J${d}</option>`).join('');
+    fromSelect.innerHTML = options;
+    toSelect.innerHTML = options;
 
-    select.onchange = () => loadReplayMatchDay(parseInt(select.value));
-    document.getElementById('replayPlayBtn')?.addEventListener('click', replayTogglePlay);
-    document.getElementById('replaySlider')?.addEventListener('input', function() {
+    // Par défaut : la dernière journée jouée (ou la plage déjà choisie)
+    const last = days[days.length - 1];
+    fromSelect.value = days.includes(prevFrom) ? prevFrom : last;
+    toSelect.value = days.includes(prevTo) && prevTo >= parseInt(fromSelect.value) ? prevTo : Math.max(parseInt(fromSelect.value), last);
+    if (parseInt(toSelect.value) < parseInt(fromSelect.value)) toSelect.value = fromSelect.value;
+
+    // onclick/onchange (pas addEventListener) : initMatchdayReplay se relance
+    // après la synchro Firebase, des écouteurs cumulés doublaient les actions
+    // (deux toggles = la lecture ne démarrait pas)
+    const reload = () => loadReplayRange(parseInt(fromSelect.value), parseInt(toSelect.value));
+    fromSelect.onchange = () => {
+        if (parseInt(fromSelect.value) > parseInt(toSelect.value)) toSelect.value = fromSelect.value;
+        reload();
+    };
+    toSelect.onchange = () => {
+        if (parseInt(toSelect.value) < parseInt(fromSelect.value)) fromSelect.value = toSelect.value;
+        reload();
+    };
+    const seasonBtn = document.getElementById('replaySeasonBtn');
+    if (seasonBtn) seasonBtn.onclick = () => {
+        fromSelect.value = days[0];
+        toSelect.value = last;
+        reload();
+    };
+    const playBtn = document.getElementById('replayPlayBtn');
+    if (playBtn) playBtn.onclick = replayTogglePlay;
+    const slider = document.getElementById('replaySlider');
+    if (slider) slider.oninput = function() {
         replayStop();
         replaySetIndex(parseInt(this.value));
-    });
+    };
 
-    loadReplayMatchDay(parseInt(select.value));
+    reload();
 }
 
 // Heure réelle d'un but : coup d'envoi + minute (+ pause si 2ème mi-temps).
@@ -72,20 +102,28 @@ function replayGoalRealTime(kickoff, goal) {
     return new Date(kickoff.getTime() + offset * 60000);
 }
 
+// Compatibilité : rejouer une seule journée
 function loadReplayMatchDay(matchDay) {
+    loadReplayRange(matchDay, matchDay);
+}
+
+function loadReplayRange(fromDay, toDay) {
     replayStop();
     const season = replaySeason();
     const seasonMatches = getStoredMatches().filter(m => m.season === season && m.finalScore);
-    const dayMatchesRaw = seasonMatches.filter(m => (m.matchDay || 0) === matchDay);
+    const rangeMatchesRaw = seasonMatches.filter(m => {
+        const d = m.matchDay || 0;
+        return d >= fromDay && d <= toDay;
+    });
 
-    if (dayMatchesRaw.length === 0) {
+    if (rangeMatchesRaw.length === 0) {
         replayData = null;
-        renderReplayEmpty('Aucun match joué pour cette journée.');
+        renderReplayEmpty('Aucun match joué sur cette plage de journées.');
         return;
     }
 
     let estimatedCount = 0;
-    const dayMatches = dayMatchesRaw.map(m => {
+    const dayMatches = rangeMatchesRaw.map(m => {
         let kickoff;
         if (m.scheduledAt) {
             kickoff = new Date(m.scheduledAt);
@@ -104,7 +142,7 @@ function loadReplayMatchDay(matchDay) {
         return { match: m, kickoff, goals, end };
     });
 
-    // Événements de la journée, en ordre chronologique réel
+    // Événements de la plage, en ordre chronologique réel
     const events = [];
     dayMatches.forEach(dm => {
         const home = getTeamById(dm.match.homeTeamId);
@@ -126,7 +164,7 @@ function loadReplayMatchDay(matchDay) {
     });
     events.sort((a, b) => a.t - b.t);
 
-    // Pas de lecture : un pas initial « avant la journée », puis un pas par
+    // Pas de lecture : un pas initial « avant la plage », puis un pas par
     // horodatage distinct (plusieurs buts simultanés = un seul pas)
     const steps = [{ t: new Date(dayMatches.reduce((min, dm) => Math.min(min, dm.kickoff.getTime()), Infinity) - 60000), events: [] }];
     events.forEach(ev => {
@@ -138,13 +176,14 @@ function loadReplayMatchDay(matchDay) {
         }
     });
 
-    // Classement de départ : la saison sans les matchs de cette journée
-    const otherMatches = seasonMatches.filter(m => (m.matchDay || 0) !== matchDay);
+    // Classement de départ : la saison AVANT la plage rejouée
+    const otherMatches = seasonMatches.filter(m => (m.matchDay || 0) < fromDay);
     const baseline = replayComputeTable(otherMatches, []);
     const baselinePos = {};
     baseline.forEach((row, i) => { baselinePos[row.id] = i + 1; });
 
-    replayData = { steps, dayMatches, otherMatches, baselinePos, estimatedCount, matchDay };
+    const days = [...new Set(rangeMatchesRaw.map(m => m.matchDay || 0))].sort((a, b) => a - b);
+    replayData = { steps, dayMatches, otherMatches, baselinePos, estimatedCount, fromDay, toDay, days, matchDay: toDay };
 
     const slider = document.getElementById('replaySlider');
     if (slider) {
@@ -213,6 +252,18 @@ function replayComputeTable(finishedMatches, liveEntries) {
     return rows;
 }
 
+// Journée « active » à l'instant t : la plus avancée dont un match a commencé
+function replayActiveDay(t) {
+    let active = null;
+    replayData.dayMatches.forEach(dm => {
+        if (dm.kickoff <= t) {
+            const d = dm.match.matchDay || 0;
+            if (active === null || d > active) active = d;
+        }
+    });
+    return active !== null ? active : replayData.days[0];
+}
+
 function replaySetIndex(index) {
     if (!replayData) return;
     replayIndex = Math.max(0, Math.min(index, replayData.steps.length - 1));
@@ -232,7 +283,7 @@ function replaySetIndex(index) {
         clock.textContent = replayIndex === 0 ? `${day} — avant les matchs` : `${day} — ${time}`;
     }
 
-    // État de chaque match à l'instant t
+    // État de chaque match de la plage à l'instant t
     const liveEntries = [];
     const matchStates = replayData.dayMatches.map(dm => {
         const started = t >= dm.kickoff;
@@ -246,7 +297,11 @@ function replaySetIndex(index) {
 
     const table = replayComputeTable(replayData.otherMatches, liveEntries);
 
-    renderReplayMatches(matchStates, t);
+    // Panneau des matchs : seulement la journée en cours à l'instant t
+    // (sur une plage de plusieurs journées, tout afficher serait illisible)
+    const activeDay = replayActiveDay(t);
+    const dayStates = matchStates.filter(ms => (ms.dm.match.matchDay || 0) === activeDay);
+    renderReplayMatches(dayStates, t, replayData.days.length > 1 ? activeDay : null);
     renderReplayFeed(step);
     renderReplayTable(table);
     highlightReplayTimeline();
@@ -271,11 +326,15 @@ function replayLiveMinute(dm, t) {
     return `${Math.min(elapsed - REPLAY_HALFTIME_BREAK_MIN, 90)}'${elapsed - REPLAY_HALFTIME_BREAK_MIN > 90 ? '+' : ''}`;
 }
 
-function renderReplayMatches(matchStates, t) {
+function renderReplayMatches(matchStates, t, dayLabel) {
     const container = document.getElementById('replayMatches');
     if (!container) return;
 
-    container.innerHTML = matchStates.map(({ dm, started, finished, score }) => {
+    const header = dayLabel
+        ? `<div class="replay-matches-header">📅 Journée ${dayLabel}</div>`
+        : '';
+
+    container.innerHTML = header + matchStates.map(({ dm, started, finished, score }) => {
         const home = getTeamById(dm.match.homeTeamId);
         const away = getTeamById(dm.match.awayTeamId);
         let status, scoreHtml, cls;
@@ -335,7 +394,7 @@ function renderReplayTable(table) {
             else { move = `<span class="replay-move down">▼${pos - prev}</span>`; rowCls = 'moved-down'; }
         }
 
-        // Bilan depuis le début de la journée
+        // Bilan depuis le début de la plage rejouée
         let dayDelta = '';
         if (base !== pos) {
             dayDelta = pos < base
@@ -357,7 +416,9 @@ function renderReplayTable(table) {
     }).join('');
 }
 
-// Frise chronologique : un point par événement, positionné à l'heure réelle
+// Frise chronologique. Une seule journée : un point par événement, positionné
+// proportionnellement à l'heure réelle. Plusieurs journées : des chips « J1,
+// J2… » cliquables (des centaines de points seraient illisibles).
 function renderReplayTimeline() {
     const container = document.getElementById('replayTimeline');
     if (!container || !replayData) return;
@@ -365,6 +426,18 @@ function renderReplayTimeline() {
     const steps = replayData.steps;
     if (steps.length < 2) { container.innerHTML = ''; return; }
 
+    if (replayData.days.length > 1) {
+        container.className = 'replay-timeline chips';
+        container.innerHTML = replayData.days.map(day => {
+            // Premier pas dont un événement appartient à cette journée
+            const idx = steps.findIndex(s => s.events.some(e => (e.dm.match.matchDay || 0) === day));
+            return `<button class="replay-day-chip" data-step="${idx}"
+                            onclick="replayStop(); replaySetIndex(${idx})">J${day}</button>`;
+        }).join('');
+        return;
+    }
+
+    container.className = 'replay-timeline';
     const t0 = steps[0].t.getTime();
     const t1 = steps[steps.length - 1].t.getTime();
     const span = Math.max(t1 - t0, 1);
@@ -388,6 +461,14 @@ function highlightReplayTimeline() {
         const stepIdx = parseInt(dot.dataset.step);
         dot.classList.toggle('done', stepIdx <= replayIndex);
         dot.classList.toggle('current', stepIdx === replayIndex);
+    });
+    // Chips de journées : marquer celles déjà passées et la journée courante
+    const chips = [...document.querySelectorAll('#replayTimeline .replay-day-chip')];
+    chips.forEach((chip, i) => {
+        const startIdx = parseInt(chip.dataset.step);
+        const nextIdx = i + 1 < chips.length ? parseInt(chips[i + 1].dataset.step) : Infinity;
+        chip.classList.toggle('done', replayIndex >= startIdx);
+        chip.classList.toggle('current', replayIndex >= startIdx && replayIndex < nextIdx);
     });
 }
 

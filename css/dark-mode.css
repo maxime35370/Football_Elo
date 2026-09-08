@@ -3217,3 +3217,20 @@
 [data-theme="dark"] .replay-feed-item.goal { background: rgba(241, 196, 15, 0.15); }
 [data-theme="dark"] .replay-feed-item.muted { color: var(--dm-ink-muted); }
 [data-theme="dark"] .replay-note { color: #d69e2e; }
+
+[data-theme="dark"] .replay-day-chip {
+    background: var(--dm-surface-1);
+    border-color: var(--dm-border);
+    color: var(--dm-ink-muted);
+}
+[data-theme="dark"] .replay-day-chip.done {
+    background: rgba(66, 153, 225, 0.18);
+    border-color: rgba(66, 153, 225, 0.5);
+    color: #90cdf4;
+}
+[data-theme="dark"] .replay-day-chip.current {
+    background: #3498db;
+    border-color: #3498db;
+    color: white;
+}
+[data-theme="dark"] .replay-matches-header { color: var(--dm-ink); }
