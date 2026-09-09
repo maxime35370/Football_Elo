@@ -3247,3 +3247,10 @@
     border-color: var(--dm-border);
     color: var(--dm-ink);
 }
+
+[data-theme="dark"] .replay-pos-block { border-top-color: var(--dm-border); }
+[data-theme="dark"] .rpc-grid { stroke: rgba(255, 255, 255, 0.07); }
+[data-theme="dark"] .rpc-axis { fill: var(--dm-ink-muted); }
+[data-theme="dark"] .rpc-day-line { stroke: rgba(255, 255, 255, 0.15); }
+[data-theme="dark"] .rpc-pos { stroke: #718096; }
+[data-theme="dark"] .rpc-legend { color: var(--dm-ink-muted); }

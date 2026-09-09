@@ -1059,3 +1059,49 @@ tr.relegation .pos-badge {
     background: white;
     max-width: 100%;
 }
+
+/* Courbe de place d'une équipe (Multiplex) */
+.replay-pos-block {
+    margin-top: 1.25rem;
+    border-top: 1px solid #e9ecef;
+    padding-top: 0.9rem;
+}
+
+.replay-pos-chart .rpc-svg {
+    width: 100%;
+    max-width: 720px;
+    height: auto;
+    display: block;
+}
+
+.rpc-grid { stroke: #eef1f4; stroke-width: 1; }
+.rpc-axis { font-size: 9px; fill: #99a3ad; }
+.rpc-day-line { stroke: #dbe2e8; stroke-width: 1; stroke-dasharray: 2 3; }
+.rpc-pos { fill: none; stroke: #a8b2bb; stroke-width: 2.5; stroke-linejoin: round; }
+.rpc-avg { fill: none; stroke: #3498db; stroke-width: 2.5; stroke-linejoin: round; }
+.rpc-med { fill: none; stroke: #e67e22; stroke-width: 2; stroke-dasharray: 6 4; stroke-linejoin: round; }
+.rpc-label { font-size: 10px; font-weight: 700; }
+.rpc-label.avg { fill: #3498db; }
+.rpc-label.med { fill: #e67e22; }
+
+.rpc-legend {
+    display: flex;
+    gap: 1.1rem;
+    flex-wrap: wrap;
+    font-size: 0.8rem;
+    color: #666;
+    margin-top: 0.4rem;
+}
+
+.rpc-key {
+    display: inline-block;
+    width: 22px;
+    height: 0;
+    border-top: 3px solid;
+    vertical-align: middle;
+    margin-right: 0.3rem;
+}
+
+.rpc-key-pos { border-color: #a8b2bb; }
+.rpc-key-avg { border-color: #3498db; }
+.rpc-key-med { border-color: #e67e22; border-top-style: dashed; }

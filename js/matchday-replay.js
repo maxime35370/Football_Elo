@@ -89,6 +89,8 @@ function initMatchdayReplay() {
     };
     const occMode = document.getElementById('replayOccMode');
     if (occMode) occMode.onchange = renderReplayOccupancy;
+    const posTeam = document.getElementById('replayPosTeam');
+    if (posTeam) posTeam.onchange = () => renderReplayPosChart();
 
     reload();
 }
@@ -341,6 +343,161 @@ function renderReplayOccupancy() {
             </tr>
         `;
     }).join('');
+
+    renderReplayPosChart(rows);
+}
+
+// Séries pour le graphique d'une équipe : place réelle à chaque instant,
+// moyenne cumulée (pondérée par le temps) et médiane cumulée. L'axe X est le
+// temps COMPTABILISÉ selon le mode : en « pendant les matchs », les trous
+// entre matchs sont retirés de l'axe (la courbe ne s'étire pas sur du vide).
+function replayComputePositionSeries(teamId, mode) {
+    const steps = replayData.steps;
+    const season = replaySeason();
+    const teams = (typeof getTeamsBySeason === 'function') ? getTeamsBySeason(season) : getStoredTeams();
+    const nPositions = teams.length;
+
+    const posSeries = [];  // intervalles {x0, x1, pos, t}
+    const avgSeries = [];  // {x, avg, med} après chaque intervalle compté
+    const dayMarkers = []; // {x, day} au 1er coup d'envoi de chaque journée
+    const seenDays = new Set();
+    const dist = {};
+    let counted = 0, weighted = 0, x = 0;
+
+    for (let i = 1; i < steps.length; i++) {
+        const t = steps[i].t;
+
+        steps[i].events.forEach(ev => {
+            if (ev.type === 'start') {
+                const day = ev.dm.match.matchDay || 0;
+                if (!seenDays.has(day)) { seenDays.add(day); dayMarkers.push({ x, day }); }
+            }
+        });
+
+        const liveEntries = [];
+        replayData.dayMatches.forEach(dm => {
+            if (t >= dm.kickoff) {
+                const s = replayScoreAt(dm, t);
+                liveEntries.push({ homeTeamId: dm.match.homeTeamId, awayTeamId: dm.match.awayTeamId, home: s.home, away: s.away });
+            }
+        });
+        const table = replayComputeTable(replayData.otherMatches, liveEntries);
+        const pos = table.findIndex(r => String(r.id) === String(teamId)) + 1;
+        if (pos === 0) continue; // équipe hors saison
+
+        const next = i + 1 < steps.length ? steps[i + 1].t : null;
+        let w = next ? next - t : 0;
+        if (mode === 'live' && !replayData.dayMatches.some(dm => dm.kickoff <= t && t < dm.end)) w = 0;
+        if (w <= 0) continue;
+
+        posSeries.push({ x0: x, x1: x + w, pos, t });
+        counted += w;
+        weighted += pos * w;
+        dist[pos] = (dist[pos] || 0) + w;
+        let cumul = 0, med = null;
+        for (let p = 1; p <= nPositions; p++) {
+            cumul += dist[p] || 0;
+            if (cumul >= counted / 2) { med = p; break; }
+        }
+        x += w;
+        avgSeries.push({ x, avg: weighted / counted, med });
+    }
+
+    return { posSeries, avgSeries, dayMarkers, total: x, nPositions };
+}
+
+// Graphique SVG : place réelle en marches (gris), moyenne cumulée en ligne
+// pleine (bleu), médiane cumulée en pointillé (orange)
+function renderReplayPosChart(occRows) {
+    const container = document.getElementById('replayPosChart');
+    const select = document.getElementById('replayPosTeam');
+    if (!container || !select || !replayData) return;
+
+    // Peupler le sélecteur (ordre alphabétique), conserver la sélection ;
+    // par défaut : l'équipe à la meilleure place moyenne
+    const season = replaySeason();
+    const teams = ((typeof getTeamsBySeason === 'function') ? getTeamsBySeason(season) : getStoredTeams())
+        .slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'fr'));
+    const previous = select.value;
+    select.innerHTML = teams.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+    if (previous && teams.some(t => String(t.id) === previous)) {
+        select.value = previous;
+    } else if (occRows && occRows.length && occRows[0].total > 0) {
+        select.value = occRows[0].team.id;
+    }
+
+    const teamId = select.value;
+    const mode = document.getElementById('replayOccMode')?.value || 'real';
+    const { posSeries, avgSeries, dayMarkers, total, nPositions } = replayComputePositionSeries(teamId, mode);
+
+    if (posSeries.length === 0 || total <= 0) {
+        container.innerHTML = '<div class="replay-feed-item muted">Pas de données pour cette équipe sur la plage.</div>';
+        return;
+    }
+
+    const W = 680, H = 260;
+    const padL = 34, padR = 12, padT = 14, padB = 26;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+    const xOf = v => padL + (v / total) * plotW;
+    const yOf = pos => padT + ((pos - 1) / Math.max(nPositions - 1, 1)) * plotH;
+
+    let svg = `<svg viewBox="0 0 ${W} ${H}" class="rpc-svg" role="img" aria-label="Courbe de place au classement">`;
+
+    // Grille horizontale : une ligne par place
+    const labelStep = nPositions > 12 ? 2 : 1;
+    for (let p = 1; p <= nPositions; p++) {
+        const y = yOf(p);
+        svg += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" class="rpc-grid"/>`;
+        if (p === 1 || p === nPositions || p % labelStep === 0) {
+            svg += `<text x="${padL - 6}" y="${y + 3}" text-anchor="end" class="rpc-axis">${p}</text>`;
+        }
+    }
+
+    // Marqueurs de journées (plage multi-journées)
+    if (dayMarkers.length > 1) {
+        dayMarkers.forEach(mk => {
+            const mx = xOf(mk.x);
+            svg += `<line x1="${mx}" y1="${padT}" x2="${mx}" y2="${H - padB}" class="rpc-day-line"/>`;
+            svg += `<text x="${mx + 3}" y="${H - padB + 14}" class="rpc-axis">J${mk.day}</text>`;
+        });
+    }
+
+    // Place réelle : marches d'escalier
+    let posPath = '';
+    posSeries.forEach((seg, i) => {
+        const y = yOf(seg.pos);
+        posPath += `${i === 0 ? 'M' : 'L'}${xOf(seg.x0).toFixed(1)},${y.toFixed(1)} L${xOf(seg.x1).toFixed(1)},${y.toFixed(1)} `;
+    });
+    svg += `<path d="${posPath}" class="rpc-pos"/>`;
+
+    // Tooltips par intervalle (limités pour ne pas alourdir le DOM)
+    if (posSeries.length <= 400) {
+        posSeries.forEach(seg => {
+            const dayStr = seg.t.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+            const time = `${seg.t.getHours()}h${String(seg.t.getMinutes()).padStart(2, '0')}`;
+            svg += `<rect x="${xOf(seg.x0).toFixed(1)}" y="${padT}" width="${Math.max(xOf(seg.x1) - xOf(seg.x0), 1).toFixed(1)}" height="${plotH}" fill="transparent"><title>${dayStr} ${time} : ${replayOrdinal(seg.pos)}</title></rect>`;
+        });
+    }
+
+    // Médiane cumulée (pointillé) puis moyenne cumulée (ligne pleine, dessus)
+    const medPath = avgSeries.map((pt, i) => `${i === 0 ? 'M' : 'L'}${xOf(pt.x).toFixed(1)},${yOf(pt.med).toFixed(1)}`).join(' ');
+    svg += `<path d="${medPath}" class="rpc-med"/>`;
+    const avgPath = avgSeries.map((pt, i) => `${i === 0 ? 'M' : 'L'}${xOf(pt.x).toFixed(1)},${yOf(pt.avg).toFixed(1)}`).join(' ');
+    svg += `<path d="${avgPath}" class="rpc-avg"/>`;
+
+    // Valeurs finales en bout de courbe
+    const last = avgSeries[avgSeries.length - 1];
+    svg += `<text x="${W - padR - 2}" y="${yOf(last.avg) - 5}" text-anchor="end" class="rpc-label avg">moy. ${last.avg.toFixed(1).replace('.', ',')}</text>`;
+    svg += `<text x="${W - padR - 2}" y="${yOf(last.med) + 13}" text-anchor="end" class="rpc-label med">méd. ${replayOrdinal(last.med)}</text>`;
+
+    svg += '</svg>';
+
+    container.innerHTML = svg + `
+        <div class="rpc-legend">
+            <span><span class="rpc-key rpc-key-pos"></span> Place réelle</span>
+            <span><span class="rpc-key rpc-key-avg"></span> Place moyenne (cumulée)</span>
+            <span><span class="rpc-key rpc-key-med"></span> Place médiane (cumulée)</span>
+        </div>`;
 }
 
 // Score d'un match à un instant t (buts crédités par équipe, CSC compris)
@@ -653,6 +810,8 @@ function renderReplayEmpty(message) {
     if (tbody) tbody.innerHTML = '';
     const occBody = document.querySelector('#replayOccupancy tbody');
     if (occBody) occBody.innerHTML = '';
+    const posChart = document.getElementById('replayPosChart');
+    if (posChart) posChart.innerHTML = '';
     const timeline = document.getElementById('replayTimeline');
     if (timeline) timeline.innerHTML = '';
     const clock = document.getElementById('replayClock');
