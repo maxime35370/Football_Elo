@@ -89,8 +89,10 @@ function initMatchdayReplay() {
     };
     const occMode = document.getElementById('replayOccMode');
     if (occMode) occMode.onchange = renderReplayOccupancy;
-    const posTeam = document.getElementById('replayPosTeam');
-    if (posTeam) posTeam.onchange = () => renderReplayPosChart();
+    ['replayPosTeam', 'replayPosTeam2', 'replayPosTeam3', 'replayPosTeam4'].forEach(id => {
+        const sel = document.getElementById(id);
+        if (sel) sel.onchange = () => renderReplayPosChart();
+    });
 
     reload();
 }
@@ -610,28 +612,50 @@ function replayComputePositionSeries(teamId, mode) {
     return { posSeries, avgSeries, dayMarkers, total: x, nPositions };
 }
 
-// Graphique SVG : place réelle en marches (gris), moyenne cumulée en ligne
-// pleine (bleu), médiane cumulée en pointillé (orange)
+// Graphique SVG. Une équipe : place réelle en marches (gris), moyenne cumulée
+// en ligne pleine (bleu), médiane cumulée en pointillé (orange). Plusieurs
+// équipes (jusqu'à 4) : les places réelles superposées, une couleur par
+// équipe, avec moyenne/médiane finales dans la légende.
 function renderReplayPosChart(occRows) {
     const container = document.getElementById('replayPosChart');
     const select = document.getElementById('replayPosTeam');
     if (!container || !select || !replayData) return;
 
-    // Peupler le sélecteur (ordre alphabétique), conserver la sélection ;
-    // par défaut : l'équipe à la meilleure place moyenne
-    const season = replaySeason();
-    const teams = ((typeof getTeamsBySeason === 'function') ? getTeamsBySeason(season) : getStoredTeams())
-        .slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'fr'));
+    // Peupler les sélecteurs (ordre alphabétique), conserver les sélections ;
+    // par défaut : l'équipe à la meilleure place moyenne, seule
+    const teams = replaySeasonTeamsAlpha();
+    const options = teams.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+    const extraSelects = [2, 3, 4]
+        .map(n => document.getElementById(`replayPosTeam${n}`))
+        .filter(Boolean);
+
     const previous = select.value;
-    select.innerHTML = teams.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+    select.innerHTML = options;
     if (previous && teams.some(t => String(t.id) === previous)) {
         select.value = previous;
     } else if (occRows && occRows.length && occRows[0].total > 0) {
         select.value = occRows[0].team.id;
     }
+    extraSelects.forEach(sel => {
+        const prev = sel.value;
+        sel.innerHTML = '<option value="">—</option>' + options;
+        sel.value = prev && teams.some(t => String(t.id) === prev) ? prev : '';
+    });
 
-    const teamId = select.value;
+    // Équipes sélectionnées, sans doublon, max 4
+    const teamIds = [select.value, ...extraSelects.map(sel => sel.value)]
+        .filter(v => v)
+        .filter((v, i, arr) => arr.indexOf(v) === i)
+        .slice(0, 4);
+
     const mode = document.getElementById('replayOccMode')?.value || 'real';
+
+    if (teamIds.length > 1) {
+        renderReplayPosChartMulti(container, teamIds, mode);
+        return;
+    }
+
+    const teamId = teamIds[0];
     const { posSeries, avgSeries, dayMarkers, total, nPositions } = replayComputePositionSeries(teamId, mode);
 
     if (posSeries.length === 0 || total <= 0) {
@@ -702,6 +726,72 @@ function renderReplayPosChart(occRows) {
             <span><span class="rpc-key rpc-key-avg"></span> Place moyenne (cumulée)</span>
             <span><span class="rpc-key rpc-key-med"></span> Place médiane (cumulée)</span>
         </div>`;
+}
+
+// Comparaison de 2 à 4 équipes : places réelles superposées, une couleur par
+// équipe ; moyenne et médiane finales rappelées dans la légende
+function renderReplayPosChartMulti(container, teamIds, mode) {
+    const seriesByTeam = teamIds.map(id => ({
+        teamId: id,
+        team: getTeamById(parseInt(id) || id),
+        color: replayTeamColor(id),
+        data: replayComputePositionSeries(id, mode)
+    })).filter(s => s.data.posSeries.length > 0 && s.data.total > 0);
+
+    if (seriesByTeam.length === 0) {
+        container.innerHTML = '<div class="replay-feed-item muted">Pas de données sur la plage.</div>';
+        return;
+    }
+
+    const { dayMarkers, total, nPositions } = seriesByTeam[0].data;
+    const W = 680, H = 260;
+    const padL = 34, padR = 12, padT = 14, padB = 26;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+    const xOf = v => padL + (v / total) * plotW;
+    const yOf = pos => padT + ((pos - 1) / Math.max(nPositions - 1, 1)) * plotH;
+
+    let svg = `<svg viewBox="0 0 ${W} ${H}" class="rpc-svg" role="img" aria-label="Comparaison de places au classement">`;
+
+    const labelStep = nPositions > 12 ? 2 : 1;
+    for (let p = 1; p <= nPositions; p++) {
+        const y = yOf(p);
+        svg += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" class="rpc-grid"/>`;
+        if (p === 1 || p === nPositions || p % labelStep === 0) {
+            svg += `<text x="${padL - 6}" y="${y + 3}" text-anchor="end" class="rpc-axis">${p}</text>`;
+        }
+    }
+
+    if (dayMarkers.length > 1) {
+        dayMarkers.forEach(mk => {
+            const mx = xOf(mk.x);
+            svg += `<line x1="${mx}" y1="${padT}" x2="${mx}" y2="${H - padB}" class="rpc-day-line"/>`;
+            svg += `<text x="${mx + 3}" y="${H - padB + 14}" class="rpc-axis">J${mk.day}</text>`;
+        });
+    }
+
+    // Un léger décalage vertical par équipe pour distinguer les paliers partagés
+    seriesByTeam.forEach((s, idx) => {
+        const offset = (idx - (seriesByTeam.length - 1) / 2) * 1.6;
+        let path = '';
+        s.data.posSeries.forEach((seg, i) => {
+            const y = yOf(seg.pos) + offset;
+            path += `${i === 0 ? 'M' : 'L'}${xOf(seg.x0).toFixed(1)},${y.toFixed(1)} L${xOf(seg.x1).toFixed(1)},${y.toFixed(1)} `;
+        });
+        svg += `<path d="${path}" fill="none" stroke="${s.color}" stroke-width="2.5" stroke-linejoin="round" opacity="0.9"/>`;
+        const lastSeg = s.data.posSeries[s.data.posSeries.length - 1];
+        svg += `<text x="${W - padR - 2}" y="${(yOf(lastSeg.pos) + offset + (idx % 2 === 0 ? -5 : 12)).toFixed(1)}" text-anchor="end"
+                      class="rpc-label" fill="${s.color}">${s.team ? s.team.shortName : '?'}</text>`;
+    });
+
+    svg += '</svg>';
+
+    const legend = seriesByTeam.map(s => {
+        const last = s.data.avgSeries[s.data.avgSeries.length - 1];
+        const stats = last ? ` — moy. ${last.avg.toFixed(1).replace('.', ',')}, méd. ${replayOrdinal(last.med)}` : '';
+        return `<span><span class="rpc-key" style="border-color:${s.color}"></span> ${s.team ? s.team.shortName : '?'}${stats}</span>`;
+    }).join('');
+
+    container.innerHTML = svg + `<div class="rpc-legend">${legend}</div>`;
 }
 
 // Score d'un match à un instant t (buts crédités par équipe, CSC compris)

@@ -216,14 +216,19 @@
 
                     <div class="replay-pos-block">
                         <div class="replay-occ-controls">
-                            <label for="replayPosTeam">📈 Courbe d'une équipe :</label>
+                            <label for="replayPosTeam">📈 Courbe :</label>
                             <select id="replayPosTeam"></select>
+                            <label for="replayPosTeam2" class="rpc-vs">vs</label>
+                            <select id="replayPosTeam2"></select>
+                            <select id="replayPosTeam3"></select>
+                            <select id="replayPosTeam4"></select>
                         </div>
                         <p class="replay-occupancy-hint">
-                            Place réelle au fil de la plage (marches grises), place moyenne cumulée
-                            (ligne pleine) et place médiane cumulée (pointillé). L'axe suit le mode de
-                            comptage choisi ci-dessus : en « pendant les matchs », les temps morts
-                            sont retirés de l'axe.
+                            Une équipe seule : place réelle (marches grises), place moyenne cumulée
+                            (ligne pleine) et place médiane cumulée (pointillé). Ajoutez jusqu'à
+                            3 autres équipes pour comparer les places réelles (une couleur par équipe,
+                            moyenne et médiane finales dans la légende). L'axe suit le mode de
+                            comptage choisi ci-dessus.
                         </p>
                         <div id="replayPosChart" class="replay-pos-chart"></div>
                     </div>
