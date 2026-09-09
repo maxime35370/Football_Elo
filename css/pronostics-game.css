@@ -1225,3 +1225,22 @@
 .plr-axis { font-size: 9px; fill: #99a3ad; }
 .plr-day-line { stroke: #dbe2e8; stroke-width: 1; stroke-dasharray: 2 3; }
 .plr-chart-label { font-size: 10px; font-weight: 700; }
+
+.plr-chart-head {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.35rem;
+}
+
+.plr-chart-head h4 { margin: 0; margin-right: auto; }
+.plr-chart-head label { font-size: 0.85rem; font-weight: 600; color: #666; }
+.plr-chart-head select {
+    padding: 0.35rem 0.6rem;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: white;
+}

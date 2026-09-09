@@ -434,8 +434,17 @@
                             </div>
                         </div>
                         <div class="plr-chart-block">
-                            <h4>📈 La course aux points</h4>
-                            <p class="plr-hint">Les points cumulés de chaque joueur, courbe dessinée au rythme de la lecture — l'axe suit les événements, sans les temps morts entre matchs ni entre journées.</p>
+                            <div class="plr-chart-head">
+                                <h4>📈 La course aux points</h4>
+                                <label for="plrZoom">🔍 Fenêtre :</label>
+                                <select id="plrZoom">
+                                    <option value="1">Journée en cours</option>
+                                    <option value="2" selected>2 dernières journées</option>
+                                    <option value="4">4 dernières journées</option>
+                                    <option value="all">Toute la plage</option>
+                                </select>
+                            </div>
+                            <p class="plr-hint">Les points cumulés de chaque joueur, courbe dessinée au rythme de la lecture — l'axe suit les événements, sans les temps morts. La fenêtre glisse : les journées passées sortent par la gauche, et l'échelle se cale sur les points visibles pour garder les variations lisibles même à 500 pts.</p>
                             <div id="plrChart" class="plr-chart"></div>
                         </div>
                         <div id="plrStatus" class="plr-status"></div>

@@ -80,6 +80,8 @@ async function initPronoLiveReplay() {
         plrStop();
         plrSetIndex(parseInt(this.value));
     };
+    const zoomSelect = document.getElementById('plrZoom');
+    if (zoomSelect) zoomSelect.onchange = plrRenderChart;
 
     if (!_plrInitDone || !plrData || plrData.fromDay !== parseInt(fromSelect.value) || plrData.toDay !== parseInt(toSelect.value)) {
         _plrInitDone = true;
@@ -488,61 +490,107 @@ function plrRenderTable() {
     }).join('');
 }
 
+// Premier / dernier pas contenant un événement d'une journée
+function plrDayStepBounds(day) {
+    const steps = plrData.steps;
+    let first = -1, last = -1;
+    steps.forEach((s, i) => {
+        if (s.events.some(e => e.day === day)) {
+            if (first < 0) first = i;
+            last = i;
+        }
+    });
+    return { first, last };
+}
+
 // Graphe des points cumulés : une courbe par pronostiqueur, dessinée
 // jusqu'au pas courant — elle avance au rythme de la frise. L'axe X est
 // l'index des événements : pas de temps morts entre matchs ni journées.
+// Zoom : fenêtre glissante sur les N dernières journées entamées (les
+// journées passées sortent par la gauche) et échelle Y calée sur les
+// valeurs VISIBLES — à 500 pts en fin de saison, on voit quand même les
+// variations du moment.
 function plrRenderChart() {
     const container = document.getElementById('plrChart');
     if (!container || !plrData) return;
     const { steps, stepRows, roster } = plrData;
     if (roster.size === 0 || steps.length < 2) { container.innerHTML = ''; return; }
 
+    // Fenêtre : journées entamées au pas courant, on garde les N dernières
+    const zoom = document.getElementById('plrZoom')?.value || '2';
+    let startIdx = 0;
+    let endIdx = steps.length - 1;
+    let windowDays = plrData.days;
+    if (zoom !== 'all') {
+        const nDays = parseInt(zoom) || 2;
+        const started = plrData.days.filter(day => {
+            const b = plrDayStepBounds(day);
+            return b.first >= 0 && b.first <= plrIndex;
+        });
+        windowDays = started.slice(-nDays);
+        if (windowDays.length === 0) windowDays = plrData.days.slice(0, 1);
+        startIdx = Math.max(1, plrDayStepBounds(windowDays[0]).first) - 1;
+        endIdx = Math.max(...windowDays.map(day => plrDayStepBounds(day).last));
+    }
+    const upTo = Math.max(Math.min(plrIndex, endIdx), startIdx);
+
+    // Échelle Y : min/max des valeurs visibles (tracées), avec marge —
+    // l'échelle évolue avec les points au fil de la lecture
+    let minY = Infinity, maxY = -Infinity;
+    for (let i = startIdx; i <= upTo; i++) {
+        stepRows[i].forEach(r => {
+            if (r.total < minY) minY = r.total;
+            if (r.total > maxY) maxY = r.total;
+        });
+    }
+    if (!isFinite(minY)) { minY = 0; maxY = 1; }
+    const span = Math.max(maxY - minY, 5);
+    minY = Math.max(0, minY - span * 0.08);
+    maxY = minY + span * 1.16;
+
     const W = 680, H = 240;
-    const padL = 36, padR = 60, padT = 12, padB = 22;
+    const padL = 40, padR = 70, padT = 12, padB = 22;
     const plotW = W - padL - padR, plotH = H - padT - padB;
-    const n = steps.length - 1;
-    const maxY = Math.max(1, ...stepRows[stepRows.length - 1].map(r => r.total));
-    const xOf = i => padL + (i / n) * plotW;
-    const yOf = v => padT + plotH - (v / maxY) * plotH;
+    const nX = Math.max(endIdx - startIdx, 1);
+    const xOf = i => padL + ((i - startIdx) / nX) * plotW;
+    const yOf = v => padT + plotH - ((v - minY) / (maxY - minY)) * plotH;
+    const fmt = v => (maxY - minY) < 20 ? (Math.round(v * 10) / 10) : Math.round(v);
 
     let svg = `<svg viewBox="0 0 ${W} ${H}" class="plr-chart-svg" role="img" aria-label="Points cumulés des pronostiqueurs">`;
 
-    // Grille horizontale (4 niveaux)
+    // Grille horizontale (4 niveaux entre min et max visibles)
     for (let g = 0; g <= 4; g++) {
-        const v = (maxY / 4) * g;
+        const v = minY + ((maxY - minY) / 4) * g;
         const y = yOf(v);
         svg += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" class="plr-grid"/>`;
-        svg += `<text x="${padL - 5}" y="${y + 3}" text-anchor="end" class="plr-axis">${Math.round(v)}</text>`;
+        svg += `<text x="${padL - 5}" y="${y + 3}" text-anchor="end" class="plr-axis">${fmt(v)}</text>`;
     }
 
-    // Marqueurs de journées (1er pas contenant un événement de la journée)
-    if (plrData.days.length > 1) {
-        plrData.days.forEach(day => {
-            const idx = steps.findIndex(s => s.events.some(e => e.day === day));
-            if (idx < 1) return;
+    // Marqueurs des journées visibles
+    if (windowDays.length > 1 || zoom === 'all') {
+        windowDays.forEach(day => {
+            const idx = plrDayStepBounds(day).first;
+            if (idx < startIdx || idx > endIdx) return;
             const x = xOf(idx);
             svg += `<line x1="${x}" y1="${padT}" x2="${x}" y2="${H - padB}" class="plr-day-line"/>`;
             svg += `<text x="${x + 3}" y="${H - padB + 12}" class="plr-axis">J${day}</text>`;
         });
     }
 
-    // Une courbe par joueur, tracée jusqu'au pas courant
-    const playerIds = [...roster.keys()];
-    const upTo = plrIndex;
-    playerIds.forEach(playerId => {
+    // Une courbe par joueur, tracée du bord gauche de la fenêtre au pas courant
+    roster.forEach((pseudo, playerId) => {
         const color = plrRosterColor(playerId);
         let path = '';
-        for (let i = 0; i <= upTo; i++) {
-            const row = plrData.stepRows[i].find(r => r.playerId === playerId);
+        for (let i = startIdx; i <= upTo; i++) {
+            const row = stepRows[i].find(r => r.playerId === playerId);
             const v = row ? row.total : 0;
-            path += `${i === 0 ? 'M' : 'L'}${xOf(i).toFixed(1)},${yOf(v).toFixed(1)} `;
+            path += `${i === startIdx ? 'M' : 'L'}${xOf(i).toFixed(1)},${yOf(v).toFixed(1)} `;
         }
         svg += `<path d="${path}" fill="none" stroke="${color}" stroke-width="2.2" stroke-linejoin="round" opacity="0.9"/>`;
-        // Point courant + pseudo
-        const cur = plrData.stepRows[upTo].find(r => r.playerId === playerId);
+        const cur = stepRows[upTo].find(r => r.playerId === playerId);
         const cx = xOf(upTo), cy = yOf(cur ? cur.total : 0);
         svg += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3.2" fill="${color}"/>`;
-        svg += `<text x="${(cx + 5).toFixed(1)}" y="${(cy + 3).toFixed(1)}" class="plr-chart-label" fill="${color}">${roster.get(playerId)} ${cur ? cur.total : 0}</text>`;
+        svg += `<text x="${(cx + 5).toFixed(1)}" y="${(cy + 3).toFixed(1)}" class="plr-chart-label" fill="${color}">${pseudo} ${cur ? cur.total : 0}</text>`;
     });
 
     svg += '</svg>';
