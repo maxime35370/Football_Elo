@@ -211,13 +211,13 @@ function initGameEvents() {
             tab.classList.add('active');
             document.getElementById(tab.dataset.tab + 'Tab').classList.add('active');
             
-            if (tab.dataset.tab === 'leaderboard') loadLeaderboard();
+            if (tab.dataset.tab === 'leaderboard') {
+                loadLeaderboard();
+                if (typeof initPronoLiveReplay === 'function') initPronoLiveReplay();
+            }
             else if (tab.dataset.tab === 'history') loadHistory();
             else if (tab.dataset.tab === 'ia') displayIAComparison();
             else if (tab.dataset.tab === 'duels') renderDuelsTab();
-            else if (tab.dataset.tab === 'liveReplay') {
-                if (typeof initPronoLiveReplay === 'function') initPronoLiveReplay();
-            }
             else if (tab.dataset.tab === 'heatmap') renderHeatmapTab();
             else if (tab.dataset.tab === 'profile') renderProfileTab();
             else if (tab.dataset.tab === 'rankingBet') {
