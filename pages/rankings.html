@@ -187,11 +187,31 @@
                                         <th title="Place où la moitié du temps est atteinte">Place médiane</th>
                                         <th title="Place occupée le plus longtemps">Place la + occupée</th>
                                         <th>Répartition du temps (1re → dernière)</th>
+                                        <th title="Temps passé dans chaque zone du classement">Zones</th>
                                     </tr>
                                 </thead>
                                 <tbody></tbody>
                             </table>
                         </div>
+                    </div>
+
+                    <div class="replay-threads-block">
+                        <h4>🎞️ Le fil de la plage</h4>
+                        <div class="replay-thread">
+                            <span class="thread-label">👑 En tête</span>
+                            <div id="replayLeaderThread" class="thread-strip"></div>
+                        </div>
+                        <div class="replay-thread">
+                            <span class="thread-label">🔦 Lanterne</span>
+                            <div id="replayLastThread" class="thread-strip"></div>
+                        </div>
+                        <p class="replay-occupancy-hint">Qui occupait la 1re et la dernière place à chaque instant — largeur = part du temps (selon le mode de comptage). Survolez pour les durées.</p>
+                    </div>
+
+                    <div class="replay-impacts-block">
+                        <h4>⚽ Les buts qui ont tout changé</h4>
+                        <p class="replay-occupancy-hint">Les buts de la plage classés par impact au classement : changement de leader d'abord, puis nombre de places bougées, avec les entrées/sorties de zones.</p>
+                        <ol id="replayImpacts" class="replay-impacts"></ol>
                     </div>
 
                     <div class="replay-pos-block">
