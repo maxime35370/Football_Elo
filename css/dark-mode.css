@@ -3299,3 +3299,6 @@
 [data-theme="dark"] .plr-grid { stroke: rgba(255, 255, 255, 0.07); }
 [data-theme="dark"] .plr-axis { fill: var(--dm-ink-muted); }
 [data-theme="dark"] .plr-day-line { stroke: rgba(255, 255, 255, 0.15); }
+
+[data-theme="dark"] .plr-chart-head label { color: var(--dm-ink-muted); }
+[data-theme="dark"] .plr-chart-head select { background: var(--dm-surface-1); border-color: var(--dm-border); color: var(--dm-ink); }
