@@ -1179,3 +1179,49 @@
     .plr-layout { grid-template-columns: 1fr; }
     .plr-clock { margin-left: 0; }
 }
+
+/* Multiplex pronos : plage + graphe de course aux points */
+.plr-timeline.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    height: auto;
+    min-height: 34px;
+    border-bottom: none;
+    align-items: center;
+}
+
+.plr-day-chip {
+    border: 1px solid #cbd5e0;
+    background: #f8f9fa;
+    color: #718096;
+    border-radius: 14px;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.plr-day-chip.done { background: #e8f4fd; border-color: #90cdf4; color: #2b6cb0; }
+.plr-day-chip.current { background: #3498db; border-color: #3498db; color: white; }
+.plr-day-chip:hover { border-color: #3498db; }
+
+.plr-matches-header { font-weight: 700; font-size: 0.85rem; color: #2c3e50; padding: 0.2rem 0.1rem 0.3rem; }
+
+.plr-dot-color {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    margin-right: 0.4rem;
+    vertical-align: middle;
+}
+
+.plr-chart-block { margin-top: 1.25rem; border-top: 1px solid #e9ecef; padding-top: 0.9rem; }
+.plr-chart-block h4 { margin: 0 0 0.35rem; color: #2c3e50; font-size: 1rem; }
+.plr-chart .plr-chart-svg { width: 100%; max-width: 760px; height: auto; display: block; }
+.plr-grid { stroke: #eef1f4; stroke-width: 1; }
+.plr-axis { font-size: 9px; fill: #99a3ad; }
+.plr-day-line { stroke: #dbe2e8; stroke-width: 1; stroke-dasharray: 2 3; }
+.plr-chart-label { font-size: 10px; font-weight: 700; }

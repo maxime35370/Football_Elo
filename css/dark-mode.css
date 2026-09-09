@@ -3289,3 +3289,13 @@
 [data-theme="dark"] .plr-table td { border-bottom-color: var(--dm-border); }
 [data-theme="dark"] .plr-table tr.plr-me td { background: rgba(52, 152, 219, 0.15); }
 [data-theme="dark"] .plr-status { color: #d69e2e; }
+
+[data-theme="dark"] .plr-day-chip { background: var(--dm-surface-1); border-color: var(--dm-border); color: var(--dm-ink-muted); }
+[data-theme="dark"] .plr-day-chip.done { background: rgba(66, 153, 225, 0.18); border-color: rgba(66, 153, 225, 0.5); color: #90cdf4; }
+[data-theme="dark"] .plr-day-chip.current { background: #3498db; border-color: #3498db; color: white; }
+[data-theme="dark"] .plr-matches-header { color: var(--dm-ink); }
+[data-theme="dark"] .plr-chart-block { border-top-color: var(--dm-border); }
+[data-theme="dark"] .plr-chart-block h4 { color: var(--dm-ink); }
+[data-theme="dark"] .plr-grid { stroke: rgba(255, 255, 255, 0.07); }
+[data-theme="dark"] .plr-axis { fill: var(--dm-ink-muted); }
+[data-theme="dark"] .plr-day-line { stroke: rgba(255, 255, 255, 0.15); }
