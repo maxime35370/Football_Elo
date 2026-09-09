@@ -3234,3 +3234,10 @@
     color: white;
 }
 [data-theme="dark"] .replay-matches-header { color: var(--dm-ink); }
+
+[data-theme="dark"] .replay-occupancy { border-top-color: var(--dm-border); }
+[data-theme="dark"] .replay-occupancy h4 { color: var(--dm-ink); }
+[data-theme="dark"] .replay-occupancy-hint,
+[data-theme="dark"] #replayOccupancy .occ-pct { color: var(--dm-ink-muted); }
+[data-theme="dark"] .occ-cell { border-color: rgba(99, 179, 237, 0.25); background: rgba(99, 179, 237, var(--occ, 0)); }
+[data-theme="dark"] .occ-cell.empty { background: transparent; border-color: var(--dm-border); }

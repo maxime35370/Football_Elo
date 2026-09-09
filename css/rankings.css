@@ -996,3 +996,48 @@ tr.relegation .pos-badge {
     color: #2c3e50;
     padding: 0.2rem 0.1rem 0.3rem;
 }
+
+/* Occupation du classement : temps passé à chaque place */
+.replay-occupancy {
+    margin-top: 1.5rem;
+    border-top: 1px solid #e9ecef;
+    padding-top: 1rem;
+}
+
+.replay-occupancy h4 {
+    margin: 0 0 0.35rem;
+    color: #2c3e50;
+    font-size: 1rem;
+}
+
+.replay-occupancy-hint {
+    color: #888;
+    font-size: 0.82rem;
+    margin: 0 0 0.75rem;
+}
+
+#replayOccupancy .team { text-align: left; font-weight: 600; }
+#replayOccupancy .occ-avg { font-variant-numeric: tabular-nums; }
+#replayOccupancy .occ-pct { color: #888; font-size: 0.8rem; }
+#replayOccupancy .occ-none { color: #aaa; text-align: left; }
+#replayOccupancy .occ-dist { text-align: left; }
+
+.occ-cells {
+    display: inline-flex;
+    gap: 2px;
+    vertical-align: middle;
+}
+
+.occ-cell {
+    width: 13px;
+    height: 15px;
+    border-radius: 3px;
+    background: rgba(52, 152, 219, var(--occ, 0));
+    border: 1px solid rgba(52, 152, 219, 0.18);
+    cursor: help;
+}
+
+.occ-cell.empty {
+    background: transparent;
+    border-color: #e9ecef;
+}
