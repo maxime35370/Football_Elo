@@ -390,15 +390,18 @@
                     <div id="liveReplayTab" class="game-tab-content">
                         <h3>🎬 Multiplex des pronostiqueurs</h3>
                         <p class="plr-hint">
-                            Revivez la journée but par but, à l'heure réelle de chaque but : le classement
+                            Revivez une journée, une série de journées ou toute la saison but par but : le classement
                             des pronostiqueurs évolue en direct avec TOUTES les règles — cotes, joker ×2,
                             Super Joker, défi buteur (+4 si 1er buteur, +1 par but, CSC exclus), combinés
                             (perdus dès qu'un match bascule), défis et buts totaux, bonus MVP. Un défi qui
                             « semblait validé » peut retomber sur un but tardif, exactement comme en vrai.
                         </p>
                         <div class="plr-controls">
-                            <label for="plrMatchDay">Journée :</label>
-                            <select id="plrMatchDay"></select>
+                            <label for="plrFromDay">De J :</label>
+                            <select id="plrFromDay"></select>
+                            <label for="plrToDay">à J :</label>
+                            <select id="plrToDay"></select>
+                            <button id="plrSeasonBtn" class="btn btn-secondary" title="Rejouer toute la saison jusqu'au dernier match joué">📅 Toute la saison</button>
                             <button id="plrPlayBtn" class="btn btn-primary">▶️ Lecture</button>
                             <select id="plrSpeed" title="Vitesse de lecture">
                                 <option value="2500">🐢 Lente</option>
@@ -429,6 +432,11 @@
                                     <tbody></tbody>
                                 </table>
                             </div>
+                        </div>
+                        <div class="plr-chart-block">
+                            <h4>📈 La course aux points</h4>
+                            <p class="plr-hint">Les points cumulés de chaque joueur, courbe dessinée au rythme de la lecture — l'axe suit les événements, sans les temps morts entre matchs ni entre journées.</p>
+                            <div id="plrChart" class="plr-chart"></div>
                         </div>
                         <div id="plrStatus" class="plr-status"></div>
                     </div>
