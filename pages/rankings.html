@@ -164,10 +164,19 @@
                     </div>
                     <div class="replay-occupancy">
                         <h4 id="replayOccupancyTitle">⏱️ Temps passé à chaque place</h4>
+                        <div class="replay-occ-controls">
+                            <label for="replayOccMode">Comptage :</label>
+                            <select id="replayOccMode">
+                                <option value="real" selected>⏳ Temps réel (les semaines entre journées comptent)</option>
+                                <option value="live">⚽ Pendant les matchs uniquement</option>
+                            </select>
+                        </div>
                         <p class="replay-occupancy-hint">
-                            Pondéré par le temps réel entre chaque événement de la plage rejouée,
-                            du premier coup d'envoi au dernier coup de sifflet — entre deux journées,
-                            une équipe « occupe » sa place pendant toute la semaine.
+                            <strong>Temps réel</strong> : du premier coup d'envoi au dernier coup de sifflet
+                            de la plage, une équipe « occupe » sa place même entre deux journées
+                            (« 12 jours en tête »). <strong>Pendant les matchs</strong> : seul le temps où
+                            au moins un match est en cours compte — entre la fin du dimanche soir et le
+                            coup d'envoi du vendredi, le classement ne bouge pas, on ne compte rien.
                         </p>
                         <div class="table-wrapper">
                             <table id="replayOccupancy" class="ranking-table replay-table">
