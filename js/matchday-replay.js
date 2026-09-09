@@ -201,6 +201,132 @@ function loadReplayRange(fromDay, toDay) {
 
     replayPrevPositions = null;
     replaySetIndex(0);
+    renderReplayOccupancy();
+}
+
+// Temps passé par chaque équipe à chaque place du classement, pondéré par le
+// temps réel : chaque intervalle entre deux événements compte pour sa durée
+// (les jours entre deux journées comptent pour la place occupée à ce moment-là).
+// Retourne, par équipe : répartition, place moyenne, place médiane, place la
+// plus occupée.
+function replayComputeOccupancy() {
+    const steps = replayData.steps;
+    const occupancy = {}; // teamId -> { pos -> ms }
+
+    // Le pas 0 (« avant les matchs ») est ignoré : la mesure démarre au
+    // premier coup d'envoi et s'arrête au dernier événement de la plage
+    for (let i = 1; i < steps.length - 1; i++) {
+        const t = steps[i].t;
+        const duration = steps[i + 1].t - t;
+        if (duration <= 0) continue;
+
+        const liveEntries = [];
+        replayData.dayMatches.forEach(dm => {
+            if (t >= dm.kickoff) {
+                const s = replayScoreAt(dm, t);
+                liveEntries.push({ homeTeamId: dm.match.homeTeamId, awayTeamId: dm.match.awayTeamId, home: s.home, away: s.away });
+            }
+        });
+
+        replayComputeTable(replayData.otherMatches, liveEntries).forEach((row, idx) => {
+            const pos = idx + 1;
+            if (!occupancy[row.id]) occupancy[row.id] = {};
+            occupancy[row.id][pos] = (occupancy[row.id][pos] || 0) + duration;
+        });
+    }
+
+    const season = replaySeason();
+    const teams = (typeof getTeamsBySeason === 'function') ? getTeamsBySeason(season) : getStoredTeams();
+    const nPositions = teams.length;
+
+    const rows = teams.map(team => {
+        const dist = occupancy[team.id] || {};
+        const total = Object.values(dist).reduce((s, ms) => s + ms, 0);
+        if (total === 0) return { team, dist, total, avg: null, median: null, mode: null };
+
+        let weighted = 0;
+        let mode = null;
+        for (const [pos, ms] of Object.entries(dist)) {
+            weighted += parseInt(pos) * ms;
+            if (mode === null || ms > dist[mode]) mode = parseInt(pos);
+        }
+        // Médiane pondérée : la place où la moitié du temps est atteinte
+        let cumul = 0, median = null;
+        for (let pos = 1; pos <= nPositions; pos++) {
+            cumul += dist[pos] || 0;
+            if (cumul >= total / 2) { median = pos; break; }
+        }
+        return { team, dist, total, avg: weighted / total, median, mode };
+    });
+
+    rows.sort((a, b) => {
+        if (a.avg === null) return 1;
+        if (b.avg === null) return -1;
+        if (a.avg !== b.avg) return a.avg - b.avg;
+        if (a.median !== b.median) return a.median - b.median;
+        return (a.team.name || '').localeCompare(b.team.name || '', 'fr');
+    });
+    return { rows, nPositions };
+}
+
+// Durée lisible : « 12j 5h », « 3h05 », « 47 min »
+function replayFormatDuration(ms) {
+    const minutes = Math.round(ms / 60000);
+    if (minutes < 60) return `${minutes} min`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h${String(minutes % 60).padStart(2, '0')}`;
+    const days = Math.floor(hours / 24);
+    return `${days}j ${hours % 24}h`;
+}
+
+function replayOrdinal(pos) {
+    return pos === 1 ? '1re' : `${pos}e`;
+}
+
+function renderReplayOccupancy() {
+    const tbody = document.querySelector('#replayOccupancy tbody');
+    if (!tbody || !replayData) return;
+
+    const title = document.getElementById('replayOccupancyTitle');
+    if (title) {
+        const range = replayData.fromDay === replayData.toDay
+            ? `journée ${replayData.toDay}`
+            : `J${replayData.fromDay} → J${replayData.toDay}`;
+        title.textContent = `⏱️ Temps passé à chaque place (${range})`;
+    }
+
+    const { rows, nPositions } = replayComputeOccupancy();
+
+    tbody.innerHTML = rows.map(row => {
+        if (row.total === 0) {
+            return `<tr><td class="team">${row.team.shortName || row.team.name}</td><td colspan="4" class="occ-none">—</td></tr>`;
+        }
+        const modeMs = row.dist[row.mode] || 0;
+        const modePct = Math.round((modeMs / row.total) * 100);
+
+        // Répartition : une cellule par place, intensité = part du temps
+        let cells = '';
+        for (let pos = 1; pos <= nPositions; pos++) {
+            const ms = row.dist[pos] || 0;
+            const share = ms / row.total;
+            const pct = Math.round(share * 100);
+            const tip = ms > 0
+                ? `${replayOrdinal(pos)} : ${replayFormatDuration(ms)} (${pct}%)`
+                : `${replayOrdinal(pos)} : jamais`;
+            const opacity = ms > 0 ? Math.max(0.15, share) : 0;
+            cells += `<span class="occ-cell${ms > 0 ? '' : ' empty'}" style="--occ:${opacity}" title="${tip}"></span>`;
+        }
+
+        return `
+            <tr>
+                <td class="team">${row.team.shortName || row.team.name}</td>
+                <td class="occ-avg"><strong>${row.avg.toFixed(1).replace('.', ',')}</strong></td>
+                <td>${replayOrdinal(row.median)}</td>
+                <td>${replayOrdinal(row.mode)} <span class="occ-pct">(${modePct}%)</span></td>
+                <td class="occ-dist"><span class="occ-cells" aria-label="Répartition du temps par place">${cells}</span></td>
+            </tr>
+        `;
+    }).join('');
 }
 
 // Score d'un match à un instant t (buts crédités par équipe, CSC compris)
@@ -511,6 +637,8 @@ function renderReplayEmpty(message) {
     if (feed) feed.innerHTML = '';
     const tbody = document.querySelector('#replayTable tbody');
     if (tbody) tbody.innerHTML = '';
+    const occBody = document.querySelector('#replayOccupancy tbody');
+    if (occBody) occBody.innerHTML = '';
     const timeline = document.getElementById('replayTimeline');
     if (timeline) timeline.innerHTML = '';
     const clock = document.getElementById('replayClock');
