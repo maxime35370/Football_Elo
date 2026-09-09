@@ -3254,3 +3254,18 @@
 [data-theme="dark"] .rpc-day-line { stroke: rgba(255, 255, 255, 0.15); }
 [data-theme="dark"] .rpc-pos { stroke: #718096; }
 [data-theme="dark"] .rpc-legend { color: var(--dm-ink-muted); }
+
+[data-theme="dark"] .replay-threads-block,
+[data-theme="dark"] .replay-impacts-block { border-top-color: var(--dm-border); }
+[data-theme="dark"] .replay-threads-block h4,
+[data-theme="dark"] .replay-impacts-block h4 { color: var(--dm-ink); }
+[data-theme="dark"] .thread-label { color: var(--dm-ink-muted); }
+[data-theme="dark"] .thread-strip { background: var(--dm-surface-2); }
+[data-theme="dark"] .impact-item { background: var(--dm-surface-1); }
+[data-theme="dark"] .impact-item::before { color: rgba(255, 255, 255, 0.12); }
+[data-theme="dark"] .impact-when { color: var(--dm-ink-muted); }
+[data-theme="dark"] .impact-badge { background: var(--dm-surface-2); color: var(--dm-ink-muted); }
+[data-theme="dark"] .impact-badge.leader { background: rgba(241, 196, 15, 0.18); color: #f0d264; }
+[data-theme="dark"] .impact-badge.moves { background: rgba(52, 152, 219, 0.2); color: #85c1e9; }
+[data-theme="dark"] .impact-badge.zone { background: rgba(231, 76, 60, 0.18); color: #f1948a; }
+[data-theme="dark"] .zone-bar { background: var(--dm-surface-2); }

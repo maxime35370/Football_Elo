@@ -185,9 +185,10 @@ function loadReplayRange(fromDay, toDay) {
     const baseline = replayComputeTable(otherMatches, []);
     const baselinePos = {};
     baseline.forEach((row, i) => { baselinePos[row.id] = i + 1; });
+    const baselineOrder = baseline.map(row => row.id);
 
     const days = [...new Set(rangeMatchesRaw.map(m => m.matchDay || 0))].sort((a, b) => a - b);
-    replayData = { steps, dayMatches, otherMatches, baselinePos, estimatedCount, fromDay, toDay, days, matchDay: toDay };
+    replayData = { steps, dayMatches, otherMatches, baselinePos, baselineOrder, estimatedCount, fromDay, toDay, days, matchDay: toDay };
 
     const slider = document.getElementById('replaySlider');
     if (slider) {
@@ -312,10 +313,11 @@ function renderReplayOccupancy() {
 
     const mode = document.getElementById('replayOccMode')?.value || 'real';
     const { rows, nPositions } = replayComputeOccupancy(mode);
+    const zoneCfg = replayZonesConfig();
 
     tbody.innerHTML = rows.map(row => {
         if (row.total === 0) {
-            return `<tr><td class="team">${row.team.shortName || row.team.name}</td><td colspan="4" class="occ-none">—</td></tr>`;
+            return `<tr><td class="team">${row.team.shortName || row.team.name}</td><td colspan="5" class="occ-none">—</td></tr>`;
         }
         const modeMs = row.dist[row.mode] || 0;
         const modePct = Math.round((modeMs / row.total) * 100);
@@ -333,6 +335,20 @@ function renderReplayOccupancy() {
             cells += `<span class="occ-cell${ms > 0 ? '' : ' empty'}" style="--occ:${opacity}" title="${tip}"></span>`;
         }
 
+        // Temps par zone : barre empilée titre / Europe / ventre mou / relégation
+        const zoneMs = { title: 0, europe: 0, mid: 0, releg: 0 };
+        for (const [pos, ms] of Object.entries(row.dist)) {
+            zoneMs[replayZoneOf(parseInt(pos), nPositions, zoneCfg)] += ms;
+        }
+        const zoneBar = ['title', 'europe', 'mid', 'releg'].map(z => {
+            const ms = zoneMs[z];
+            if (ms <= 0) return '';
+            const pct = (ms / row.total) * 100;
+            const meta = REPLAY_ZONE_META[z];
+            return `<span class="zone-seg" style="width:${pct.toFixed(2)}%;background:${meta.color}"
+                          title="${meta.label} : ${replayFormatDuration(ms)} (${Math.round(pct)}%)"></span>`;
+        }).join('');
+
         return `
             <tr>
                 <td class="team">${row.team.shortName || row.team.name}</td>
@@ -340,11 +356,199 @@ function renderReplayOccupancy() {
                 <td>${replayOrdinal(row.median)}</td>
                 <td>${replayOrdinal(row.mode)} <span class="occ-pct">(${modePct}%)</span></td>
                 <td class="occ-dist"><span class="occ-cells" aria-label="Répartition du temps par place">${cells}</span></td>
+                <td class="occ-zones"><span class="zone-bar" aria-label="Temps par zone">${zoneBar}</span></td>
             </tr>
         `;
     }).join('');
 
+    const intervals = replayScanIntervals(mode);
+    renderReplayThreads(intervals);
+    renderReplayImpacts(intervals);
     renderReplayPosChart(rows);
+}
+
+// ===============================
+// Fil des leaders, zones, buts à impact
+// ===============================
+
+// Palette stable par équipe (indexée sur l'ordre alphabétique de la saison)
+const REPLAY_TEAM_COLORS = [
+    '#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c',
+    '#e67e22', '#34495e', '#16a085', '#c0392b', '#2980b9', '#8e44ad',
+    '#27ae60', '#d35400', '#7f8c8d', '#f1c40f', '#5d6d7e', '#af7ac5'
+];
+
+function replaySeasonTeamsAlpha() {
+    const season = replaySeason();
+    return ((typeof getTeamsBySeason === 'function') ? getTeamsBySeason(season) : getStoredTeams())
+        .slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'fr'));
+}
+
+function replayTeamColor(teamId) {
+    const idx = replaySeasonTeamsAlpha().findIndex(t => String(t.id) === String(teamId));
+    return REPLAY_TEAM_COLORS[idx % REPLAY_TEAM_COLORS.length] || '#95a5a6';
+}
+
+// Zones du championnat (mêmes règles que le classement traditionnel)
+function replayZonesConfig() {
+    const cfg = (typeof getSeasonConfig === 'function') ? getSeasonConfig() : {};
+    return {
+        championPlaces: cfg.championPlaces || 1,
+        europeanPlaces: cfg.europeanPlaces || 3,
+        relegationPlaces: cfg.relegationPlaces || 2
+    };
+}
+
+function replayZoneOf(pos, nPositions, cfg) {
+    if (pos <= cfg.championPlaces) return 'title';
+    if (pos <= cfg.europeanPlaces) return 'europe';
+    if (nPositions >= 6 && pos > nPositions - cfg.relegationPlaces) return 'releg';
+    return 'mid';
+}
+
+const REPLAY_ZONE_META = {
+    title: { label: '🏆 Titre', color: '#f1c40f' },
+    europe: { label: '⭐ Europe', color: '#3498db' },
+    mid: { label: 'Ventre mou', color: '#cbd5e0' },
+    releg: { label: '🛡️ Relégation', color: '#e74c3c' }
+};
+
+// Scan partagé de la timeline : pour chaque pas, l'ordre du classement et le
+// poids de l'intervalle qui le suit (0 si non compté dans le mode choisi)
+function replayScanIntervals(mode) {
+    const steps = replayData.steps;
+    const intervals = [];
+    for (let i = 1; i < steps.length; i++) {
+        const t = steps[i].t;
+        const liveEntries = [];
+        replayData.dayMatches.forEach(dm => {
+            if (t >= dm.kickoff) {
+                const s = replayScoreAt(dm, t);
+                liveEntries.push({ homeTeamId: dm.match.homeTeamId, awayTeamId: dm.match.awayTeamId, home: s.home, away: s.away });
+            }
+        });
+        const order = replayComputeTable(replayData.otherMatches, liveEntries).map(r => r.id);
+        const next = i + 1 < steps.length ? steps[i + 1].t : null;
+        let w = next ? next - t : 0;
+        if (w > 0 && mode === 'live' && !replayData.dayMatches.some(dm => dm.kickoff <= t && t < dm.end)) w = 0;
+        intervals.push({ t, w, order, events: steps[i].events });
+    }
+    return intervals;
+}
+
+// Frises « qui était en tête / lanterne rouge » : segments fusionnés par
+// équipe, largeur = part du temps compté
+function renderReplayThreads(intervals) {
+    const build = (containerId, pickTeam) => {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        const segments = [];
+        intervals.forEach(iv => {
+            if (iv.w <= 0 || iv.order.length === 0) return;
+            const teamId = pickTeam(iv.order);
+            const last = segments[segments.length - 1];
+            if (last && String(last.teamId) === String(teamId)) {
+                last.w += iv.w;
+            } else {
+                segments.push({ teamId, w: iv.w, from: iv.t });
+            }
+        });
+        const total = segments.reduce((s, seg) => s + seg.w, 0);
+        if (total <= 0) { container.innerHTML = ''; return; }
+        container.innerHTML = segments.map(seg => {
+            const team = getTeamById(seg.teamId);
+            const name = team ? team.shortName : '?';
+            const pct = (seg.w / total) * 100;
+            const from = seg.from.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+            return `<span class="thread-seg" style="width:${pct.toFixed(2)}%;background:${replayTeamColor(seg.teamId)}"
+                          title="${name} : ${replayFormatDuration(seg.w)} (à partir de ${from})">${pct > 5 ? name : ''}</span>`;
+        }).join('');
+    };
+    build('replayLeaderThread', order => order[0]);
+    build('replayLastThread', order => order[order.length - 1]);
+}
+
+// Les buts qui ont tout changé : pour chaque pas contenant au moins un but,
+// mouvements de places entre l'avant et l'après, changement de leader et
+// entrées/sorties de zones
+function replayComputeGoalImpacts(intervals) {
+    const cfg = replayZonesConfig();
+    const nPositions = (replayData.baselineOrder || []).length || intervals[0]?.order.length || 0;
+    const posMap = order => { const m = {}; order.forEach((id, i) => { m[id] = i + 1; }); return m; };
+
+    let prevOrder = replayData.baselineOrder || (intervals[0] ? intervals[0].order : []);
+    const impacts = [];
+
+    intervals.forEach(iv => {
+        const goalEvents = iv.events.filter(e => e.type === 'goal');
+        if (goalEvents.length > 0) {
+            const before = posMap(prevOrder), after = posMap(iv.order);
+            let moves = 0;
+            const zoneEvents = [];
+            iv.order.forEach(id => {
+                const pb = before[id], pa = after[id];
+                if (pb === undefined || pa === undefined) return;
+                moves += Math.abs(pb - pa);
+                const zb = replayZoneOf(pb, nPositions, cfg), za = replayZoneOf(pa, nPositions, cfg);
+                if (zb !== za) {
+                    const team = getTeamById(id);
+                    const name = team ? team.shortName : '?';
+                    // Seuls les franchissements de la ligne Europe et de la
+                    // ligne rouge sont signalés (titre↔Europe = badge leader)
+                    if (za === 'releg') zoneEvents.push(`🔻 ${name} tombe en zone rouge`);
+                    else if (zb === 'releg') zoneEvents.push(`🟢 ${name} sort de la zone rouge`);
+                    else if (zb === 'mid' && (za === 'europe' || za === 'title')) zoneEvents.push(`⭐ ${name} entre dans les places européennes`);
+                    else if (za === 'mid' && (zb === 'europe' || zb === 'title')) zoneEvents.push(`↘️ ${name} quitte les places européennes`);
+                }
+            });
+            const leaderChanged = String(iv.order[0]) !== String(prevOrder[0]);
+            const newLeader = leaderChanged ? getTeamById(iv.order[0]) : null;
+            if (moves > 0 || leaderChanged || zoneEvents.length > 0) {
+                impacts.push({
+                    t: iv.t,
+                    goals: goalEvents.map(e => e.text),
+                    moves, leaderChanged,
+                    newLeader: newLeader ? newLeader.shortName : null,
+                    zoneEvents
+                });
+            }
+        }
+        prevOrder = iv.order;
+    });
+
+    impacts.sort((a, b) => {
+        if (a.leaderChanged !== b.leaderChanged) return a.leaderChanged ? -1 : 1;
+        if (a.moves !== b.moves) return b.moves - a.moves;
+        return a.t - b.t;
+    });
+    return impacts;
+}
+
+function renderReplayImpacts(intervals) {
+    const list = document.getElementById('replayImpacts');
+    if (!list) return;
+
+    const impacts = replayComputeGoalImpacts(intervals).slice(0, 10);
+    if (impacts.length === 0) {
+        list.innerHTML = '<li class="replay-feed-item muted">Aucun but n\'a fait bouger le classement sur cette plage.</li>';
+        return;
+    }
+
+    list.innerHTML = impacts.map(imp => {
+        const day = imp.t.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+        const time = `${imp.t.getHours()}h${String(imp.t.getMinutes()).padStart(2, '0')}`;
+        const badges = [];
+        if (imp.leaderChanged) badges.push(`<span class="impact-badge leader">👑 ${imp.newLeader} prend la tête</span>`);
+        if (imp.moves > 0) badges.push(`<span class="impact-badge moves">↕️ ${imp.moves} place${imp.moves > 1 ? 's' : ''} bougée${imp.moves > 1 ? 's' : ''}</span>`);
+        imp.zoneEvents.slice(0, 3).forEach(z => badges.push(`<span class="impact-badge zone">${z}</span>`));
+        return `
+            <li class="impact-item">
+                <div class="impact-when">${day} ${time}</div>
+                <div class="impact-goals">${imp.goals.join('<br>')}</div>
+                <div class="impact-badges">${badges.join(' ')}</div>
+            </li>
+        `;
+    }).join('');
 }
 
 // Séries pour le graphique d'une équipe : place réelle à chaque instant,
@@ -812,6 +1016,10 @@ function renderReplayEmpty(message) {
     if (occBody) occBody.innerHTML = '';
     const posChart = document.getElementById('replayPosChart');
     if (posChart) posChart.innerHTML = '';
+    ['replayLeaderThread', 'replayLastThread', 'replayImpacts'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = '';
+    });
     const timeline = document.getElementById('replayTimeline');
     if (timeline) timeline.innerHTML = '';
     const clock = document.getElementById('replayClock');
