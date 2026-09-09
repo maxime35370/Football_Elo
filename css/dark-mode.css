@@ -3302,3 +3302,5 @@
 
 [data-theme="dark"] .plr-chart-head label { color: var(--dm-ink-muted); }
 [data-theme="dark"] .plr-chart-head select { background: var(--dm-surface-1); border-color: var(--dm-border); color: var(--dm-ink); }
+
+[data-theme="dark"] .plr-section { border-top-color: var(--dm-border); }

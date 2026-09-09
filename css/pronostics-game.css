@@ -1244,3 +1244,10 @@
     font-weight: 600;
     background: white;
 }
+
+/* Multiplex intégré à l'onglet Classement */
+.plr-section {
+    margin-top: 2rem;
+    border-top: 2px solid #e9ecef;
+    padding-top: 1.25rem;
+}
