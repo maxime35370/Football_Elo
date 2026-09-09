@@ -1217,3 +1217,5 @@ tr.relegation .pos-badge {
 
 .zone-seg { display: inline-block; height: 100%; cursor: help; }
 #replayOccupancy .occ-zones { text-align: left; }
+
+.rpc-vs { font-weight: 700; color: #888; font-size: 0.8rem; }
