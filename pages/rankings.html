@@ -194,6 +194,20 @@
                         </div>
                     </div>
 
+                    <div class="replay-pos-block">
+                        <div class="replay-occ-controls">
+                            <label for="replayPosTeam">📈 Courbe d'une équipe :</label>
+                            <select id="replayPosTeam"></select>
+                        </div>
+                        <p class="replay-occupancy-hint">
+                            Place réelle au fil de la plage (marches grises), place moyenne cumulée
+                            (ligne pleine) et place médiane cumulée (pointillé). L'axe suit le mode de
+                            comptage choisi ci-dessus : en « pendant les matchs », les temps morts
+                            sont retirés de l'axe.
+                        </p>
+                        <div id="replayPosChart" class="replay-pos-chart"></div>
+                    </div>
+
                     <div id="replayNote" class="replay-note"></div>
                 </div>
 
