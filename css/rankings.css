@@ -1041,3 +1041,21 @@ tr.relegation .pos-badge {
     background: transparent;
     border-color: #e9ecef;
 }
+
+.replay-occ-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.4rem 0 0.5rem;
+    font-size: 0.88rem;
+}
+
+.replay-occ-controls select {
+    padding: 0.35rem 0.6rem;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: white;
+    max-width: 100%;
+}

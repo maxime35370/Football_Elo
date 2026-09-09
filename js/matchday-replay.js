@@ -87,6 +87,8 @@ function initMatchdayReplay() {
         replayStop();
         replaySetIndex(parseInt(this.value));
     };
+    const occMode = document.getElementById('replayOccMode');
+    if (occMode) occMode.onchange = renderReplayOccupancy;
 
     reload();
 }
@@ -204,12 +206,17 @@ function loadReplayRange(fromDay, toDay) {
     renderReplayOccupancy();
 }
 
-// Temps passé par chaque équipe à chaque place du classement, pondéré par le
-// temps réel : chaque intervalle entre deux événements compte pour sa durée
-// (les jours entre deux journées comptent pour la place occupée à ce moment-là).
+// Temps passé par chaque équipe à chaque place du classement.
+// Deux modes de comptage :
+//  - 'real' : chaque intervalle entre deux événements pèse sa durée réelle —
+//    les jours entre deux journées comptent pour la place occupée à ce
+//    moment-là (« 12 jours en tête »)
+//  - 'live' : seuls les intervalles où au moins un match de la plage est en
+//    cours comptent — entre la fin du dernier match du dimanche et le coup
+//    d'envoi du vendredi, le classement ne bouge pas, on ne compte rien
 // Retourne, par équipe : répartition, place moyenne, place médiane, place la
 // plus occupée.
-function replayComputeOccupancy() {
+function replayComputeOccupancy(mode) {
     const steps = replayData.steps;
     const occupancy = {}; // teamId -> { pos -> ms }
 
@@ -219,6 +226,12 @@ function replayComputeOccupancy() {
         const t = steps[i].t;
         const duration = steps[i + 1].t - t;
         if (duration <= 0) continue;
+
+        // L'ensemble des matchs en cours est constant sur tout l'intervalle
+        // (les coups d'envoi et fins de match sont des bornes d'intervalle)
+        if (mode === 'live' && !replayData.dayMatches.some(dm => dm.kickoff <= t && t < dm.end)) {
+            continue;
+        }
 
         const liveEntries = [];
         replayData.dayMatches.forEach(dm => {
@@ -295,7 +308,8 @@ function renderReplayOccupancy() {
         title.textContent = `⏱️ Temps passé à chaque place (${range})`;
     }
 
-    const { rows, nPositions } = replayComputeOccupancy();
+    const mode = document.getElementById('replayOccMode')?.value || 'real';
+    const { rows, nPositions } = replayComputeOccupancy(mode);
 
     tbody.innerHTML = rows.map(row => {
         if (row.total === 0) {
