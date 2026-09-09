@@ -1037,3 +1037,145 @@
     border-radius: 6px;
     font-weight: 600;
 }
+
+/* ===============================
+   Multiplex des pronostiqueurs
+   =============================== */
+
+.plr-hint { color: #666; font-size: 0.9rem; margin-bottom: 1rem; }
+
+.plr-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.75rem;
+}
+
+.plr-controls select {
+    padding: 0.45rem 0.75rem;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    background: white;
+}
+
+.plr-clock {
+    margin-left: auto;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: #2c3e50;
+    background: #f0f4f8;
+    padding: 0.4rem 0.9rem;
+    border-radius: 8px;
+    white-space: nowrap;
+}
+
+.plr-slider { width: 100%; margin: 0.25rem 0 0; accent-color: #3498db; }
+
+.plr-timeline {
+    position: relative;
+    height: 34px;
+    margin: 0.25rem 0 1rem;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.plr-dot {
+    position: absolute;
+    top: 4px;
+    transform: translateX(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.85rem;
+    opacity: 0.35;
+    padding: 2px;
+    transition: opacity 0.2s, transform 0.15s;
+}
+
+.plr-dot.done { opacity: 1; }
+.plr-dot.current { transform: translateX(-50%) scale(1.5); }
+.plr-dot:hover { opacity: 1; transform: translateX(-50%) scale(1.4); }
+
+.plr-layout {
+    display: grid;
+    grid-template-columns: minmax(230px, 1fr) minmax(300px, 1.3fr);
+    gap: 1.25rem;
+    align-items: start;
+}
+
+.plr-matches { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.75rem; }
+
+.plr-match {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.45rem 0.7rem;
+    border-radius: 8px;
+    background: #f8f9fa;
+    border-left: 4px solid #cbd5e0;
+    font-size: 0.92rem;
+}
+
+.plr-match.live { border-left-color: #e74c3c; background: #fff8f6; }
+.plr-match.finished { border-left-color: #27ae60; }
+.plr-match-status { font-size: 0.8rem; color: #666; min-width: 4.6rem; white-space: nowrap; }
+.plr-match-teams { display: flex; align-items: center; gap: 0.5rem; font-weight: 600; }
+
+.plr-score {
+    background: #2c3e50;
+    color: white;
+    padding: 0.1rem 0.5rem;
+    border-radius: 6px;
+    font-variant-numeric: tabular-nums;
+}
+
+.plr-score.live { background: #e74c3c; }
+.plr-score.upcoming { background: #cbd5e0; color: #4a5568; }
+
+.plr-feed { max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.3rem; }
+.plr-feed-item { font-size: 0.88rem; padding: 0.35rem 0.6rem; border-radius: 6px; background: #f0f4f8; }
+.plr-feed-item.goal { background: #fff3cd; font-weight: 600; }
+.plr-feed-item.muted { color: #888; font-style: italic; }
+.plr-feed-item.movers { background: #eef7ff; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+
+.plr-delta { font-size: 0.8rem; font-weight: 700; }
+.plr-delta.up { color: #1e8449; }
+.plr-delta.down { color: #b03a2e; }
+
+.plr-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+.plr-table th {
+    background: #2c3e50;
+    color: white;
+    padding: 0.5rem 0.55rem;
+    text-align: center;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+}
+.plr-table td { padding: 0.42rem 0.55rem; text-align: center; border-bottom: 1px solid #eef1f4; }
+.plr-table .pseudo { text-align: left; font-weight: 600; }
+.plr-table .pts { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.plr-table .bonuses { font-size: 0.82rem; white-space: nowrap; }
+.plr-table tr.plr-me td { background: rgba(52, 152, 219, 0.08); }
+
+.plr-move { font-size: 0.8rem; font-weight: 700; }
+.plr-move.up { color: #27ae60; }
+.plr-move.down { color: #e74c3c; }
+.plr-move.same { color: #b0b8c0; }
+
+.plr-pts-delta { font-size: 0.75rem; font-weight: 700; }
+.plr-pts-delta.up { color: #1e8449; }
+.plr-pts-delta.down { color: #b03a2e; }
+
+@keyframes plrFlashUp { 0% { background: rgba(39, 174, 96, 0.35); } 100% { background: transparent; } }
+@keyframes plrFlashDown { 0% { background: rgba(231, 76, 60, 0.3); } 100% { background: transparent; } }
+.plr-table tr.moved-up td { animation: plrFlashUp 1.2s ease-out; }
+.plr-table tr.moved-down td { animation: plrFlashDown 1.2s ease-out; }
+
+.plr-status { margin-top: 0.6rem; font-size: 0.82rem; color: #b7791f; }
+
+@media (max-width: 768px) {
+    .plr-layout { grid-template-columns: 1fr; }
+    .plr-clock { margin-left: 0; }
+}

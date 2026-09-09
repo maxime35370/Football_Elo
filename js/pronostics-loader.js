@@ -50,6 +50,7 @@
         'ranking-bet-view.js',
         'ranking-bet-controller.js',
         'pronostics-challenges.js',
+        'pronostics-live-replay.js',
 
         // --- Auto-update (en dernier) ---
         'match-auto-update.js',

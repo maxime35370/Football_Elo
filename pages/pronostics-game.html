@@ -112,6 +112,7 @@
                         <button class="game-tab" data-tab="rules">📖 Règles</button>
                         <button class="game-tab" data-tab="ia">🤖 IA vs Joueurs</button>
                         <button class="game-tab" data-tab="duels">⚔️ Duels</button>
+                        <button class="game-tab" data-tab="liveReplay">🎬 Multiplex</button>
                         <button class="game-tab" data-tab="heatmap">🔥 Heatmap</button>
                         <button class="game-tab" data-tab="profile">🎭 Profil</button>
                         <button class="game-tab" data-tab="chat">💬 Discussions</button>
@@ -386,6 +387,52 @@
                         </div>
                     </div>
                     <!-- Onglet Chat -->
+                    <div id="liveReplayTab" class="game-tab-content">
+                        <h3>🎬 Multiplex des pronostiqueurs</h3>
+                        <p class="plr-hint">
+                            Revivez la journée but par but, à l'heure réelle de chaque but : le classement
+                            des pronostiqueurs évolue en direct avec TOUTES les règles — cotes, joker ×2,
+                            Super Joker, défi buteur (+4 si 1er buteur, +1 par but, CSC exclus), combinés
+                            (perdus dès qu'un match bascule), défis et buts totaux, bonus MVP. Un défi qui
+                            « semblait validé » peut retomber sur un but tardif, exactement comme en vrai.
+                        </p>
+                        <div class="plr-controls">
+                            <label for="plrMatchDay">Journée :</label>
+                            <select id="plrMatchDay"></select>
+                            <button id="plrPlayBtn" class="btn btn-primary">▶️ Lecture</button>
+                            <select id="plrSpeed" title="Vitesse de lecture">
+                                <option value="2500">🐢 Lente</option>
+                                <option value="1500" selected>▶️ Normale</option>
+                                <option value="600">🐇 Rapide</option>
+                            </select>
+                            <span id="plrClock" class="plr-clock">—</span>
+                        </div>
+                        <input type="range" id="plrSlider" class="plr-slider" min="0" max="0" value="0" step="1">
+                        <div id="plrTimeline" class="plr-timeline"></div>
+                        <div class="plr-layout">
+                            <div class="plr-left">
+                                <div id="plrMatches" class="plr-matches"></div>
+                                <div id="plrFeed" class="plr-feed"></div>
+                            </div>
+                            <div class="table-wrapper">
+                                <table id="plrTable" class="plr-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Rang</th>
+                                            <th></th>
+                                            <th>Joueur</th>
+                                            <th>Points</th>
+                                            <th title="Points des matchs (cotes + joker inclus)">Matchs</th>
+                                            <th title="Bonus : 🃏✨ Super Joker, ⚽ buteur, 🎰 combiné, 🎲 défis, 🏆 MVP">Bonus</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div id="plrStatus" class="plr-status"></div>
+                    </div>
+
                     <div id="chatTab" class="game-tab-content">
                         <!-- Généré dynamiquement par pronostics-chat.js -->
                     </div>

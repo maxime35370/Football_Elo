@@ -3269,3 +3269,23 @@
 [data-theme="dark"] .impact-badge.moves { background: rgba(52, 152, 219, 0.2); color: #85c1e9; }
 [data-theme="dark"] .impact-badge.zone { background: rgba(231, 76, 60, 0.18); color: #f1948a; }
 [data-theme="dark"] .zone-bar { background: var(--dm-surface-2); }
+
+/* Multiplex des pronostiqueurs */
+[data-theme="dark"] .plr-hint { color: var(--dm-ink-muted); }
+[data-theme="dark"] .plr-controls select { background: var(--dm-surface-1); border-color: var(--dm-border); color: var(--dm-ink); }
+[data-theme="dark"] .plr-clock { background: var(--dm-surface-2); color: var(--dm-ink); }
+[data-theme="dark"] .plr-timeline { border-bottom-color: var(--dm-border); }
+[data-theme="dark"] .plr-match { background: var(--dm-surface-1); border-left-color: var(--dm-border); }
+[data-theme="dark"] .plr-match.live { background: rgba(231, 76, 60, 0.12); border-left-color: #e74c3c; }
+[data-theme="dark"] .plr-match.finished { border-left-color: #27ae60; }
+[data-theme="dark"] .plr-match-status { color: var(--dm-ink-muted); }
+[data-theme="dark"] .plr-score.upcoming { background: var(--dm-surface-2); color: var(--dm-ink-muted); }
+[data-theme="dark"] .plr-feed-item { background: var(--dm-surface-2); }
+[data-theme="dark"] .plr-feed-item.goal { background: rgba(241, 196, 15, 0.15); }
+[data-theme="dark"] .plr-feed-item.movers { background: rgba(52, 152, 219, 0.12); }
+[data-theme="dark"] .plr-feed-item.muted { color: var(--dm-ink-muted); }
+[data-theme="dark"] .plr-delta.up, [data-theme="dark"] .plr-pts-delta.up { color: #7dcea0; }
+[data-theme="dark"] .plr-delta.down, [data-theme="dark"] .plr-pts-delta.down { color: #f1948a; }
+[data-theme="dark"] .plr-table td { border-bottom-color: var(--dm-border); }
+[data-theme="dark"] .plr-table tr.plr-me td { background: rgba(52, 152, 219, 0.15); }
+[data-theme="dark"] .plr-status { color: #d69e2e; }
