@@ -3348,9 +3348,10 @@ function calculateTeamRadarData(teamId) {
     // --- Calculer Elo ---
     let eloRating = 1500;
     if (typeof EloSystem !== 'undefined') {
-        const teamsElo = EloSystem.initializeTeamsElo(allTeams);
+        const season = typeof currentSeason !== 'undefined' ? currentSeason : (typeof getCurrentSeason === 'function' ? getCurrentSeason() : '');
+        const seasonStartElo = typeof getSeasonStartingElo === 'function' ? getSeasonStartingElo(season) : {};
         const sortedMatches = [...allMatches].sort((a, b) => (a.matchDay || 0) - (b.matchDay || 0));
-        sortedMatches.forEach(m => EloSystem.processMatch(m, teamsElo));
+        const teamsElo = EloSystem.recalculateAllEloRatings(allTeams, sortedMatches, seasonStartElo);
         const eloTeam = teamsElo.find(t => t.id == teamId);
         if (eloTeam) eloRating = eloTeam.eloRating;
     }
@@ -3370,9 +3371,10 @@ function calculateTeamRadarData(teamId) {
     // Elo : normaliser entre min et max Elo de la saison
     let allEloRatings = [1500];
     if (typeof EloSystem !== 'undefined') {
-        const teamsElo = EloSystem.initializeTeamsElo(allTeams);
+        const season = typeof currentSeason !== 'undefined' ? currentSeason : (typeof getCurrentSeason === 'function' ? getCurrentSeason() : '');
+        const seasonStartElo = typeof getSeasonStartingElo === 'function' ? getSeasonStartingElo(season) : {};
         const sortedMatches = [...allMatches].sort((a, b) => (a.matchDay || 0) - (b.matchDay || 0));
-        sortedMatches.forEach(m => EloSystem.processMatch(m, teamsElo));
+        const teamsElo = EloSystem.recalculateAllEloRatings(allTeams, sortedMatches, seasonStartElo);
         allEloRatings = teamsElo.map(t => t.eloRating || 1500);
     }
     
@@ -3609,9 +3611,9 @@ function generateMatchdaySummary(matchDay) {
             .filter(m => m.matchDay < matchDay)
             .sort((a, b) => (a.matchDay || 0) - (b.matchDay || 0));
         
-        const teamsElo = EloSystem.initializeTeamsElo(teams);
-        matchesBefore.forEach(m => EloSystem.processMatch(m, teamsElo));
-        
+        const seasonStartElo = typeof getSeasonStartingElo === 'function' ? getSeasonStartingElo(season) : {};
+        const teamsElo = EloSystem.recalculateAllEloRatings(teams, matchesBefore, seasonStartElo);
+
         matchesThisDay.forEach(match => {
             const homeElo = teamsElo.find(t => t.id == match.homeTeamId);
             const awayElo = teamsElo.find(t => t.id == match.awayTeamId);
@@ -4092,9 +4094,9 @@ function initFranceMap() {
     // Elo
     let eloMap = {};
     if (typeof EloSystem !== 'undefined') {
-        const teamsElo = EloSystem.initializeTeamsElo(teams);
+        const seasonStartElo = typeof getSeasonStartingElo === 'function' ? getSeasonStartingElo(season) : {};
         const sorted = [...allMatches].sort((a, b) => (a.matchDay || 0) - (b.matchDay || 0));
-        sorted.forEach(m => EloSystem.processMatch(m, teamsElo));
+        const teamsElo = EloSystem.recalculateAllEloRatings(teams, sorted, seasonStartElo);
         teamsElo.forEach(t => { eloMap[t.id] = t.eloRating || 1500; });
     }
     
