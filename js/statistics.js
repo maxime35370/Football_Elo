@@ -3139,14 +3139,14 @@ function analyzeEloVsPoints() {
     
     // Calculer l'Elo directement ici (pas dépendre de rankings.js)
     if (typeof EloSystem === 'undefined') return [];
-    
+
     const sortedMatches = [...allMatches].sort((a, b) => (a.matchDay || 0) - (b.matchDay || 0));
-    
-    const localTeamsWithElo = EloSystem.initializeTeamsElo(teams);
-    sortedMatches.forEach(match => {
-        EloSystem.processMatch(match, localTeamsWithElo);
-    });
-    
+
+    // Repartir de l'Elo de fin de saison précédente (reporté), pas de 1500 fixe,
+    // comme le fait le reste de l'app (voir rankings.js / pronostics-controller.js).
+    const seasonStartElo = typeof getSeasonStartingElo === 'function' ? getSeasonStartingElo(season) : {};
+    const localTeamsWithElo = EloSystem.recalculateAllEloRatings(teams, sortedMatches, seasonStartElo);
+
     const eloRanking = EloSystem.generateEloRanking(localTeamsWithElo);
     
     if (eloRanking.length === 0) return [];
