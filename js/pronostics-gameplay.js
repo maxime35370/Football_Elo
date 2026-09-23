@@ -171,8 +171,8 @@ async function toggleJoker(matchDay, homeTeamId, awayTeamId) {
     }
     
     if (result.success) {
-        // Rafraîchir l'affichage
-        displayPredictionsForm();
+        // Rafraîchir l'affichage sans écraser les saisies en cours
+        displayPredictionsForm(true);
         updateJokerCounter();
     } else {
         alert(result.error);
