@@ -295,7 +295,7 @@ async function handleToggleSuperJoker(matchDay) {
     }
     
     if (result.success) {
-        displayPredictionsForm(); // Rafraîchir
+        displayPredictionsForm(true); // Rafraîchir sans écraser les saisies en cours
     } else {
         alert(result.error);
     }

@@ -254,7 +254,7 @@ function initMatchDaySelector() {
 // ORCHESTRATEUR : FORMULAIRE PRONOSTICS
 // ===============================
 
-async function displayPredictionsForm() {
+async function displayPredictionsForm(preserveUnsaved = false) {
     const container = document.getElementById('predictionsList');
     const statusEl = document.getElementById('predictionsStatus');
     const deadlineEl = document.getElementById('deadlineInfo');
@@ -263,7 +263,21 @@ async function displayPredictionsForm() {
         container.innerHTML = '<p style="text-align:center;color:#7f8c8d;">Sélectionne une journée</p>';
         return;
     }
-    
+
+    // ⚡ Conserver les scores en cours de saisie (pas encore sauvegardés) avant
+    // de rafraîchir le formulaire, sinon un toggle de joker/Super Joker efface
+    // tout ce que le joueur vient de taper.
+    const unsavedScores = {};
+    container.querySelectorAll('.prediction-match').forEach(matchEl => {
+        const home = matchEl.dataset.home;
+        const away = matchEl.dataset.away;
+        const homeScore = matchEl.querySelector('.home-score')?.value ?? '';
+        const awayScore = matchEl.querySelector('.away-score')?.value ?? '';
+        if (homeScore !== '' || awayScore !== '') {
+            unsavedScores[`${home}-${away}`] = { homeScore, awayScore };
+        }
+    });
+
     // --- MODEL : récupérer les données ---
     const lastPlayedMatchDay = Math.max(0, ...allMatches.map(m => m.matchDay || 0));
     const isPastMatchDay = selectedMatchDay <= lastPlayedMatchDay;
@@ -279,17 +293,31 @@ async function displayPredictionsForm() {
     
     const existingPredictions = await getPlayerPredictions(currentPlayer.id, currentSeason, selectedMatchDay);
     const predictionsMap = buildPredictionsMap(existingPredictions);
-    
-    // Charger les picks buteurs
-    if (existingPredictions?.predictions && typeof loadScorerPicksFromPredictions === 'function') {
-        loadScorerPicksFromPredictions(existingPredictions.predictions);
-    }
-    
-    // Charger le combiné sauvegardé
-    if (currentPlayer && typeof getPlayerCombine === 'function') {
-        const savedCombine = await getPlayerCombine(currentPlayer.id, currentSeason, selectedMatchDay);
-        if (typeof loadCombineFromSaved === 'function') {
-            loadCombineFromSaved(savedCombine, selectedMatchDay);
+
+    // Réinjecter les scores en cours de saisie (non sauvegardés) capturés plus haut
+    Object.keys(unsavedScores).forEach(key => {
+        const { homeScore, awayScore } = unsavedScores[key];
+        const existing = predictionsMap[key];
+        predictionsMap[key] = {
+            ...existing,
+            homeScore: homeScore !== '' ? homeScore : existing?.homeScore,
+            awayScore: awayScore !== '' ? awayScore : existing?.awayScore
+        };
+    });
+
+    // Charger les picks buteurs / combiné sauvegardés — seulement au premier
+    // affichage de la journée : un simple rafraîchissement (toggle joker,
+    // Super Joker...) ne doit pas écraser les choix pas encore sauvegardés.
+    if (!preserveUnsaved) {
+        if (existingPredictions?.predictions && typeof loadScorerPicksFromPredictions === 'function') {
+            loadScorerPicksFromPredictions(existingPredictions.predictions);
+        }
+
+        if (currentPlayer && typeof getPlayerCombine === 'function') {
+            const savedCombine = await getPlayerCombine(currentPlayer.id, currentSeason, selectedMatchDay);
+            if (typeof loadCombineFromSaved === 'function') {
+                loadCombineFromSaved(savedCombine, selectedMatchDay);
+            }
         }
     }
     
