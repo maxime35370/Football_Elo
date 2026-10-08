@@ -3258,11 +3258,11 @@
 [data-theme="dark"] .replay-threads-block,
 [data-theme="dark"] .replay-impacts-block { border-top-color: var(--dm-border); }
 
-[data-theme="dark"] .pmf-block h4 { color: var(--dm-ink); }
+[data-theme="dark"] .pmf-block h4,
+[data-theme="dark"] .pmf-subtitle { color: var(--dm-ink); }
 [data-theme="dark"] .pmf-grid { stroke: rgba(255, 255, 255, 0.07); }
 [data-theme="dark"] .pmf-zero { stroke: var(--dm-border); }
 [data-theme="dark"] .pmf-axis { fill: var(--dm-ink-muted); }
-[data-theme="dark"] .pmf-bar-label { fill: var(--dm-ink-muted); }
 [data-theme="dark"] .pmf-table .pmf-subhead th { color: var(--dm-ink-muted); }
 [data-theme="dark"] .pmf-venue { color: var(--dm-ink-muted); }
 [data-theme="dark"] .replay-threads-block h4,

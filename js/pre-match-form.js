@@ -140,78 +140,200 @@ function pmfOrdinal(pos) {
     return pos === 1 ? '1er' : `${pos}e`;
 }
 
-// Chart SVG en barres : une barre par journée, hauteur/sens = écart de
-// points avec l'adversaire du jour (au-dessus de 0 = on menait, en dessous =
-// on était mené). Le nom de l'adversaire et sa place sont en infobulle.
-function renderPmfGapChart(rows) {
-    const container = document.getElementById('pmfGapChart');
+function pmfXmlEscape(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// Pas de grille "rond" selon l'amplitude à couvrir (1, 2, 5, 10...)
+function pmfNiceStep(maxAbs) {
+    if (maxAbs > 40) return 10;
+    if (maxAbs > 20) return 5;
+    if (maxAbs > 10) return 2;
+    return 1;
+}
+
+// Axe X commun aux 3 graphiques : une position par journée jouée, espacées
+// également (ce n'est pas une frise temporelle réelle, juste la succession
+// des journées de l'équipe choisie)
+function pmfXScale(n, plotW, padL) {
+    return i => n <= 1 ? padL + plotW / 2 : padL + (i / (n - 1)) * plotW;
+}
+
+function pmfEmptyChart(container) {
+    container.innerHTML = '<div class="replay-feed-item muted">Aucun match joué par cette équipe sur la saison.</div>';
+}
+
+// Graphique 1 : votre place au classement vs celle de l'adversaire du jour,
+// journée après journée — la ligne orange montre si le calendrier se
+// corse ou se détend au fil de la saison.
+function renderPmfRankChart(rows, nPositions) {
+    const container = document.getElementById('pmfRankChart');
     if (!container) return;
+    if (rows.length === 0) { pmfEmptyChart(container); return; }
 
-    if (rows.length === 0) {
-        container.innerHTML = '<div class="replay-feed-item muted">Aucun match joué par cette équipe sur la saison.</div>';
-        return;
-    }
-
-    const maxAbs = Math.max(3, ...rows.map(r => Math.abs(r.gap)));
     const W = 680, H = 280;
-    const padL = 34, padR = 12, padT = 24, padB = 58;
+    const padL = 34, padR = 12, padT = 14, padB = 46;
     const plotW = W - padL - padR, plotH = H - padT - padB;
     const n = rows.length;
-    const bw = plotW / n;
-    const yOf = v => padT + plotH / 2 - (v / maxAbs) * (plotH / 2);
-    const zeroY = yOf(0);
-    const step = maxAbs > 12 ? 5 : maxAbs > 6 ? 2 : 1;
+    const xOf = pmfXScale(n, plotW, padL);
+    const yOf = pos => padT + ((pos - 1) / Math.max(nPositions - 1, 1)) * plotH;
+    const labelStep = nPositions > 12 ? 2 : 1;
     const labelEvery = n > 20 ? 2 : 1;
 
-    let svg = `<svg viewBox="0 0 ${W} ${H}" class="pmf-svg" role="img" aria-label="Écart de points avant chaque journée">`;
+    let svg = `<svg viewBox="0 0 ${W} ${H}" class="pmf-svg" role="img" aria-label="Place au classement, vous et l'adversaire du jour">`;
 
-    for (let v = -Math.floor(maxAbs / step) * step; v <= maxAbs; v += step) {
-        const y = yOf(v);
+    for (let p = 1; p <= nPositions; p++) {
+        const y = yOf(p);
         svg += `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}" class="pmf-grid"/>`;
-        svg += `<text x="${padL - 6}" y="${(y + 3).toFixed(1)}" text-anchor="end" class="pmf-axis">${v > 0 ? '+' + v : v}</text>`;
+        if (p === 1 || p === nPositions || p % labelStep === 0) {
+            svg += `<text x="${(padL - 6).toFixed(1)}" y="${(y + 3).toFixed(1)}" text-anchor="end" class="pmf-axis">${p}</text>`;
+        }
     }
-    svg += `<line x1="${padL}" y1="${zeroY.toFixed(1)}" x2="${W - padR}" y2="${zeroY.toFixed(1)}" class="pmf-zero"/>`;
+    rows.forEach((r, i) => {
+        if (i % labelEvery === 0) {
+            svg += `<text x="${xOf(i).toFixed(1)}" y="${(H - padB + 16).toFixed(1)}" text-anchor="middle" class="pmf-axis">J${r.day}</text>`;
+        }
+    });
+
+    const buildLine = key => rows.map((r, i) => `${i === 0 ? 'M' : 'L'}${xOf(i).toFixed(1)},${yOf(r[key]).toFixed(1)}`).join(' ');
+    svg += `<path d="${buildLine('posO')}" class="pmf-line pmf-line-opp"/>`;
+    svg += `<path d="${buildLine('posT')}" class="pmf-line pmf-line-you"/>`;
 
     rows.forEach((r, i) => {
-        const x = padL + i * bw;
-        const barW = Math.max(bw - 6, 4);
-        const barX = x + (bw - barW) / 2;
-        const barYRaw = yOf(r.gap);
-        const y0 = Math.min(zeroY, barYRaw);
-        const barH = Math.max(Math.abs(zeroY - barYRaw), 1.5);
-        const cls = r.gap > 0 ? 'ahead' : r.gap < 0 ? 'behind' : 'even';
+        const x = xOf(i);
         const oppName = r.opponent ? (r.opponent.shortName || r.opponent.name) : '?';
         const venue = r.isHome ? 'D' : 'E';
-        const noData = r.playedBeforeT === 0 && r.playedBeforeO === 0;
         const gapTxt = r.gap > 0 ? `+${r.gap}` : `${r.gap}`;
-        const tip = noData
-            ? `J${r.day} vs ${oppName} (${venue}) : aucun match joué avant cette journée`
-            : `J${r.day} vs ${oppName} (${venue}) — adversaire ${pmfOrdinal(r.posO)}, ${r.ptsO} pt${r.ptsO > 1 ? 's' : ''} — vous ${pmfOrdinal(r.posT)}, ${r.ptsT} pt${r.ptsT > 1 ? 's' : ''} — écart ${gapTxt} pt${Math.abs(r.gap) > 1 ? 's' : ''}`;
-
-        svg += `<rect x="${barX.toFixed(1)}" y="${y0.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH.toFixed(1)}" class="pmf-bar ${cls}"><title>${tip.replace(/"/g, '&quot;')}</title></rect>`;
-
-        // Le nom de l'adversaire se colle au bout de la barre, mais sans
-        // jamais chevaucher le cadre du graphique ni les libellés « Jx »
-        const labelY = r.gap >= 0
-            ? Math.max(y0 - 4, padT + 8)
-            : Math.min(y0 + barH + 11, H - padB - 6);
-        svg += `<text x="${(barX + barW / 2).toFixed(1)}" y="${labelY.toFixed(1)}" text-anchor="middle" class="pmf-bar-label">${pmfXmlEscape(oppName)}</text>`;
-
-        if (i % labelEvery === 0) {
-            svg += `<text x="${(barX + barW / 2).toFixed(1)}" y="${H - padB + 24}" text-anchor="middle" class="pmf-axis">J${r.day}</text>`;
-        }
+        const tipOpp = `J${r.day} — adversaire : ${oppName} (${venue}), ${pmfOrdinal(r.posO)}, ${r.ptsO} pt${r.ptsO > 1 ? 's' : ''}`;
+        const tipYou = `J${r.day} — vous : ${pmfOrdinal(r.posT)}, ${r.ptsT} pt${r.ptsT > 1 ? 's' : ''} (écart ${gapTxt} pt${Math.abs(r.gap) > 1 ? 's' : ''} vs ${oppName})`;
+        svg += `<circle cx="${x.toFixed(1)}" cy="${yOf(r.posO).toFixed(1)}" r="4" class="pmf-dot pmf-dot-opp"><title>${pmfXmlEscape(tipOpp)}</title></circle>`;
+        svg += `<circle cx="${x.toFixed(1)}" cy="${yOf(r.posT).toFixed(1)}" r="4" class="pmf-dot pmf-dot-you"><title>${pmfXmlEscape(tipYou)}</title></circle>`;
     });
 
     svg += '</svg>';
     container.innerHTML = svg + `
         <div class="rpc-legend pmf-legend">
-            <span><span class="pmf-key ahead"></span> Vous étiez devant au classement</span>
-            <span><span class="pmf-key behind"></span> Vous étiez derrière</span>
+            <span><span class="pmf-key pmf-key-you"></span> Vous</span>
+            <span><span class="pmf-key pmf-key-opp"></span> Adversaire du jour</span>
         </div>`;
 }
 
-function pmfXmlEscape(str) {
-    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+// Graphique 2 : buts marqués (lignes pleines) et encaissés (pointillés),
+// total saison avant chaque match, une couleur par équipe (vous / adversaire
+// du jour, qui change chaque journée).
+function renderPmfGoalsChart(rows) {
+    const container = document.getElementById('pmfGoalsChart');
+    if (!container) return;
+    if (rows.length === 0) { pmfEmptyChart(container); return; }
+
+    const maxVal = Math.max(1, ...rows.flatMap(r => [r.gfT, r.gaT, r.gfO, r.gaO]));
+    const W = 680, H = 280;
+    const padL = 28, padR = 12, padT = 14, padB = 46;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+    const n = rows.length;
+    const xOf = pmfXScale(n, plotW, padL);
+    const yOf = v => padT + plotH - (v / maxVal) * plotH;
+    const step = pmfNiceStep(maxVal);
+    const labelEvery = n > 20 ? 2 : 1;
+
+    let svg = `<svg viewBox="0 0 ${W} ${H}" class="pmf-svg" role="img" aria-label="Buts marqués et encaissés, saison, avant chaque match">`;
+
+    for (let v = 0; v <= maxVal; v += step) {
+        const y = yOf(v);
+        svg += `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}" class="pmf-grid"/>`;
+        svg += `<text x="${(padL - 6).toFixed(1)}" y="${(y + 3).toFixed(1)}" text-anchor="end" class="pmf-axis">${v}</text>`;
+    }
+    rows.forEach((r, i) => {
+        if (i % labelEvery === 0) {
+            svg += `<text x="${xOf(i).toFixed(1)}" y="${(H - padB + 16).toFixed(1)}" text-anchor="middle" class="pmf-axis">J${r.day}</text>`;
+        }
+    });
+
+    const buildLine = key => rows.map((r, i) => `${i === 0 ? 'M' : 'L'}${xOf(i).toFixed(1)},${yOf(r[key]).toFixed(1)}`).join(' ');
+    svg += `<path d="${buildLine('gaO')}" class="pmf-line pmf-line-opp pmf-dash"/>`;
+    svg += `<path d="${buildLine('gaT')}" class="pmf-line pmf-line-you pmf-dash"/>`;
+    svg += `<path d="${buildLine('gfO')}" class="pmf-line pmf-line-opp"/>`;
+    svg += `<path d="${buildLine('gfT')}" class="pmf-line pmf-line-you"/>`;
+
+    rows.forEach((r, i) => {
+        const x = xOf(i);
+        const oppName = r.opponent ? (r.opponent.shortName || r.opponent.name) : '?';
+        const tipGf = `J${r.day} vs ${oppName} — marqués (saison) : vous ${r.gfT}, adv. ${r.gfO}`;
+        const tipGa = `J${r.day} vs ${oppName} — encaissés (saison) : vous ${r.gaT}, adv. ${r.gaO}`;
+        svg += `<circle cx="${x.toFixed(1)}" cy="${yOf(r.gfT).toFixed(1)}" r="3" class="pmf-dot pmf-dot-you"><title>${pmfXmlEscape(tipGf)}</title></circle>`;
+        svg += `<circle cx="${x.toFixed(1)}" cy="${yOf(r.gfO).toFixed(1)}" r="3" class="pmf-dot pmf-dot-opp"><title>${pmfXmlEscape(tipGf)}</title></circle>`;
+        svg += `<circle cx="${x.toFixed(1)}" cy="${yOf(r.gaT).toFixed(1)}" r="3" class="pmf-dot pmf-dot-you"><title>${pmfXmlEscape(tipGa)}</title></circle>`;
+        svg += `<circle cx="${x.toFixed(1)}" cy="${yOf(r.gaO).toFixed(1)}" r="3" class="pmf-dot pmf-dot-opp"><title>${pmfXmlEscape(tipGa)}</title></circle>`;
+    });
+
+    svg += '</svg>';
+    container.innerHTML = svg + `
+        <div class="rpc-legend pmf-legend">
+            <span><span class="pmf-key pmf-key-you"></span> Vous — marqués</span>
+            <span><span class="pmf-key pmf-key-you pmf-key-dash"></span> Vous — encaissés</span>
+            <span><span class="pmf-key pmf-key-opp"></span> Adversaire — marqués</span>
+            <span><span class="pmf-key pmf-key-opp pmf-key-dash"></span> Adversaire — encaissés</span>
+        </div>`;
+}
+
+// Graphique 3 : dynamique récente — écart (vous − adversaire) sur les buts
+// marqués et encaissés de leurs 5 derniers matchs respectifs. Au-dessus de 0
+// = vous étiez en meilleure forme que l'adversaire sur cette période.
+function renderPmfFormChart(rows) {
+    const container = document.getElementById('pmfFormChart');
+    if (!container) return;
+    if (rows.length === 0) { pmfEmptyChart(container); return; }
+
+    const diffs = rows.map(r => ({
+        day: r.day, opponent: r.opponent,
+        gf: r.last5T.gf - r.last5O.gf, ga: r.last5T.ga - r.last5O.ga,
+        countT: r.last5T.count, countO: r.last5O.count
+    }));
+    const maxAbs = Math.max(3, ...diffs.flatMap(d => [Math.abs(d.gf), Math.abs(d.ga)]));
+    const W = 680, H = 280;
+    const padL = 28, padR = 12, padT = 14, padB = 46;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+    const n = diffs.length;
+    const xOf = pmfXScale(n, plotW, padL);
+    const yOf = v => padT + plotH / 2 - (v / maxAbs) * (plotH / 2);
+    const zeroY = yOf(0);
+    const step = pmfNiceStep(maxAbs);
+    const labelEvery = n > 20 ? 2 : 1;
+
+    let svg = `<svg viewBox="0 0 ${W} ${H}" class="pmf-svg" role="img" aria-label="Dynamique récente : écart de buts sur 5 matchs, vous contre l'adversaire du jour">`;
+
+    for (let v = -Math.floor(maxAbs / step) * step; v <= maxAbs; v += step) {
+        const y = yOf(v);
+        svg += `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}" class="pmf-grid"/>`;
+        svg += `<text x="${(padL - 6).toFixed(1)}" y="${(y + 3).toFixed(1)}" text-anchor="end" class="pmf-axis">${v > 0 ? '+' + v : v}</text>`;
+    }
+    svg += `<line x1="${padL}" y1="${zeroY.toFixed(1)}" x2="${W - padR}" y2="${zeroY.toFixed(1)}" class="pmf-zero"/>`;
+    diffs.forEach((d, i) => {
+        if (i % labelEvery === 0) {
+            svg += `<text x="${xOf(i).toFixed(1)}" y="${(H - padB + 16).toFixed(1)}" text-anchor="middle" class="pmf-axis">J${d.day}</text>`;
+        }
+    });
+
+    const buildLine = key => diffs.map((d, i) => `${i === 0 ? 'M' : 'L'}${xOf(i).toFixed(1)},${yOf(d[key]).toFixed(1)}`).join(' ');
+    svg += `<path d="${buildLine('ga')}" class="pmf-line pmf-line-ga pmf-dash"/>`;
+    svg += `<path d="${buildLine('gf')}" class="pmf-line pmf-line-gf"/>`;
+
+    diffs.forEach((d, i) => {
+        const x = xOf(i);
+        const oppName = d.opponent ? (d.opponent.shortName || d.opponent.name) : '?';
+        const period = `vous sur ${d.countT} match${d.countT > 1 ? 's' : ''}, adv. sur ${d.countO} match${d.countO > 1 ? 's' : ''}`;
+        const tipGf = `J${d.day} vs ${oppName} — écart buts marqués (5 derniers) : ${d.gf > 0 ? '+' : ''}${d.gf} (${period})`;
+        const tipGa = `J${d.day} vs ${oppName} — écart buts encaissés (5 derniers) : ${d.ga > 0 ? '+' : ''}${d.ga} (${period})`;
+        svg += `<circle cx="${x.toFixed(1)}" cy="${yOf(d.gf).toFixed(1)}" r="3.5" class="pmf-dot pmf-dot-gf"><title>${pmfXmlEscape(tipGf)}</title></circle>`;
+        svg += `<circle cx="${x.toFixed(1)}" cy="${yOf(d.ga).toFixed(1)}" r="3.5" class="pmf-dot pmf-dot-ga"><title>${pmfXmlEscape(tipGa)}</title></circle>`;
+    });
+
+    svg += '</svg>';
+    container.innerHTML = svg + `
+        <div class="rpc-legend pmf-legend">
+            <span><span class="pmf-key pmf-key-gf"></span> Écart buts marqués (vous − adv., 5 derniers)</span>
+            <span><span class="pmf-key pmf-key-ga pmf-key-dash"></span> Écart buts encaissés (vous − adv., 5 derniers)</span>
+        </div>`;
 }
 
 // Plus haut = mieux (buts marqués)
@@ -267,11 +389,16 @@ function renderPmfTable(rows) {
 function renderPreMatchForm() {
     const select = document.getElementById('pmfTeam');
     if (!select || !select.value) {
-        renderPmfGapChart([]);
+        renderPmfRankChart([], 0);
+        renderPmfGoalsChart([]);
+        renderPmfFormChart([]);
         renderPmfTable([]);
         return;
     }
     const rows = pmfComputeRows(select.value);
-    renderPmfGapChart(rows);
+    const nPositions = pmfTeams().length;
+    renderPmfRankChart(rows, nPositions);
+    renderPmfGoalsChart(rows);
+    renderPmfFormChart(rows);
     renderPmfTable(rows);
 }

@@ -1227,7 +1227,14 @@ tr.relegation .pos-badge {
     font-size: 1rem;
 }
 
-.pmf-gap-chart .pmf-svg {
+.pmf-subtitle {
+    margin: 1.1rem 0 0.4rem;
+    color: #2c3e50;
+    font-size: 0.88rem;
+    font-weight: 700;
+}
+
+.pmf-chart .pmf-svg {
     width: 100%;
     max-width: 720px;
     height: auto;
@@ -1238,26 +1245,36 @@ tr.relegation .pos-badge {
 .pmf-grid { stroke: #eef1f4; stroke-width: 1; }
 .pmf-zero { stroke: #cbd5e0; stroke-width: 1.5; }
 .pmf-axis { font-size: 9px; fill: #99a3ad; }
-.pmf-bar-label { font-size: 9px; fill: #718096; }
 
-.pmf-bar { cursor: help; }
-.pmf-bar.ahead { fill: #27ae60; }
-.pmf-bar.behind { fill: #e74c3c; }
-.pmf-bar.even { fill: #95a5a6; }
+.pmf-line { fill: none; stroke-width: 2.5; stroke-linejoin: round; }
+.pmf-line-you { stroke: #3498db; }
+.pmf-line-opp { stroke: #e67e22; }
+.pmf-line-gf { stroke: #27ae60; }
+.pmf-line-ga { stroke: #9b59b6; }
+.pmf-dash { stroke-dasharray: 6 4; }
+
+.pmf-dot { cursor: help; }
+.pmf-dot-you { fill: #3498db; }
+.pmf-dot-opp { fill: #e67e22; }
+.pmf-dot-gf { fill: #27ae60; }
+.pmf-dot-ga { fill: #9b59b6; }
 
 .pmf-legend { margin-top: 0; }
 
 .pmf-key {
     display: inline-block;
-    width: 12px;
-    height: 12px;
-    border-radius: 3px;
+    width: 22px;
+    height: 0;
+    border-top: 3px solid;
     vertical-align: middle;
     margin-right: 0.3rem;
 }
 
-.pmf-key.ahead { background: #27ae60; }
-.pmf-key.behind { background: #e74c3c; }
+.pmf-key-you { border-color: #3498db; }
+.pmf-key-opp { border-color: #e67e22; }
+.pmf-key-gf { border-color: #27ae60; }
+.pmf-key-ga { border-color: #9b59b6; }
+.pmf-key-dash { border-top-style: dashed; }
 
 .pmf-table .pmf-subhead th {
     font-size: 0.72rem;

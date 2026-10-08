@@ -241,12 +241,24 @@
                         </div>
                         <p class="replay-occupancy-hint">
                             Pour l'équipe choisie, l'état des lieux juste avant le coup d'envoi de chaque
-                            journée jouée : l'écart de points avec l'adversaire du jour et sa place au
-                            classement, puis la comparaison des buts marqués et encaissés des deux équipes
-                            (total saison et 5 derniers matchs). Tout est calculé <strong>avant</strong> ce
-                            match — son résultat n'entre jamais dans les chiffres affichés.
+                            journée jouée. Tout est calculé <strong>avant</strong> ce match — son résultat
+                            n'entre jamais dans les chiffres affichés.
                         </p>
-                        <div id="pmfGapChart" class="pmf-gap-chart"></div>
+
+                        <h5 class="pmf-subtitle">📈 Place au classement : vous contre l'adversaire du jour</h5>
+                        <div id="pmfRankChart" class="pmf-chart"></div>
+
+                        <h5 class="pmf-subtitle">⚽ Buts marqués / encaissés (saison, avant chaque match)</h5>
+                        <div id="pmfGoalsChart" class="pmf-chart"></div>
+
+                        <h5 class="pmf-subtitle">🔥 Dynamique récente (écart sur les 5 derniers matchs)</h5>
+                        <p class="replay-occupancy-hint">
+                            Écart entre vos buts et ceux de l'adversaire sur leurs 5 derniers matchs
+                            respectifs avant cette journée (moins de 5 en tout début de saison) : au-dessus
+                            de 0, vous aviez l'avantage sur cette période.
+                        </p>
+                        <div id="pmfFormChart" class="pmf-chart"></div>
+
                         <div class="table-wrapper">
                             <table id="pmfTable" class="ranking-table pmf-table">
                                 <thead>
