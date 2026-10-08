@@ -1252,12 +1252,24 @@ tr.relegation .pos-badge {
 .pmf-line-gf { stroke: #27ae60; }
 .pmf-line-ga { stroke: #9b59b6; }
 .pmf-dash { stroke-dasharray: 6 4; }
+/* Segment reliant la dernière journée jouée au prochain match programmé :
+   même couleur, plus pâle et avec son propre pointillé pour bien le
+   distinguer d'un simple écart "encaissés" */
+.pmf-preview { stroke-dasharray: 3 3; opacity: 0.55; }
 
 .pmf-dot { cursor: help; }
 .pmf-dot-you { fill: #3498db; }
 .pmf-dot-opp { fill: #e67e22; }
 .pmf-dot-gf { fill: #27ae60; }
 .pmf-dot-ga { fill: #9b59b6; }
+
+/* Prochain match : pastille creuse plutôt que pleine (c'est une projection,
+   pas un fait acquis) */
+.pmf-dot-preview { stroke-width: 2; fill: #ffffff; }
+.pmf-dot-you.pmf-dot-preview { stroke: #3498db; }
+.pmf-dot-opp.pmf-dot-preview { stroke: #e67e22; }
+.pmf-dot-gf.pmf-dot-preview { stroke: #27ae60; }
+.pmf-dot-ga.pmf-dot-preview { stroke: #9b59b6; }
 
 .pmf-legend { margin-top: 0; }
 
@@ -1285,3 +1297,73 @@ tr.relegation .pos-badge {
 }
 
 .pmf-venue { color: #999; font-weight: 400; font-size: 0.85em; }
+
+/* Projection du prochain match, dans le tableau */
+.pmf-row-preview td { font-style: italic; opacity: 0.85; }
+
+.pmf-preview-badge {
+    display: inline-block;
+    font-style: normal;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #2980b9;
+    background: rgba(52, 152, 219, 0.15);
+    border-radius: 8px;
+    padding: 0.05rem 0.4rem;
+    margin-left: 0.3rem;
+    vertical-align: middle;
+}
+
+/* Graphique 1 + panneau "plus forte / équivalent / plus faible" côte à côte */
+.pmf-rank-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    align-items: flex-start;
+}
+
+.pmf-rank-wrap .pmf-chart {
+    flex: 2 1 420px;
+    min-width: 280px;
+    margin-bottom: 0;
+}
+
+.pmf-strength {
+    flex: 1 1 200px;
+    min-width: 190px;
+    max-width: 260px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.pmf-strength-item {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.6rem 0.8rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #95a5a6;
+}
+
+.pmf-strength-value {
+    font-size: 1.4rem;
+    font-weight: 800;
+    min-width: 1.7rem;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.pmf-strength-label {
+    font-size: 0.76rem;
+    color: #666;
+    line-height: 1.3;
+}
+
+.pmf-strength-item.stronger { border-left-color: #27ae60; }
+.pmf-strength-item.stronger .pmf-strength-value { color: #27ae60; }
+.pmf-strength-item.equal { border-left-color: #f1c40f; }
+.pmf-strength-item.equal .pmf-strength-value { color: #d4ac0d; }
+.pmf-strength-item.weaker { border-left-color: #e74c3c; }
+.pmf-strength-item.weaker .pmf-strength-value { color: #e74c3c; }

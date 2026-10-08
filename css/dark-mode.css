@@ -3265,6 +3265,10 @@
 [data-theme="dark"] .pmf-axis { fill: var(--dm-ink-muted); }
 [data-theme="dark"] .pmf-table .pmf-subhead th { color: var(--dm-ink-muted); }
 [data-theme="dark"] .pmf-venue { color: var(--dm-ink-muted); }
+[data-theme="dark"] .pmf-dot-preview { fill: var(--dm-surface-1); }
+[data-theme="dark"] .pmf-preview-badge { background: rgba(52, 152, 219, 0.22); color: #7ec4f2; }
+[data-theme="dark"] .pmf-strength-item { background: var(--dm-surface-2); }
+[data-theme="dark"] .pmf-strength-label { color: var(--dm-ink-muted); }
 [data-theme="dark"] .replay-threads-block h4,
 [data-theme="dark"] .replay-impacts-block h4 { color: var(--dm-ink); }
 [data-theme="dark"] .thread-label { color: var(--dm-ink-muted); }
