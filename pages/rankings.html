@@ -233,6 +233,57 @@
                         <div id="replayPosChart" class="replay-pos-chart"></div>
                     </div>
 
+                    <div class="replay-pos-block pmf-block" id="pmfBlock">
+                        <h4>🧭 Avant chaque match : écart de points & forme</h4>
+                        <div class="replay-occ-controls">
+                            <label for="pmfTeam">Équipe :</label>
+                            <select id="pmfTeam"></select>
+                        </div>
+                        <p class="replay-occupancy-hint">
+                            Pour l'équipe choisie, l'état des lieux juste avant le coup d'envoi de chaque
+                            journée jouée. Tout est calculé <strong>avant</strong> ce match — son résultat
+                            n'entre jamais dans les chiffres affichés.
+                        </p>
+
+                        <h5 class="pmf-subtitle">📈 Place au classement : vous contre l'adversaire du jour</h5>
+                        <div id="pmfRankChart" class="pmf-chart"></div>
+
+                        <h5 class="pmf-subtitle">⚽ Buts marqués / encaissés (saison, avant chaque match)</h5>
+                        <div id="pmfGoalsChart" class="pmf-chart"></div>
+
+                        <h5 class="pmf-subtitle">🔥 Dynamique récente (écart sur les 5 derniers matchs)</h5>
+                        <p class="replay-occupancy-hint">
+                            Écart entre vos buts et ceux de l'adversaire sur leurs 5 derniers matchs
+                            respectifs avant cette journée (moins de 5 en tout début de saison) : au-dessus
+                            de 0, vous aviez l'avantage sur cette période.
+                        </p>
+                        <div id="pmfFormChart" class="pmf-chart"></div>
+
+                        <div class="table-wrapper">
+                            <table id="pmfTable" class="ranking-table pmf-table">
+                                <thead>
+                                    <tr>
+                                        <th rowspan="2">J</th>
+                                        <th rowspan="2">Adversaire</th>
+                                        <th rowspan="2">Place adv.</th>
+                                        <th rowspan="2">Écart pts</th>
+                                        <th colspan="2">Buts marqués (saison)</th>
+                                        <th colspan="2">Buts encaissés (saison)</th>
+                                        <th colspan="2">Buts marqués (5 derniers)</th>
+                                        <th colspan="2">Buts encaissés (5 derniers)</th>
+                                    </tr>
+                                    <tr class="pmf-subhead">
+                                        <th>Nous</th><th>Adv.</th>
+                                        <th>Nous</th><th>Adv.</th>
+                                        <th>Nous</th><th>Adv.</th>
+                                        <th>Nous</th><th>Adv.</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+
                     <div id="replayNote" class="replay-note"></div>
                 </div>
 
@@ -412,6 +463,7 @@
         <script src="../js/elo-system.js"></script>
         <script src="../js/rankings.js"></script>
         <script src="../js/matchday-replay.js"></script>
+        <script src="../js/pre-match-form.js"></script>
         <script src="../js/head-to-head.js"></script>
     <script>
     function toggleMenu() {
