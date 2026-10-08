@@ -233,6 +233,45 @@
                         <div id="replayPosChart" class="replay-pos-chart"></div>
                     </div>
 
+                    <div class="replay-pos-block pmf-block" id="pmfBlock">
+                        <h4>🧭 Avant chaque match : écart de points & forme</h4>
+                        <div class="replay-occ-controls">
+                            <label for="pmfTeam">Équipe :</label>
+                            <select id="pmfTeam"></select>
+                        </div>
+                        <p class="replay-occupancy-hint">
+                            Pour l'équipe choisie, l'état des lieux juste avant le coup d'envoi de chaque
+                            journée jouée : l'écart de points avec l'adversaire du jour et sa place au
+                            classement, puis la comparaison des buts marqués et encaissés des deux équipes
+                            (total saison et 5 derniers matchs). Tout est calculé <strong>avant</strong> ce
+                            match — son résultat n'entre jamais dans les chiffres affichés.
+                        </p>
+                        <div id="pmfGapChart" class="pmf-gap-chart"></div>
+                        <div class="table-wrapper">
+                            <table id="pmfTable" class="ranking-table pmf-table">
+                                <thead>
+                                    <tr>
+                                        <th rowspan="2">J</th>
+                                        <th rowspan="2">Adversaire</th>
+                                        <th rowspan="2">Place adv.</th>
+                                        <th rowspan="2">Écart pts</th>
+                                        <th colspan="2">Buts marqués (saison)</th>
+                                        <th colspan="2">Buts encaissés (saison)</th>
+                                        <th colspan="2">Buts marqués (5 derniers)</th>
+                                        <th colspan="2">Buts encaissés (5 derniers)</th>
+                                    </tr>
+                                    <tr class="pmf-subhead">
+                                        <th>Nous</th><th>Adv.</th>
+                                        <th>Nous</th><th>Adv.</th>
+                                        <th>Nous</th><th>Adv.</th>
+                                        <th>Nous</th><th>Adv.</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+
                     <div id="replayNote" class="replay-note"></div>
                 </div>
 
@@ -412,6 +451,7 @@
         <script src="../js/elo-system.js"></script>
         <script src="../js/rankings.js"></script>
         <script src="../js/matchday-replay.js"></script>
+        <script src="../js/pre-match-form.js"></script>
         <script src="../js/head-to-head.js"></script>
     <script>
     function toggleMenu() {

@@ -1219,3 +1219,52 @@ tr.relegation .pos-badge {
 #replayOccupancy .occ-zones { text-align: left; }
 
 .rpc-vs { font-weight: 700; color: #888; font-size: 0.8rem; }
+
+/* Avant chaque match : écart de points & forme */
+.pmf-block h4 {
+    margin: 0 0 0.6rem;
+    color: #2c3e50;
+    font-size: 1rem;
+}
+
+.pmf-gap-chart .pmf-svg {
+    width: 100%;
+    max-width: 720px;
+    height: auto;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.pmf-grid { stroke: #eef1f4; stroke-width: 1; }
+.pmf-zero { stroke: #cbd5e0; stroke-width: 1.5; }
+.pmf-axis { font-size: 9px; fill: #99a3ad; }
+.pmf-bar-label { font-size: 9px; fill: #718096; }
+
+.pmf-bar { cursor: help; }
+.pmf-bar.ahead { fill: #27ae60; }
+.pmf-bar.behind { fill: #e74c3c; }
+.pmf-bar.even { fill: #95a5a6; }
+
+.pmf-legend { margin-top: 0; }
+
+.pmf-key {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    vertical-align: middle;
+    margin-right: 0.3rem;
+}
+
+.pmf-key.ahead { background: #27ae60; }
+.pmf-key.behind { background: #e74c3c; }
+
+.pmf-table .pmf-subhead th {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #888;
+    padding-top: 0.2rem;
+    padding-bottom: 0.4rem;
+}
+
+.pmf-venue { color: #999; font-weight: 400; font-size: 0.85em; }
