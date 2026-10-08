@@ -136,6 +136,64 @@ function pmfComputeRows(teamId) {
     });
 }
 
+// Le prochain match NON joué de l'équipe (calendrier généré dans l'onglet
+// Calendrier), le plus proche en numéro de journée. null si rien n'est
+// programmé après son dernier match joué.
+function pmfNextMatch(teamId) {
+    const season = pmfSeason();
+    const future = (typeof loadFutureMatches === 'function') ? loadFutureMatches(season) : [];
+    if (future.length === 0) return null;
+
+    // Une affiche du calendrier reste en base même une fois son match joué
+    // (storage.js) : on écarte celles dont le résultat existe déjà
+    const playedKeys = new Set(
+        getStoredMatches()
+            .filter(m => m.season === season && m.finalScore)
+            .map(m => `${m.homeTeamId}-${m.awayTeamId}`)
+    );
+
+    const candidates = future
+        .filter(m => (!m.season || m.season === season) &&
+            !playedKeys.has(`${m.homeTeamId}-${m.awayTeamId}`) &&
+            (String(m.homeTeamId) === String(teamId) || String(m.awayTeamId) === String(teamId)))
+        .sort((a, b) => (a.matchDay || 0) - (b.matchDay || 0));
+
+    return candidates[0] || null;
+}
+
+// Projection pour le prochain match programmé : mêmes calculs que les
+// journées déjà jouées, mais avec TOUS les matchs joués à ce jour (le
+// classement/les buts ne bougeront plus avant son coup d'envoi)
+function pmfComputePreviewRow(teamId) {
+    const nextMatch = pmfNextMatch(teamId);
+    if (!nextMatch) return null;
+
+    const season = pmfSeason();
+    const teams = pmfTeams();
+    const seasonMatches = getStoredMatches().filter(m => m.season === season && m.finalScore);
+    const isHome = String(nextMatch.homeTeamId) === String(teamId);
+    const oppId = isHome ? nextMatch.awayTeamId : nextMatch.homeTeamId;
+
+    const standings = pmfStandingsBefore(seasonMatches, Infinity, teams);
+    const rowT = standings.find(r => String(r.id) === String(teamId));
+    const rowO = standings.find(r => String(r.id) === String(oppId));
+    if (!rowT || !rowO) return null;
+    const posT = standings.indexOf(rowT) + 1;
+    const posO = standings.indexOf(rowO) + 1;
+
+    return {
+        day: nextMatch.matchDay || 0, opponent: getTeamById(oppId), isHome,
+        posT, posO,
+        ptsT: rowT.points, ptsO: rowO.points, gap: rowT.points - rowO.points,
+        playedBeforeT: rowT.played, playedBeforeO: rowO.played,
+        gfT: rowT.goalsFor, gaT: rowT.goalsAgainst,
+        gfO: rowO.goalsFor, gaO: rowO.goalsAgainst,
+        last5T: pmfLast5(teamId, seasonMatches, Infinity),
+        last5O: pmfLast5(oppId, seasonMatches, Infinity),
+        isPreview: true
+    };
+}
+
 function pmfOrdinal(pos) {
     return pos === 1 ? '1er' : `${pos}e`;
 }
@@ -161,6 +219,33 @@ function pmfXScale(n, plotW, padL) {
 
 function pmfEmptyChart(container) {
     container.innerHTML = '<div class="replay-feed-item muted">Aucun match joué par cette équipe sur la saison.</div>';
+}
+
+// Découpe une série en deux tracés : la ligne pleine sur les journées déjà
+// jouées, et un segment pointillé reliant la dernière journée jouée au
+// prochain match (projection) quand il y en a un.
+function pmfSplitPaths(rows, xOf, valueOf) {
+    const n = rows.length;
+    const hasPreview = n > 0 && rows[n - 1].isPreview;
+    const histCount = hasPreview ? n - 1 : n;
+
+    let main = '';
+    for (let i = 0; i < histCount; i++) {
+        main += `${i === 0 ? 'M' : 'L'}${xOf(i).toFixed(1)},${valueOf(rows[i]).toFixed(1)} `;
+    }
+
+    let preview = '';
+    if (hasPreview && histCount > 0) {
+        preview = `M${xOf(histCount - 1).toFixed(1)},${valueOf(rows[histCount - 1]).toFixed(1)} `
+            + `L${xOf(histCount).toFixed(1)},${valueOf(rows[histCount]).toFixed(1)}`;
+    }
+
+    return { main: main.trim(), preview };
+}
+
+function pmfDot(x, y, cls, isPreview, tip) {
+    const previewCls = isPreview ? ' pmf-dot-preview' : '';
+    return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${isPreview ? 4.5 : 3.5}" class="pmf-dot ${cls}${previewCls}"><title>${pmfXmlEscape(tip)}</title></circle>`;
 }
 
 // Graphique 1 : votre place au classement vs celle de l'adversaire du jour,
@@ -195,19 +280,23 @@ function renderPmfRankChart(rows, nPositions) {
         }
     });
 
-    const buildLine = key => rows.map((r, i) => `${i === 0 ? 'M' : 'L'}${xOf(i).toFixed(1)},${yOf(r[key]).toFixed(1)}`).join(' ');
-    svg += `<path d="${buildLine('posO')}" class="pmf-line pmf-line-opp"/>`;
-    svg += `<path d="${buildLine('posT')}" class="pmf-line pmf-line-you"/>`;
+    const pathsOpp = pmfSplitPaths(rows, xOf, r => yOf(r.posO));
+    const pathsYou = pmfSplitPaths(rows, xOf, r => yOf(r.posT));
+    svg += `<path d="${pathsOpp.main}" class="pmf-line pmf-line-opp"/>`;
+    if (pathsOpp.preview) svg += `<path d="${pathsOpp.preview}" class="pmf-line pmf-line-opp pmf-preview"/>`;
+    svg += `<path d="${pathsYou.main}" class="pmf-line pmf-line-you"/>`;
+    if (pathsYou.preview) svg += `<path d="${pathsYou.preview}" class="pmf-line pmf-line-you pmf-preview"/>`;
 
     rows.forEach((r, i) => {
         const x = xOf(i);
         const oppName = r.opponent ? (r.opponent.shortName || r.opponent.name) : '?';
         const venue = r.isHome ? 'D' : 'E';
         const gapTxt = r.gap > 0 ? `+${r.gap}` : `${r.gap}`;
-        const tipOpp = `J${r.day} — adversaire : ${oppName} (${venue}), ${pmfOrdinal(r.posO)}, ${r.ptsO} pt${r.ptsO > 1 ? 's' : ''}`;
-        const tipYou = `J${r.day} — vous : ${pmfOrdinal(r.posT)}, ${r.ptsT} pt${r.ptsT > 1 ? 's' : ''} (écart ${gapTxt} pt${Math.abs(r.gap) > 1 ? 's' : ''} vs ${oppName})`;
-        svg += `<circle cx="${x.toFixed(1)}" cy="${yOf(r.posO).toFixed(1)}" r="4" class="pmf-dot pmf-dot-opp"><title>${pmfXmlEscape(tipOpp)}</title></circle>`;
-        svg += `<circle cx="${x.toFixed(1)}" cy="${yOf(r.posT).toFixed(1)}" r="4" class="pmf-dot pmf-dot-you"><title>${pmfXmlEscape(tipYou)}</title></circle>`;
+        const when = r.isPreview ? ` — prochain match (projection à date)` : '';
+        const tipOpp = `J${r.day} — adversaire : ${oppName} (${venue}), ${pmfOrdinal(r.posO)}, ${r.ptsO} pt${r.ptsO > 1 ? 's' : ''}${when}`;
+        const tipYou = `J${r.day} — vous : ${pmfOrdinal(r.posT)}, ${r.ptsT} pt${r.ptsT > 1 ? 's' : ''} (écart ${gapTxt} pt${Math.abs(r.gap) > 1 ? 's' : ''} vs ${oppName})${when}`;
+        svg += pmfDot(x, yOf(r.posO), 'pmf-dot-opp', r.isPreview, tipOpp);
+        svg += pmfDot(x, yOf(r.posT), 'pmf-dot-you', r.isPreview, tipYou);
     });
 
     svg += '</svg>';
@@ -215,7 +304,44 @@ function renderPmfRankChart(rows, nPositions) {
         <div class="rpc-legend pmf-legend">
             <span><span class="pmf-key pmf-key-you"></span> Vous</span>
             <span><span class="pmf-key pmf-key-opp"></span> Adversaire du jour</span>
+            ${rows.some(r => r.isPreview) ? '<span>⋯ Prochain match (projection à date)</span>' : ''}
         </div>`;
+}
+
+// Panneau latéral : combien de fois l'équipe affrontait un adversaire plus
+// fort, de niveau équivalent (± 2 places), ou plus faible — classé sur les
+// seules journées déjà jouées (la projection n'est pas un fait acquis)
+function pmfRankCompare(r) {
+    const diff = r.posO - r.posT; // > 0 : vous étiez mieux classé
+    if (diff > 2) return 'stronger';
+    if (diff < -2) return 'weaker';
+    return 'equal';
+}
+
+function renderPmfStrengthSummary(rows) {
+    const container = document.getElementById('pmfRankSummary');
+    if (!container) return;
+
+    const played = rows.filter(r => !r.isPreview);
+    if (played.length === 0) { container.innerHTML = ''; return; }
+
+    const counts = { stronger: 0, equal: 0, weaker: 0 };
+    played.forEach(r => counts[pmfRankCompare(r)]++);
+
+    container.innerHTML = `
+        <div class="pmf-strength-item stronger">
+            <span class="pmf-strength-value">${counts.stronger}</span>
+            <span class="pmf-strength-label">fois plus forte que l'adversaire<br>(plus de 2 places d'écart)</span>
+        </div>
+        <div class="pmf-strength-item equal">
+            <span class="pmf-strength-value">${counts.equal}</span>
+            <span class="pmf-strength-label">fois de niveau équivalent<br>(± 2 places)</span>
+        </div>
+        <div class="pmf-strength-item weaker">
+            <span class="pmf-strength-value">${counts.weaker}</span>
+            <span class="pmf-strength-label">fois plus faible que l'adversaire<br>(plus de 2 places d'écart)</span>
+        </div>
+    `;
 }
 
 // Graphique 2 : buts marqués (lignes pleines) et encaissés (pointillés),
@@ -249,21 +375,22 @@ function renderPmfGoalsChart(rows) {
         }
     });
 
-    const buildLine = key => rows.map((r, i) => `${i === 0 ? 'M' : 'L'}${xOf(i).toFixed(1)},${yOf(r[key]).toFixed(1)}`).join(' ');
-    svg += `<path d="${buildLine('gaO')}" class="pmf-line pmf-line-opp pmf-dash"/>`;
-    svg += `<path d="${buildLine('gaT')}" class="pmf-line pmf-line-you pmf-dash"/>`;
-    svg += `<path d="${buildLine('gfO')}" class="pmf-line pmf-line-opp"/>`;
-    svg += `<path d="${buildLine('gfT')}" class="pmf-line pmf-line-you"/>`;
+    [['gaO', 'pmf-line-opp pmf-dash'], ['gaT', 'pmf-line-you pmf-dash'], ['gfO', 'pmf-line-opp'], ['gfT', 'pmf-line-you']].forEach(([key, cls]) => {
+        const paths = pmfSplitPaths(rows, xOf, r => yOf(r[key]));
+        svg += `<path d="${paths.main}" class="pmf-line ${cls}"/>`;
+        if (paths.preview) svg += `<path d="${paths.preview}" class="pmf-line ${cls} pmf-preview"/>`;
+    });
 
     rows.forEach((r, i) => {
         const x = xOf(i);
         const oppName = r.opponent ? (r.opponent.shortName || r.opponent.name) : '?';
-        const tipGf = `J${r.day} vs ${oppName} — marqués (saison) : vous ${r.gfT}, adv. ${r.gfO}`;
-        const tipGa = `J${r.day} vs ${oppName} — encaissés (saison) : vous ${r.gaT}, adv. ${r.gaO}`;
-        svg += `<circle cx="${x.toFixed(1)}" cy="${yOf(r.gfT).toFixed(1)}" r="3" class="pmf-dot pmf-dot-you"><title>${pmfXmlEscape(tipGf)}</title></circle>`;
-        svg += `<circle cx="${x.toFixed(1)}" cy="${yOf(r.gfO).toFixed(1)}" r="3" class="pmf-dot pmf-dot-opp"><title>${pmfXmlEscape(tipGf)}</title></circle>`;
-        svg += `<circle cx="${x.toFixed(1)}" cy="${yOf(r.gaT).toFixed(1)}" r="3" class="pmf-dot pmf-dot-you"><title>${pmfXmlEscape(tipGa)}</title></circle>`;
-        svg += `<circle cx="${x.toFixed(1)}" cy="${yOf(r.gaO).toFixed(1)}" r="3" class="pmf-dot pmf-dot-opp"><title>${pmfXmlEscape(tipGa)}</title></circle>`;
+        const when = r.isPreview ? ' — prochain match (à date)' : '';
+        const tipGf = `J${r.day} vs ${oppName} — marqués (saison) : vous ${r.gfT}, adv. ${r.gfO}${when}`;
+        const tipGa = `J${r.day} vs ${oppName} — encaissés (saison) : vous ${r.gaT}, adv. ${r.gaO}${when}`;
+        svg += pmfDot(x, yOf(r.gfT), 'pmf-dot-you', r.isPreview, tipGf);
+        svg += pmfDot(x, yOf(r.gfO), 'pmf-dot-opp', r.isPreview, tipGf);
+        svg += pmfDot(x, yOf(r.gaT), 'pmf-dot-you', r.isPreview, tipGa);
+        svg += pmfDot(x, yOf(r.gaO), 'pmf-dot-opp', r.isPreview, tipGa);
     });
 
     svg += '</svg>';
@@ -285,7 +412,7 @@ function renderPmfFormChart(rows) {
     if (rows.length === 0) { pmfEmptyChart(container); return; }
 
     const diffs = rows.map(r => ({
-        day: r.day, opponent: r.opponent,
+        day: r.day, opponent: r.opponent, isPreview: r.isPreview,
         gf: r.last5T.gf - r.last5O.gf, ga: r.last5T.ga - r.last5O.ga,
         countT: r.last5T.count, countO: r.last5O.count
     }));
@@ -314,18 +441,22 @@ function renderPmfFormChart(rows) {
         }
     });
 
-    const buildLine = key => diffs.map((d, i) => `${i === 0 ? 'M' : 'L'}${xOf(i).toFixed(1)},${yOf(d[key]).toFixed(1)}`).join(' ');
-    svg += `<path d="${buildLine('ga')}" class="pmf-line pmf-line-ga pmf-dash"/>`;
-    svg += `<path d="${buildLine('gf')}" class="pmf-line pmf-line-gf"/>`;
+    const pathsGa = pmfSplitPaths(diffs, xOf, d => yOf(d.ga));
+    const pathsGf = pmfSplitPaths(diffs, xOf, d => yOf(d.gf));
+    svg += `<path d="${pathsGa.main}" class="pmf-line pmf-line-ga pmf-dash"/>`;
+    if (pathsGa.preview) svg += `<path d="${pathsGa.preview}" class="pmf-line pmf-line-ga pmf-dash pmf-preview"/>`;
+    svg += `<path d="${pathsGf.main}" class="pmf-line pmf-line-gf"/>`;
+    if (pathsGf.preview) svg += `<path d="${pathsGf.preview}" class="pmf-line pmf-line-gf pmf-preview"/>`;
 
     diffs.forEach((d, i) => {
         const x = xOf(i);
         const oppName = d.opponent ? (d.opponent.shortName || d.opponent.name) : '?';
         const period = `vous sur ${d.countT} match${d.countT > 1 ? 's' : ''}, adv. sur ${d.countO} match${d.countO > 1 ? 's' : ''}`;
-        const tipGf = `J${d.day} vs ${oppName} — écart buts marqués (5 derniers) : ${d.gf > 0 ? '+' : ''}${d.gf} (${period})`;
-        const tipGa = `J${d.day} vs ${oppName} — écart buts encaissés (5 derniers) : ${d.ga > 0 ? '+' : ''}${d.ga} (${period})`;
-        svg += `<circle cx="${x.toFixed(1)}" cy="${yOf(d.gf).toFixed(1)}" r="3.5" class="pmf-dot pmf-dot-gf"><title>${pmfXmlEscape(tipGf)}</title></circle>`;
-        svg += `<circle cx="${x.toFixed(1)}" cy="${yOf(d.ga).toFixed(1)}" r="3.5" class="pmf-dot pmf-dot-ga"><title>${pmfXmlEscape(tipGa)}</title></circle>`;
+        const when = d.isPreview ? ' — prochain match (à date)' : '';
+        const tipGf = `J${d.day} vs ${oppName} — écart buts marqués (5 derniers) : ${d.gf > 0 ? '+' : ''}${d.gf} (${period})${when}`;
+        const tipGa = `J${d.day} vs ${oppName} — écart buts encaissés (5 derniers) : ${d.ga > 0 ? '+' : ''}${d.ga} (${period})${when}`;
+        svg += pmfDot(x, yOf(d.gf), 'pmf-dot-gf', d.isPreview, tipGf);
+        svg += pmfDot(x, yOf(d.ga), 'pmf-dot-ga', d.isPreview, tipGa);
     });
 
     svg += '</svg>';
@@ -366,10 +497,12 @@ function renderPmfTable(rows) {
         const gapCls = r.gap > 0 ? 'positive' : r.gap < 0 ? 'negative' : '';
         const last5TipT = `Sur ${r.last5T.count} match${r.last5T.count > 1 ? 's' : ''}`;
         const last5TipO = `Sur ${r.last5O.count} match${r.last5O.count > 1 ? 's' : ''}`;
+        const dayLabel = r.isPreview ? `${r.day} <span class="pmf-preview-badge">à venir</span>` : r.day;
+        const rowCls = r.isPreview ? ' class="pmf-row-preview"' : '';
 
         return `
-            <tr>
-                <td>${r.day}</td>
+            <tr${rowCls}>
+                <td>${dayLabel}</td>
                 <td class="team-name">${oppName} <span class="pmf-venue">(${venue})</span></td>
                 <td>${pmfOrdinal(r.posO)}</td>
                 <td class="${gapCls}"><strong>${gapTxt}</strong></td>
@@ -392,13 +525,18 @@ function renderPreMatchForm() {
         renderPmfRankChart([], 0);
         renderPmfGoalsChart([]);
         renderPmfFormChart([]);
+        renderPmfStrengthSummary([]);
         renderPmfTable([]);
         return;
     }
     const rows = pmfComputeRows(select.value);
+    const preview = pmfComputePreviewRow(select.value);
+    const rowsWithPreview = preview ? [...rows, preview] : rows;
     const nPositions = pmfTeams().length;
-    renderPmfRankChart(rows, nPositions);
-    renderPmfGoalsChart(rows);
-    renderPmfFormChart(rows);
-    renderPmfTable(rows);
+
+    renderPmfRankChart(rowsWithPreview, nPositions);
+    renderPmfGoalsChart(rowsWithPreview);
+    renderPmfFormChart(rowsWithPreview);
+    renderPmfStrengthSummary(rows);
+    renderPmfTable(rowsWithPreview);
 }

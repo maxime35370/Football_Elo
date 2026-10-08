@@ -242,11 +242,16 @@
                         <p class="replay-occupancy-hint">
                             Pour l'équipe choisie, l'état des lieux juste avant le coup d'envoi de chaque
                             journée jouée. Tout est calculé <strong>avant</strong> ce match — son résultat
-                            n'entre jamais dans les chiffres affichés.
+                            n'entre jamais dans les chiffres affichés. Si une prochaine journée est déjà
+                            programmée (onglet Calendrier), elle apparaît en pointillé/creux tout au bout :
+                            ses chiffres sont ceux d'aujourd'hui et ne bougeront plus avant le coup d'envoi.
                         </p>
 
                         <h5 class="pmf-subtitle">📈 Place au classement : vous contre l'adversaire du jour</h5>
-                        <div id="pmfRankChart" class="pmf-chart"></div>
+                        <div class="pmf-rank-wrap">
+                            <div id="pmfRankChart" class="pmf-chart"></div>
+                            <div id="pmfRankSummary" class="pmf-strength"></div>
+                        </div>
 
                         <h5 class="pmf-subtitle">⚽ Buts marqués / encaissés (saison, avant chaque match)</h5>
                         <div id="pmfGoalsChart" class="pmf-chart"></div>
