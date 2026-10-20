@@ -248,7 +248,13 @@ function generateIAPredictionForMatch(match, teamsWithElo) {
 
 async function generateAllIAPredictions() {
     if (!currentSeason) return;
-    
+
+    // Attendre que Firebase Auth ait fini de restaurer une éventuelle
+    // session existante avant de vérifier le statut admin : juste après
+    // le chargement de la page, firebase.auth().currentUser peut encore
+    // être null pendant quelques instants même si l'admin est connecté.
+    await waitForAuthReady();
+
     // ====================================================
     // NOUVEAU : Si l'utilisateur n'est PAS admin,
     // on se contente de LIRE les pronostics depuis Firebase
@@ -917,6 +923,28 @@ function debugIAPrediction(matchDay) {
         console.log(`  Probas: ${p.homeWinProb}% / ${p.drawProb}% / ${p.awayWinProb}%`);
         console.log('');
     });
+}
+
+// Résout dès que Firebase Auth a restauré (ou non) une session existante.
+// firebase.auth().currentUser peut rester null pendant quelques instants
+// après le chargement de la page même quand une session est persistée :
+// onAuthStateChanged se déclenche une première fois dès que l'état réel
+// est connu, qu'il y ait un utilisateur ou non.
+let _authReadyPromise = null;
+function waitForAuthReady() {
+    if (!_authReadyPromise) {
+        _authReadyPromise = new Promise((resolve) => {
+            try {
+                const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
+                    unsubscribe();
+                    resolve(user);
+                });
+            } catch (e) {
+                resolve(null);
+            }
+        });
+    }
+    return _authReadyPromise;
 }
 
 function isCurrentUserAdmin() {
