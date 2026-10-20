@@ -331,13 +331,31 @@ async function generateAllIAPredictions() {
         if (uniqueMatches.length === 0) continue;
         
         // Calculer l'Elo AU MOMENT de cette journée (pour les journées passées)
-        const hasPlayedMatches = allMatches.some(m => m.matchDay == matchDay && m.finalScore);
-        const teamsWithElo = hasPlayedMatches 
-            ? calculateEloAtDate(
-                allMatches.filter(m => m.matchDay == matchDay)[0]?.scheduledAt || new Date().toISOString(),
-                allMatches,
-                allTeams
-              )
+        const playedThisDay = allMatches.filter(m => m.matchDay == matchDay && m.finalScore);
+        const hasPlayedMatches = playedThisDay.length > 0;
+
+        // Date de référence : la plus ancienne date connue parmi les matchs
+        // joués de cette journée (et non juste le premier match trouvé),
+        // pour éviter de retomber sur "aujourd'hui" si ce match précis n'a
+        // pas de date renseignée — ce qui ferait fuiter l'Elo actuel dans
+        // le pronostic d'une journée passée.
+        let matchDayDate = null;
+        if (hasPlayedMatches) {
+            const knownDates = playedThisDay
+                .map(m => m.scheduledAt || m.date)
+                .filter(Boolean)
+                .map(d => new Date(d))
+                .filter(d => !isNaN(d.getTime()));
+            if (knownDates.length > 0) {
+                matchDayDate = new Date(Math.min(...knownDates.map(d => d.getTime()))).toISOString();
+            } else {
+                console.warn(`⚠️ Journée ${matchDay} : aucune date trouvée sur les matchs joués, Elo calculé à la date du jour (biais possible).`);
+                matchDayDate = new Date().toISOString();
+            }
+        }
+
+        const teamsWithElo = hasPlayedMatches
+            ? calculateEloAtDate(matchDayDate, allMatches, allTeams)
             : currentElo;
         
         // Initialiser la journée si nécessaire
