@@ -309,7 +309,39 @@ function applyBulkDatetime() {
     alert(`✅ Date appliquée à ${createdManualMatches.length} match(s)`);
 }
 
-function saveManualMatches() {
+// Fusionne les matchs d'une journée sur l'état le plus récent du calendrier
+// (relu depuis Firebase juste avant d'écrire), au lieu d'écraser tout le
+// document avec la copie locale de futureMatches qui peut être périmée
+// (onglet resté ouvert depuis un moment). Seule la journée manualMatchDay
+// est remplacée ; tout le reste de l'état le plus récent est conservé tel
+// quel — y compris les affiches déjà jouées, qu'il n'est donc plus
+// nécessaire de réinjecter séparément si la lecture fraîche a réussi.
+async function persistManualMatchDay(matchesForDay) {
+    const latest = await fetchLatestFutureMatches(currentSeason);
+    const baseline = latest !== null ? latest : futureMatches;
+
+    const merged = baseline.filter(m => m.matchDay !== manualMatchDay);
+    merged.push(...matchesForDay);
+
+    // Filet de sécurité si la lecture fraîche a échoué (fallback local) :
+    // réinjecter les affiches déjà jouées écartées de futureMatches en
+    // mémoire pour ne pas les effacer du calendrier.
+    const playedAside = typeof playedFixturesAside !== 'undefined' ? playedFixturesAside : [];
+    playedAside.forEach(m => {
+        const key = `${m.homeTeamId}-${m.awayTeamId}`;
+        if (!merged.some(mm => `${mm.homeTeamId}-${mm.awayTeamId}` === key)) {
+            merged.push(m);
+        }
+    });
+
+    await saveFutureMatchesAsync(currentSeason, merged);
+
+    // Garder la copie locale cohérente (affiches déjà jouées toujours à part)
+    const playedKeys = new Set(playedAside.map(m => `${m.homeTeamId}-${m.awayTeamId}`));
+    futureMatches = merged.filter(m => !playedKeys.has(`${m.homeTeamId}-${m.awayTeamId}`));
+}
+
+async function saveManualMatches() {
     // Journée vidée : autoriser la sauvegarde pour supprimer les affiches
     // restantes (ex. affiche inversée par la ligue à recréer ailleurs)
     if (createdManualMatches.length === 0) {
@@ -323,31 +355,22 @@ function saveManualMatches() {
         }
     }
 
+    const newMatchesForDay = createdManualMatches.map(match => ({
+        id: match.id,
+        season: currentSeason,
+        matchDay: manualMatchDay,
+        homeTeamId: match.homeTeamId,
+        awayTeamId: match.awayTeamId,
+        status: 'upcoming',
+        scheduledAt: match.scheduledAt || null
+    }));
 
-    // Supprimer les anciens matchs de cette journée
-    futureMatches = futureMatches.filter(m => m.matchDay !== manualMatchDay);
-    
-    // Ajouter les nouveaux matchs
-    createdManualMatches.forEach(match => {
-        futureMatches.push({
-            id: match.id,
-            season: currentSeason,
-            matchDay: manualMatchDay,
-            homeTeamId: match.homeTeamId,
-            awayTeamId: match.awayTeamId,
-            status: 'upcoming',
-            scheduledAt: match.scheduledAt || null
-        });
-    });
-    
-    // Sauvegarder (en réinjectant les affiches déjà jouées, écartées de
-    // futureMatches en mémoire, pour ne pas les effacer du calendrier)
-    saveFutureMatches(currentSeason, [...futureMatches, ...(typeof playedFixturesAside !== 'undefined' ? playedFixturesAside : [])]);
+    await persistManualMatchDay(newMatchesForDay);
 
     // Mettre à jour l'affichage
     updateCalendarStatus();
     populateManualMatchDaySelector();
-    
+
     if (createdManualMatches.length === 0) {
         alert(`✅ Affiches supprimées : la journée ${manualMatchDay} ne contient plus de match à venir.`);
         // Rester sur la journée pour vérifier le résultat
@@ -363,15 +386,13 @@ function saveManualMatches() {
     onManualMatchDayChange({ target: { value: manualMatchDay } });
 }
 
-function clearManualMatches() {
+async function clearManualMatches() {
     if (createdManualMatches.length === 0) return;
-    
+
     if (!confirm('Réinitialiser tous les matchs de cette journée ?')) return;
-    
-    // Supprimer aussi de futureMatches si déjà sauvegardés
-    futureMatches = futureMatches.filter(m => m.matchDay !== manualMatchDay);
-    saveFutureMatches(currentSeason, [...futureMatches, ...(typeof playedFixturesAside !== 'undefined' ? playedFixturesAside : [])]);
-    
+
+    await persistManualMatchDay([]);
+
     createdManualMatches = [];
     selectedHomeTeam = null;
     renderAvailableTeams();

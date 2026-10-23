@@ -27,6 +27,35 @@ let storedPredictions = null;
 let simulatedResults = {};
 
 // ===============================
+// LECTURE FRAÎCHE AVANT ÉCRITURE
+// ===============================
+// futureMatches est stocké comme UN SEUL document Firestore contenant tout
+// le calendrier à venir : toute sauvegarde réécrit le tableau entier. Si la
+// copie en mémoire du navigateur est périmée (onglet resté ouvert, pas
+// rechargé depuis un moment), sauvegarder écraserait silencieusement tout
+// ce qui a été modifié ailleurs depuis. Cette fonction relit l'état le plus
+// récent juste avant d'écrire, pour fusionner dessus plutôt que d'écraser
+// une copie potentiellement obsolète.
+//
+// Renvoie :
+//   - un tableau (éventuellement vide) si la lecture a réussi
+//   - null si la lecture est impossible (hors-ligne, erreur Firebase) :
+//     l'appelant doit alors garder sa copie locale plutôt que de risquer
+//     de tout effacer avec un tableau vide non vérifié.
+async function fetchLatestFutureMatches(season) {
+    try {
+        if (typeof db === 'undefined' || !navigator.onLine) return null;
+        const doc = await db.collection('futureMatches').doc(season).get();
+        if (!doc.exists) return []; // Saison sans calendrier sauvegardé : vide, légitime
+        const data = doc.data();
+        return Array.isArray(data.matches) ? data.matches : [];
+    } catch (e) {
+        console.warn('⚠️ Impossible de relire le calendrier le plus récent avant sauvegarde, copie locale conservée:', e);
+        return null;
+    }
+}
+
+// ===============================
 // INITIALISATION
 // ===============================
 document.addEventListener('DOMContentLoaded', async function() {
