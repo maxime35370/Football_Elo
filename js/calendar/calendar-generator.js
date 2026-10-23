@@ -29,24 +29,37 @@ function generateFullCalendar() {
         }
     }
     
-    // Créer un set des confrontations DÉJÀ JOUÉES
-    const playedConfrontations = new Set();
+    // Confrontations déjà couvertes : matchs déjà JOUÉS + affiches déjà
+    // programmées au calendrier (saisies à la main, avec leurs dates).
+    // On ne les régénère jamais — seules les confrontations manquantes
+    // des deux côtés sont complétées, pour ne jamais écraser du travail
+    // déjà fait (dates, affiches choisies manuellement).
+    const coveredConfrontations = new Set();
     allMatches.forEach(match => {
-        playedConfrontations.add(`${match.homeTeamId}-${match.awayTeamId}`);
+        coveredConfrontations.add(`${match.homeTeamId}-${match.awayTeamId}`);
     });
-    
+    futureMatches.forEach(match => {
+        coveredConfrontations.add(`${match.homeTeamId}-${match.awayTeamId}`);
+    });
+
     // Trouver les confrontations manquantes
-    let missingConfrontations = allPossibleConfrontations.filter(conf => 
-        !playedConfrontations.has(`${conf.homeTeamId}-${conf.awayTeamId}`)
+    let missingConfrontations = allPossibleConfrontations.filter(conf =>
+        !coveredConfrontations.has(`${conf.homeTeamId}-${conf.awayTeamId}`)
     );
-    
+
     if (missingConfrontations.length === 0) {
-        alert('✅ Tous les matchs ont déjà été joués !');
+        alert('✅ Tous les matchs sont déjà joués ou déjà programmés au calendrier !');
         return;
     }
-    
-    // Trouver la dernière journée jouée
-    const lastPlayedMatchDay = Math.max(...allMatches.map(m => m.matchDay || 0), 0);
+
+    // Les nouvelles journées démarrent après la dernière déjà utilisée,
+    // jouée OU déjà programmée au calendrier — jamais en écrasant une
+    // journée existante.
+    const lastPlayedMatchDay = Math.max(
+        ...allMatches.map(m => m.matchDay || 0),
+        ...futureMatches.map(m => m.matchDay || 0),
+        0
+    );
     
     // Compter combien de matchs chaque équipe doit encore jouer
     const teamRemainingMatches = {};
@@ -151,19 +164,22 @@ function generateFullCalendar() {
         }
     }
     
-    futureMatches = generatedMatches;
-    
+    // On COMPLÈTE le calendrier existant, on ne le remplace jamais :
+    // les affiches déjà programmées (et leurs dates) sont conservées telles
+    // quelles, seules les confrontations manquantes sont ajoutées.
+    futureMatches = [...futureMatches, ...generatedMatches];
+
     // Sauvegarder
     saveFutureMatches(currentSeason, futureMatches);
-    
+
     // Mettre à jour l'affichage
     updateCalendarStatus();
     displayActiveTab();
-    
+
     const finalMatchDay = currentMatchDay - 1;
     const expectedMatchDays = totalMatchDays;
-    
-    let statusMsg = `✅ Calendrier généré !\n\n📊 Statistiques:\n- ${playedConfrontations.size} matchs déjà joués\n- ${generatedMatches.length} matchs à venir\n- Journées ${lastPlayedMatchDay + 1} à ${finalMatchDay}`;
+
+    let statusMsg = `✅ Calendrier complété !\n\n📊 Statistiques:\n- ${coveredConfrontations.size} confrontations déjà jouées ou déjà programmées\n- ${generatedMatches.length} matchs ajoutés\n- Journées ${lastPlayedMatchDay + 1} à ${finalMatchDay}`;
     
     if (finalMatchDay <= expectedMatchDays) {
         statusMsg += `\n\n✅ Calendrier optimal (${expectedMatchDays} journées)`;
