@@ -4,14 +4,20 @@
 // GÉNÉRATION DU CALENDRIER
 // ===============================
 
-function generateFullCalendar() {
+async function generateFullCalendar() {
     const teams = getTeamsBySeason(currentSeason);
-    
+
     if (teams.length < 2) {
         alert('Il faut au moins 2 équipes pour générer un calendrier.');
         return;
     }
-    
+
+    // Relire l'état le plus récent du calendrier avant de calculer ce qui
+    // manque et avant d'écrire, pour ne jamais se baser sur une copie
+    // locale périmée (onglet resté ouvert depuis un moment).
+    const latestFutureMatches = await fetchLatestFutureMatches(currentSeason);
+    const futureMatchesBaseline = latestFutureMatches !== null ? latestFutureMatches : futureMatches;
+
     const numTeams = teams.length;
     const matchesPerDay = Math.floor(numTeams / 2);
     const totalMatchDays = (numTeams - 1) * 2;
@@ -38,7 +44,7 @@ function generateFullCalendar() {
     allMatches.forEach(match => {
         coveredConfrontations.add(`${match.homeTeamId}-${match.awayTeamId}`);
     });
-    futureMatches.forEach(match => {
+    futureMatchesBaseline.forEach(match => {
         coveredConfrontations.add(`${match.homeTeamId}-${match.awayTeamId}`);
     });
 
@@ -57,7 +63,7 @@ function generateFullCalendar() {
     // journée existante.
     const lastPlayedMatchDay = Math.max(
         ...allMatches.map(m => m.matchDay || 0),
-        ...futureMatches.map(m => m.matchDay || 0),
+        ...futureMatchesBaseline.map(m => m.matchDay || 0),
         0
     );
     
@@ -166,11 +172,12 @@ function generateFullCalendar() {
     
     // On COMPLÈTE le calendrier existant, on ne le remplace jamais :
     // les affiches déjà programmées (et leurs dates) sont conservées telles
-    // quelles, seules les confrontations manquantes sont ajoutées.
-    futureMatches = [...futureMatches, ...generatedMatches];
+    // quelles, seules les confrontations manquantes sont ajoutées. On part
+    // de la lecture fraîche (futureMatchesBaseline), pas de la copie locale.
+    futureMatches = [...futureMatchesBaseline, ...generatedMatches];
 
     // Sauvegarder
-    saveFutureMatches(currentSeason, futureMatches);
+    await saveFutureMatchesAsync(currentSeason, futureMatches);
 
     // Mettre à jour l'affichage
     updateCalendarStatus();
