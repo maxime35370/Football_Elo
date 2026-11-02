@@ -366,21 +366,29 @@ async function generateAllIAPredictions() {
             };
         }
         
+        // Élaguer les pronos qui ne correspondent plus à un match actuel de
+        // cette journée (ex: match déplacé vers une autre journée depuis) —
+        // sans ça, ils restent collés indéfiniment et s'additionnent aux
+        // pronos des matchs réels.
+        const currentKeys = new Set(uniqueMatches.map(m => m.homeTeamId + '_' + m.awayTeamId));
+        iaPredictions.matchDays[matchDay].predictions = iaPredictions.matchDays[matchDay].predictions
+            .filter(p => currentKeys.has(p.homeTeamId + '_' + p.awayTeamId));
+
         // Générer/Mettre à jour les pronostics pour chaque match
         for (const match of uniqueMatches) {
             const existingIndex = iaPredictions.matchDays[matchDay].predictions.findIndex(p =>
                 p.homeTeamId == match.homeTeamId && p.awayTeamId == match.awayTeamId
             );
-            
+
             const prediction = generateIAPredictionForMatch(match, teamsWithElo);
-            
+
             if (prediction) {
                 if (existingIndex >= 0) {
                     // Mettre à jour si l'Elo a changé significativement
                     const existing = iaPredictions.matchDays[matchDay].predictions[existingIndex];
                     const eloChanged = Math.abs(existing.homeElo - prediction.homeElo) > 10 ||
                                        Math.abs(existing.awayElo - prediction.awayElo) > 10;
-                    
+
                     if (eloChanged) {
                         iaPredictions.matchDays[matchDay].predictions[existingIndex] = prediction;
                     }
@@ -389,7 +397,7 @@ async function generateAllIAPredictions() {
                 }
             }
         }
-        
+
         iaPredictions.matchDays[matchDay].generatedAt = new Date().toISOString();
     }
     
