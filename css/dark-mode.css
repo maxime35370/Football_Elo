@@ -3316,3 +3316,10 @@
 [data-theme="dark"] .plr-chart-head select { background: var(--dm-surface-1); border-color: var(--dm-border); color: var(--dm-ink); }
 
 [data-theme="dark"] .plr-section { border-top-color: var(--dm-border); }
+
+/* Changelog joueurs */
+[data-theme="dark"] .changelog-intro { color: var(--dm-ink-muted); }
+[data-theme="dark"] .changelog-month { background: var(--dm-surface-1); box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); }
+[data-theme="dark"] .changelog-month h3 { color: var(--dm-ink); }
+[data-theme="dark"] .changelog-month li { color: var(--dm-ink-muted); }
+[data-theme="dark"] .changelog-month li strong { color: var(--dm-ink); }
