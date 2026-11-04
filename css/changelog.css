@@ -1,0 +1,51 @@
+/* changelog.css - Styles pour la page Changelog joueurs */
+
+.changelog-intro {
+    color: #5a6c7d;
+    margin-top: -0.5rem;
+    margin-bottom: 0;
+}
+
+.changelog-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin: 2rem 0;
+}
+
+.changelog-month {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    padding: 1.75rem 2rem;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    border-left: 5px solid #3498db;
+}
+
+.changelog-month h3 {
+    color: #2c3e50;
+    font-size: 1.3rem;
+    margin: 0 0 1rem 0;
+}
+
+.changelog-month ul {
+    margin: 0;
+    padding-left: 1.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.changelog-month li {
+    color: #34495e;
+    line-height: 1.5;
+}
+
+.changelog-month li strong {
+    color: #2c3e50;
+}
+
+@media (max-width: 600px) {
+    .changelog-month {
+        padding: 1.25rem 1.25rem;
+    }
+}

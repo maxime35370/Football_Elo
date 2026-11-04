@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Changelog - Football Elo</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/rankings.css">
+    <link rel="stylesheet" href="../css/changelog.css">
+    <link rel="stylesheet" href="../css/mobile.css">
+    <link rel="stylesheet" href="../css/dark-mode.css">
+    <script src="../js/theme.js"></script>
+</head>
+<body>
+
+    <nav>
+        <button class="burger-menu" onclick="toggleMenu()">☰</button>
+            <button class="theme-toggle" onclick="toggleTheme()" title="Changer de thème">☀️</button>
+        <div class="nav-container">
+            <a href="../index.html" class="nav-btn">🏠 Accueil</a>
+            <a href="../pages/add-match.html" class="nav-btn">➕ Ajouter un match</a>
+            <a href="../pages/matches.html" class="nav-btn">📋 Historique</a>
+            <a href="../pages/results-table.html" class="nav-btn">📊 Tableau</a>
+            <a href="../pages/rankings.html" class="nav-btn">🏆 Classements</a>
+            <a href="../pages/statistics.html" class="nav-btn">📈 Stats</a>
+            <a href="../pages/calendar.html" class="nav-btn">📅 Calendrier</a>
+            <a href="../pages/pronostics-game.html" class="nav-btn">🎮 Pronos</a>
+            <a href="../pages/archives.html" class="nav-btn">📚 Archives</a>
+            <a href="../pages/changelog.html" class="nav-btn active">📝 Changelog</a>
+            <a href="../pages/admin/teams-manager.html" class="nav-btn">⚙️ Admin</a>
+        </div>
+    </nav>
+
+    <main>
+        <div class="rankings-container">
+            <div class="rankings-header">
+                <h2>📝 Changelog</h2>
+                <p class="changelog-intro">Tout ce qui a été ajouté ou amélioré pour vous depuis le lancement du site, mois par mois.</p>
+            </div>
+
+            <div class="changelog-timeline">
+
+                <div class="changelog-month">
+                    <h3>Septembre 2025</h3>
+                    <ul>
+                        <li>Mise en ligne du site : saisie des matchs, classement de base, historique des matchs, administration des équipes, connexion à la base de données.</li>
+                    </ul>
+                </div>
+
+                <div class="changelog-month">
+                    <h3>Novembre 2025</h3>
+                    <ul>
+                        <li>Arrivée du <strong>système de saisons</strong> : on peut démarrer une nouvelle saison, les anciennes sont archivées et consultables.</li>
+                        <li>Arrivée du <strong>classement Elo</strong> (force réelle des équipes), affiché dans le classement et sur les matchs en cours, avec la forme récente des équipes.</li>
+                        <li>Première page <strong>Statistiques</strong> : minute des buts, classement des confrontations directes entre deux équipes au choix, graphique offensif/défensif.</li>
+                    </ul>
+                </div>
+
+                <div class="changelog-month">
+                    <h3>Décembre 2025</h3>
+                    <ul>
+                        <li>Grosse mise à jour des stats et du calendrier : répartition des matchs, buteurs par club, classement à la mi-temps, classement entre deux journées au choix, série de résultats et forme dans le classement, stats domicile/extérieur, série de victoires, matchs sans défaite, clean-sheets, heatmap des buts, carte des résultats, graphique d'évolution du classement et de l'Elo, calendrier avec prévisions de fin de saison et objectifs d'équipe.</li>
+                        <li>Naissance du jeu de <strong>pronostics</strong> : première version + simulation Elo, carte des confrontations, pronostics reliés directement au calendrier.</li>
+                        <li>Les pronostics deviennent un vrai jeu : <strong>IA qui propose des pronostics</strong>, badges, <strong>joker</strong>, <strong>duel face-à-face</strong>, comparaison après le match, heatmap de perf, 8 niveaux de badge "équipe favorite", avatars.</li>
+                    </ul>
+                </div>
+
+                <div class="changelog-month">
+                    <h3>Janvier 2026</h3>
+                    <ul>
+                        <li>Menu burger et affichage adapté au téléphone.</li>
+                        <li>Réglages des places de fin de saison et droits selon l'utilisateur.</li>
+                    </ul>
+                </div>
+
+                <div class="changelog-month">
+                    <h3>Février 2026</h3>
+                    <ul>
+                        <li>Simulation "hype de saison" et confrontations en direct.</li>
+                        <li><strong>Arbre de probabilités</strong> pour visualiser les scénarios de fin de saison.</li>
+                        <li>Les pronos de l'IA sont générés et sauvegardés automatiquement.</li>
+                        <li><strong>Chat</strong> sur les matchs et les journées.</li>
+                        <li>Classement à la mi-temps (hors temps additionnel), stats de "vulnérabilité après un but encaissé".</li>
+                        <li>Radar par équipe, détection des <strong>retournements de situation</strong>, équipes "clutch", écart classement points vs Elo.</li>
+                        <li>Pronostics enrichis : <strong>choix du buteur</strong>, <strong>paris combinés</strong>, <strong>joker sur la journée entière</strong>, badge MVP des journées précédentes, points MVP comptés dans le classement pronostics.</li>
+                        <li><strong>Paris proposés par l'IA</strong>, puis <strong>carte à partager</strong> (sharecard) avec les bonus buteurs et jokers.</li>
+                        <li><strong>Import automatique des résultats</strong> depuis ESPN (plus besoin de tout saisir à la main).</li>
+                        <li>Points de défis ajoutés au classement de fin de saison.</li>
+                    </ul>
+                </div>
+
+                <div class="changelog-month">
+                    <h3>Mars 2026</h3>
+                    <ul>
+                        <li>Classement calculable <strong>par mois</strong>.</li>
+                    </ul>
+                </div>
+
+                <div class="changelog-month">
+                    <h3>Avril 2026</h3>
+                    <ul>
+                        <li>Refonte mobile complète : tout le site devient vraiment utilisable sur téléphone (pronostics, historique des matchs, tableau croisé des confrontations, calendrier avec difficulté/objectifs/simulation, page stats, classement final projeté, Monte Carlo).</li>
+                    </ul>
+                </div>
+
+                <div class="changelog-month">
+                    <h3>Mai 2026</h3>
+                    <ul>
+                        <li>L'Elo de fin de saison est désormais repris comme <strong>Elo de départ de la saison suivante</strong> (continuité de la force des équipes).</li>
+                    </ul>
+                </div>
+
+                <div class="changelog-month">
+                    <h3>Juin 2026</h3>
+                    <ul>
+                        <li>Plusieurs correctifs importants pour que ce report d'Elo fonctionne vraiment partout (classement, calendrier, pronostics), et le classement ne reste plus bloqué à 1500 par erreur.</li>
+                    </ul>
+                </div>
+
+                <div class="changelog-month">
+                    <h3>Août 2026</h3>
+                    <ul>
+                        <li><strong>Mode sombre complet</strong> sur tout le site.</li>
+                        <li><strong>Modale de détails</strong> en cliquant sur un match du calendrier : historique des confrontations, courbe d'évolution de l'Elo.</li>
+                        <li><strong>Refonte de la saisie des pronostics</strong> : steppers pour les scores, choix du buteur en 1 clic, barre de progression.</li>
+                        <li>Filtre par saison sur les pronostics, harmonisation visuelle de toutes les pages.</li>
+                        <li>Correction d'un décalage de 2h sur les horaires des matchs (les heures affichées étaient fausses).</li>
+                        <li>Nouvelle <strong>fiche joueur</strong> : gestion du mercato, des homonymes, autocomplétion des noms, historique de ses matchs.</li>
+                        <li><strong>Colonne "Évolution depuis le début de saison"</strong> dans le classement Elo, et <strong>courbe de difficulté restante</strong> par équipe dans le calendrier.</li>
+                        <li>Le <strong>bonus du pari combiné</strong> est enfin réellement compté dans les totaux (barème affiné), et les <strong>buts contre son camp</strong> ne comptent plus dans les classements de buteurs.</li>
+                    </ul>
+                </div>
+
+                <div class="changelog-month">
+                    <h3>Septembre 2026</h3>
+                    <ul>
+                        <li>+1 point par but sur le défi buteur ; courbe de l'Elo de l'adversaire affichée journée par journée.</li>
+                        <li>Audit complet : <strong>tous les bonus de pronostics sont désormais comptés partout</strong> de la même façon.</li>
+                        <li>Nouvelle rubrique <strong>Multiplex</strong> très riche sur la page Classements : <strong>"le film de la journée"</strong> (rejouer une journée, une série ou toute la saison minute par minute), temps passé à chaque place du classement, place moyenne/médiane, courbe de la place d'une équipe dans le temps (jusqu'à 4 équipes), les buts qui ont tout changé, le fil des leaders, et le classement des pronostiqueurs lui-même rejoué but par but avec une "course aux points".</li>
+                    </ul>
+                </div>
+
+                <div class="changelog-month">
+                    <h3>Octobre 2026</h3>
+                    <ul>
+                        <li>Panneau de forces des équipes et projection du prochain match ajoutés au Multiplex.</li>
+                        <li>Le joker n'efface plus les scores/pronostics déjà saisis en cas de clic accidentel.</li>
+                        <li>Plusieurs correctifs de connexion qui empêchaient parfois d'accéder correctement aux pronostics IA.</li>
+                        <li>Correction d'un bug qui pouvait <strong>écraser le calendrier déjà rempli</strong> lors d'une génération — vos matchs programmés sont désormais protégés.</li>
+                    </ul>
+                </div>
+
+                <div class="changelog-month">
+                    <h3>Novembre 2026</h3>
+                    <ul>
+                        <li>Nettoyage automatique des pronostics IA laissés orphelins après une suppression de journée.</li>
+                    </ul>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Football Elo - Changelog</p>
+    </footer>
+
+    <script>
+    function toggleMenu() {
+        document.querySelector('.nav-container').classList.toggle('open');
+    }
+    </script>
+</body>
+</html>
