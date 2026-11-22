@@ -1293,10 +1293,25 @@ async function backfillGoalDetails(options) {
         return null;
     }
 
-    const locals = (typeof allMatches !== 'undefined' ? allMatches : []).filter(m =>
+    // La page admin ne charge pas allMatches d'elle-même : on le fait ici
+    // (fonction définie par teams-manager.html), sinon 0 match serait vu.
+    if (typeof ensureESPNDataLoaded === 'function') {
+        try { await ensureESPNDataLoaded(); }
+        catch (e) { console.warn('⚠️ Chargement des matchs impossible :', e.message); }
+    }
+
+    const pool = typeof allMatches !== 'undefined' ? allMatches : [];
+    const locals = pool.filter(m =>
         m.finalScore && m.date &&
         m.season === season &&
-        (!opts.matchDay || m.matchDay === opts.matchDay));
+        (!opts.matchDay || Number(m.matchDay) === Number(opts.matchDay)));
+
+    if (locals.length === 0) {
+        const seasons = [...new Set(pool.map(m => m.season))];
+        console.warn(`⚠️ Aucun match à traiter. Saison cherchée : "${season}" | matchs chargés : ${pool.length}` +
+            ` | saisons présentes : ${seasons.join(', ') || 'aucune'}`);
+        return { enriched: 0, unchanged: 0, notFound: 0, errors: 0 };
+    }
 
     const dates = [...new Set(locals.map(m => String(m.date).split('T')[0]))].sort();
     console.log(`🔁 Rattrapage ${opts.dryRun ? '(PREVIEW)' : ''} — ${locals.length} match(s), ${dates.length} date(s)`);
