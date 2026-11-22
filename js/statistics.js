@@ -2076,14 +2076,14 @@ function renderShotPitch(points) {
     const dot = p => {
         const c = p.conceded ? '#dc2626' : '#16a34a';
         const shape = p.penalty
-            ? `<rect x="${(p.sx - 1.1).toFixed(1)}" y="${(p.sy - 1.1).toFixed(1)}" width="2.2" height="2.2" fill="${c}" fill-opacity="0.85" stroke="#fff" stroke-width="0.3"/>`
-            : `<circle cx="${p.sx.toFixed(1)}" cy="${p.sy.toFixed(1)}" r="1.2" fill="${c}" fill-opacity="0.85" stroke="#fff" stroke-width="0.3"/>`;
-        // zone de survol élargie (cible tactile) + infobulle
-        return `<g data-tip="${escHtml(p.tip)}" style="cursor:pointer">
-            <circle cx="${p.sx.toFixed(1)}" cy="${p.sy.toFixed(1)}" r="2.6" fill="transparent"/>${shape}</g>`;
+            ? `<rect x="-1.1" y="-1.1" width="2.2" height="2.2" fill="${c}" fill-opacity="0.85" stroke="#fff" stroke-width="0.3"/>`
+            : `<circle r="1.2" fill="${c}" fill-opacity="0.85" stroke="#fff" stroke-width="0.3"/>`;
+        // .shot-scale : le zoom réduit la taille apparente du point (voir applyShotView)
+        return `<g data-tip="${escHtml(p.tip)}" transform="translate(${p.sx.toFixed(1)},${p.sy.toFixed(1)})" style="cursor:pointer">
+            <g class="shot-scale"><circle r="2.6" fill="transparent"/>${shape}</g></g>`;
     };
     return `
-        <svg viewBox="-2 -3 72 111" class="shot-pitch" style="width:100%;max-width:380px;display:block;margin:0 auto;border-radius:6px;background:#cfe3cb;">
+        <svg viewBox="-2 -3 72 111" class="shot-pitch" style="width:100%;max-width:380px;display:block;margin:0 auto;border-radius:6px;background:#cfe3cb;cursor:grab;user-select:none;">
             ${stripes}
             <g fill="none" stroke="#7aa57a" stroke-width="0.45">
                 <rect x="0" y="0" width="68" height="105"/>
@@ -2124,6 +2124,95 @@ function initShotTooltips(container) {
     container.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
 }
 
+// ---------- Zoom / déplacement du terrain ----------
+// viewBox complet : [x, y, largeur, hauteur]. Le zoom ne change que le viewBox.
+const SHOT_FULL_VB = [-2, -3, 72, 111];
+const SHOT_MAX_ZOOM = 8;
+const SHOT_VIEWS = {
+    full:   SHOT_FULL_VB,
+    top:    [6, -2, 56, 40],     // surface adverse (buts marqués)
+    bottom: [6, 67, 56, 40]      // notre surface (buts encaissés)
+};
+
+function getShotSvg() { return document.querySelector('#teamShotZones svg.shot-pitch'); }
+
+function readShotViewBox(svg) { return svg.getAttribute('viewBox').split(/\s+/).map(Number); }
+
+function applyShotView(svg, vb) {
+    const F = SHOT_FULL_VB;
+    let [x, y, w, h] = vb;
+    const ratio = h / w;
+    w = Math.max(F[2] / SHOT_MAX_ZOOM, Math.min(w, F[2]));
+    h = w * ratio;
+    if (h > F[3]) { h = F[3]; w = h / ratio; }
+    x = Math.max(F[0], Math.min(x, F[0] + F[2] - w));
+    y = Math.max(F[1], Math.min(y, F[1] + F[3] - h));
+    svg.setAttribute('viewBox', `${x.toFixed(2)} ${y.toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)}`);
+    // Les points grossissent avec le zoom : on les compense en partie pour
+    // garder des buts distincts quand on regarde de près.
+    const scale = 1 / Math.pow(F[2] / w, 0.7);
+    svg.querySelectorAll('.shot-scale').forEach(g => g.setAttribute('transform', `scale(${scale.toFixed(3)})`));
+}
+
+function setShotView(mode) {
+    const svg = getShotSvg();
+    if (svg && SHOT_VIEWS[mode]) applyShotView(svg, SHOT_VIEWS[mode].slice());
+}
+
+// Zoom ×factor autour d'un point (coordonnées du terrain) ; centre de la vue par défaut
+function zoomShot(factor, cx, cy) {
+    const svg = getShotSvg();
+    if (!svg) return;
+    const [x, y, w, h] = readShotViewBox(svg);
+    if (cx == null) { cx = x + w / 2; cy = y + h / 2; }
+    applyShotView(svg, [cx - (cx - x) / factor, cy - (cy - y) / factor, w / factor, h / factor]);
+}
+
+function shotPointFromEvent(svg, e) {
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX; pt.y = e.clientY;
+    return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+
+// Interactions souris : Ctrl/⌘ + molette = zoom, double-clic = zoom ×2, glisser = déplacer
+function initShotZoom(container) {
+    if (container._shotZoomReady) return;
+    container._shotZoomReady = true;
+    let drag = null;
+
+    container.addEventListener('wheel', e => {
+        const svg = e.target.closest && e.target.closest('svg.shot-pitch');
+        if (!svg || !(e.ctrlKey || e.metaKey)) return;     // sinon la page défile normalement
+        e.preventDefault();
+        const p = shotPointFromEvent(svg, e);
+        zoomShot(e.deltaY < 0 ? 1.25 : 0.8, p.x, p.y);
+    }, { passive: false });
+
+    container.addEventListener('dblclick', e => {
+        const svg = e.target.closest && e.target.closest('svg.shot-pitch');
+        if (!svg) return;
+        const p = shotPointFromEvent(svg, e);
+        zoomShot(2, p.x, p.y);
+    });
+
+    container.addEventListener('pointerdown', e => {
+        const svg = e.target.closest && e.target.closest('svg.shot-pitch');
+        if (!svg || e.pointerType !== 'mouse' || e.button !== 0) return;
+        drag = { svg, x: e.clientX, y: e.clientY };
+        svg.style.cursor = 'grabbing';
+    });
+    window.addEventListener('pointermove', e => {
+        if (!drag) return;
+        const [x, y, w, h] = readShotViewBox(drag.svg);
+        const r = drag.svg.getBoundingClientRect();
+        applyShotView(drag.svg, [x - (e.clientX - drag.x) * w / r.width, y - (e.clientY - drag.y) * h / r.height, w, h]);
+        drag.x = e.clientX; drag.y = e.clientY;
+    });
+    window.addEventListener('pointerup', () => {
+        if (drag) { drag.svg.style.cursor = 'grab'; drag = null; }
+    });
+}
+
 // Filtre d'affichage : tous / marqués / encaissés
 function setShotLayer(layer) {
     const c = document.getElementById('teamShotZones');
@@ -2137,6 +2226,7 @@ function updateShotZonesTeam(teamId) {
     const container = document.getElementById('teamShotZones');
     if (!container) return;
     initShotTooltips(container);
+    initShotZoom(container);
 
     // Ces stats ne concernent que la saison EN COURS (données ESPN récentes).
     const active = typeof getCurrentSeason === 'function' ? getCurrentSeason() : null;
@@ -2181,17 +2271,23 @@ function updateShotZonesTeam(teamId) {
         return;
     }
 
-    const btn = (layer, label) => `<button type="button" class="shot-layer-btn${layer === 'all' ? ' active' : ''}" data-layer="${layer}" onclick="setShotLayer('${layer}')"
-        style="padding:.25rem .7rem;margin-right:.3rem;border:1px solid #bbb;border-radius:14px;background:transparent;color:inherit;cursor:pointer;">${label}</button>`;
+    const pill = 'padding:.25rem .7rem;margin:0 .3rem .3rem 0;border:1px solid #bbb;border-radius:14px;background:transparent;color:inherit;cursor:pointer;';
+    const btn = (layer, label) => `<button type="button" class="shot-layer-btn${layer === 'all' ? ' active' : ''}" data-layer="${layer}" onclick="setShotLayer('${layer}')" style="${pill}">${label}</button>`;
+    const vbtn = (mode, label) => `<button type="button" onclick="setShotView('${mode}')" style="${pill}">${label}</button>`;
+    const zbtn = (f, label, title) => `<button type="button" title="${title}" onclick="zoomShot(${f})" style="${pill}min-width:2.2rem;">${label}</button>`;
 
     container.innerHTML = `
         ${possHtml}
-        <div style="margin-bottom:.5rem;">
+        <div style="margin-bottom:.2rem;">
             ${btn('all', 'Tous')}${btn('for', '🟢 Marqués')}${btn('against', '🔴 Encaissés')}
+        </div>
+        <div style="margin-bottom:.5rem;">
+            ${vbtn('full', '⛶ Terrain')}${vbtn('top', '🔍 Surface adverse')}${vbtn('bottom', '🔍 Notre surface')}
+            ${zbtn(1.5, '＋', 'Zoom avant')}${zbtn(1 / 1.5, '－', 'Zoom arrière')}
         </div>
         ${renderShotPitch(points)}
         <p class="shotzones-note" style="text-align:center;margin:.4rem 0 1rem;">
-            🟢 but marqué (devant le but du haut) · 🔴 but encaissé (devant notre but, en bas) · ◼ penalty · survole ou touche un point pour le détail.
+            🟢 but marqué (devant le but du haut) · 🔴 but encaissé (devant notre but, en bas) · ◼ penalty · survole ou touche un point pour le détail. Zoom : boutons, Ctrl/⌘ + molette ou double-clic ; glisse pour déplacer.
         </p>
         <table class="stats-table" style="margin-top:1rem;">
             <thead><tr><th>Zone (tirs localisés)</th><th>Marqués (${zf.located})</th><th>Encaissés (${za.located})</th></tr></thead>
