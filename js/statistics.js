@@ -2013,26 +2013,137 @@ function averageTeamPossession(matches, teamId) {
     return vals.length >= 1 ? { avg: vals.reduce((a, b) => a + b, 0) / vals.length, n: vals.length } : null;
 }
 
-function renderShotPitch(points, color) {
-    // Demi-terrain 68 x 52,5 m, but en haut. Vue de l'attaquant : droite = droite.
-    const dots = points.map(p =>
-        `<circle cx="${(p.y * 68).toFixed(1)}" cy="${(p.x * 52.5).toFixed(1)}" r="1.5" fill="${color}" fill-opacity="0.75" stroke="#fff" stroke-width="0.3"/>`).join('');
+// ---------- Terrain complet : buts marqués (vert) en haut, encaissés (rouge) en bas ----------
+// L'équipe attaque vers le HAUT. Un but marqué est placé devant le but du haut ;
+// un but encaissé est un tir ADVERSE sur NOTRE but (en bas) : on le pivote de
+// 180° (distance depuis le bas, gauche/droite inversés car l'adversaire regarde
+// vers le bas). Tous les terrains font 68 × 105 m : un tir lointain, y compris
+// depuis la moitié adverse, tombe donc naturellement au bon endroit.
+const PITCH_W = 68, PITCH_L = 105;
+
+function escHtml(t) {
+    return String(t == null ? '' : t).replace(/[&<>"']/g, c =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function shotTooltipHtml(match, goal, conceded) {
+    const tn = id => (allTeams.find(t => t.id == id) || {}).shortName || '?';
+    const name = String(goal.scorerFull || goal.scorer || 'Inconnu').replace(/^\s*\(?CSC\)?\s*/i, '');
+    const when = goal.displayTime || `${goal.minute}'`;
+    const extra = [];
+    if (plIsPenaltyGoal(goal)) extra.push('penalty');
+    if (goal.goalType) extra.push(String(goal.goalType).toLowerCase());
+    if (goal.assist) extra.push('passe de ' + goal.assist);
+    const d = match.date ? new Date(match.date) : null;
+    const dateTxt = d && !isNaN(d) ? d.toLocaleDateString('fr-FR') : '';
+    return `<strong>${escHtml(name)}</strong> ${escHtml(when)} ${conceded ? '🔴' : '🟢'}` +
+        `<br>${escHtml(tn(match.homeTeamId))} ${match.finalScore.home}-${match.finalScore.away} ${escHtml(tn(match.awayTeamId))}` +
+        `<br><small>J${match.matchDay || '?'}${dateTxt ? ' · ' + dateTxt : ''}${extra.length ? '<br>' + escHtml(extra.join(' · ')) : ''}</small>`;
+}
+
+// Construit les points {sx, sy, tip, penalty, conceded} d'un jeu de matchs pour l'équipe
+function buildShotPoints(teamMatches, teamId) {
+    const pts = [];
+    teamMatches.forEach(m => (m.goals || []).forEach(g => {
+        if (plIsOwnGoal(g)) return;
+        if (typeof g.shotX !== 'number' || typeof g.shotY !== 'number') return;
+        const conceded = g.teamId != teamId;
+        const dist = Math.min(g.shotX * SHOT_ZONES.PITCH_HALF_LENGTH_M, PITCH_L);   // mètres au but visé
+        const lat = Math.max(0, Math.min(1, g.shotY));
+        pts.push({
+            conceded,
+            penalty: plIsPenaltyGoal(g),
+            sx: (conceded ? 1 - lat : lat) * PITCH_W,
+            sy: conceded ? PITCH_L - dist : dist,
+            tip: shotTooltipHtml(m, g, conceded)
+        });
+    }));
+    return pts;
+}
+
+function renderShotPitch(points) {
+    const stripes = Array.from({ length: 10 }, (_, i) =>
+        `<rect x="0" y="${i * 10.5}" width="68" height="10.5" fill="${i % 2 ? '#dcebd8' : '#e6f2e2'}"/>`).join('');
+    const mark = (top) => {   // surfaces d'un des deux buts (top=true : but du haut)
+        const f = top ? 1 : -1, y0 = top ? 0 : 105;
+        return `
+            <rect x="13.85" y="${top ? 0 : 88.5}" width="40.3" height="16.5"/>
+            <rect x="24.85" y="${top ? 0 : 99.5}" width="18.3" height="5.5"/>
+            <rect x="30.34" y="${top ? -1.5 : 105}" width="7.32" height="1.5" fill="#fff"/>
+            <path d="M 26.7 ${y0 + f * 16.5} A 9.15 9.15 0 0 ${top ? 0 : 1} 41.3 ${y0 + f * 16.5}"/>
+            <circle cx="34" cy="${y0 + f * 11}" r="0.5" fill="#7aa57a"/>`;
+    };
+    const dot = p => {
+        const c = p.conceded ? '#dc2626' : '#16a34a';
+        const shape = p.penalty
+            ? `<rect x="${(p.sx - 1.1).toFixed(1)}" y="${(p.sy - 1.1).toFixed(1)}" width="2.2" height="2.2" fill="${c}" fill-opacity="0.85" stroke="#fff" stroke-width="0.3"/>`
+            : `<circle cx="${p.sx.toFixed(1)}" cy="${p.sy.toFixed(1)}" r="1.2" fill="${c}" fill-opacity="0.85" stroke="#fff" stroke-width="0.3"/>`;
+        // zone de survol élargie (cible tactile) + infobulle
+        return `<g data-tip="${escHtml(p.tip)}" style="cursor:pointer">
+            <circle cx="${p.sx.toFixed(1)}" cy="${p.sy.toFixed(1)}" r="2.6" fill="transparent"/>${shape}</g>`;
+    };
     return `
-        <svg viewBox="-1 -1 70 54.5" style="width:100%;max-width:300px;background:#2e7d32;border-radius:6px;">
-            <g fill="none" stroke="#ffffffcc" stroke-width="0.4">
-                <rect x="0" y="0" width="68" height="52.5"/>
-                <rect x="13.85" y="0" width="40.3" height="16.5"/>
-                <rect x="24.85" y="0" width="18.3" height="5.5"/>
-                <path d="M 26.7 16.5 A 9.15 9.15 0 0 0 41.3 16.5"/>
+        <svg viewBox="-2 -3 72 111" class="shot-pitch" style="width:100%;max-width:380px;display:block;margin:0 auto;border-radius:6px;background:#cfe3cb;">
+            ${stripes}
+            <g fill="none" stroke="#7aa57a" stroke-width="0.45">
+                <rect x="0" y="0" width="68" height="105"/>
+                <line x1="0" y1="52.5" x2="68" y2="52.5"/>
+                <circle cx="34" cy="52.5" r="9.15"/>
+                ${mark(true)}${mark(false)}
             </g>
-            <circle cx="34" cy="11" r="0.5" fill="#ffffffcc"/>
-            ${dots}
+            <circle cx="34" cy="52.5" r="0.5" fill="#7aa57a"/>
+            <g class="shot-layer-for">${points.filter(p => !p.conceded).map(dot).join('')}</g>
+            <g class="shot-layer-against">${points.filter(p => p.conceded).map(dot).join('')}</g>
         </svg>`;
+}
+
+// Infobulle unique (survol souris ou tap), partagée par tous les terrains
+function initShotTooltips(container) {
+    if (container._shotTipReady) return;
+    container._shotTipReady = true;
+    let tip = document.getElementById('shotTooltip');
+    if (!tip) {
+        tip = document.createElement('div');
+        tip.id = 'shotTooltip';
+        tip.style.cssText = 'position:fixed;z-index:10000;display:none;pointer-events:none;max-width:240px;' +
+            'padding:6px 9px;border-radius:6px;font-size:.8rem;line-height:1.35;background:#222;color:#fff;box-shadow:0 2px 8px #0006;';
+        document.body.appendChild(tip);
+    }
+    const show = e => {
+        const el = e.target.closest && e.target.closest('[data-tip]');
+        if (!el) { tip.style.display = 'none'; return; }
+        tip.innerHTML = el.getAttribute('data-tip');
+        tip.style.display = 'block';
+        const w = tip.offsetWidth, h = tip.offsetHeight;
+        tip.style.left = Math.max(4, Math.min(window.innerWidth - w - 4, e.clientX + 12)) + 'px';
+        tip.style.top = Math.max(4, Math.min(window.innerHeight - h - 4, e.clientY + 12)) + 'px';
+    };
+    container.addEventListener('mouseover', show);
+    container.addEventListener('mousemove', show);
+    container.addEventListener('click', show);          // tactile
+    container.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+}
+
+// Filtre d'affichage : tous / marqués / encaissés
+function setShotLayer(layer) {
+    const c = document.getElementById('teamShotZones');
+    if (!c) return;
+    c.querySelectorAll('.shot-layer-for').forEach(g => g.style.display = layer === 'against' ? 'none' : '');
+    c.querySelectorAll('.shot-layer-against').forEach(g => g.style.display = layer === 'for' ? 'none' : '');
+    c.querySelectorAll('.shot-layer-btn').forEach(b => b.classList.toggle('active', b.dataset.layer === layer));
 }
 
 function updateShotZonesTeam(teamId) {
     const container = document.getElementById('teamShotZones');
     if (!container) return;
+    initShotTooltips(container);
+
+    // Ces stats ne concernent que la saison EN COURS (données ESPN récentes).
+    const active = typeof getCurrentSeason === 'function' ? getCurrentSeason() : null;
+    if (!active || currentSeason !== active) {
+        container.innerHTML = `<p style="color:#7f8c8d;">Zones de tir et possession : disponibles uniquement pour la saison en cours (${escHtml(active || '?')}).</p>`;
+        return;
+    }
 
     const teamMatches = allMatches.filter(m => m.homeTeamId == teamId || m.awayTeamId == teamId);
     const goalsFor = [], goalsAgainst = [];
@@ -2041,12 +2152,13 @@ function updateShotZonesTeam(teamId) {
     }));
     const zf = aggregateShotZones(goalsFor);
     const za = aggregateShotZones(goalsAgainst);
+    const points = buildShotPoints(teamMatches, teamId);
 
-    // Possession : équipe vs adversaires rencontrés vs moyenne du championnat
+    // Possession : équipe vs adversaires rencontrés
     const mine = averageTeamPossession(teamMatches, teamId);
-    const oppSum = teamMatches.map(m => getTeamPossession(m, m.homeTeamId == teamId ? m.awayTeamId : m.homeTeamId))
+    const oppVals = teamMatches.map(m => getTeamPossession(m, m.homeTeamId == teamId ? m.awayTeamId : m.homeTeamId))
         .filter(v => v !== null);
-    const opp = oppSum.length ? oppSum.reduce((a, b) => a + b, 0) / oppSum.length : null;
+    const opp = oppVals.length ? oppVals.reduce((a, b) => a + b, 0) / oppVals.length : null;
 
     const pct = (n, d) => d > 0 ? `${Math.round(n / d * 100)}%` : '–';
     const row = (label, f, a, key) => `
@@ -2064,17 +2176,23 @@ function updateShotZonesTeam(teamId) {
                 <div class="record-label">Écart de possession</div></div>
         </div>` : `<p style="color:#7f8c8d;">Possession indisponible (lance <code>await backfillGoalDetails({dryRun:false})</code> dans la console).</p>`;
 
-    if (zf.located + za.located === 0 && !mine) {
-        container.innerHTML = `<p style="color:#7f8c8d;">Aucune donnée de position de tir pour cette équipe (saison en cours uniquement — lance <code>await backfillGoalDetails({dryRun:false})</code>).</p>`;
+    if (points.length === 0 && !mine) {
+        container.innerHTML = `<p style="color:#7f8c8d;">Aucune donnée de position de tir pour cette équipe (lance <code>await backfillGoalDetails({dryRun:false})</code> dans la console).</p>`;
         return;
     }
 
+    const btn = (layer, label) => `<button type="button" class="shot-layer-btn${layer === 'all' ? ' active' : ''}" data-layer="${layer}" onclick="setShotLayer('${layer}')"
+        style="padding:.25rem .7rem;margin-right:.3rem;border:1px solid #bbb;border-radius:14px;background:transparent;color:inherit;cursor:pointer;">${label}</button>`;
+
     container.innerHTML = `
         ${possHtml}
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;">
-            <div><h4>⚽ Buts marqués</h4>${renderShotPitch(zf.points, '#f1c40f')}</div>
-            <div><h4>🛡️ Buts encaissés</h4>${renderShotPitch(za.points, '#e74c3c')}</div>
+        <div style="margin-bottom:.5rem;">
+            ${btn('all', 'Tous')}${btn('for', '🟢 Marqués')}${btn('against', '🔴 Encaissés')}
         </div>
+        ${renderShotPitch(points)}
+        <p class="shotzones-note" style="text-align:center;margin:.4rem 0 1rem;">
+            🟢 but marqué (devant le but du haut) · 🔴 but encaissé (devant notre but, en bas) · ◼ penalty · survole ou touche un point pour le détail.
+        </p>
         <table class="stats-table" style="margin-top:1rem;">
             <thead><tr><th>Zone (tirs localisés)</th><th>Marqués (${zf.located})</th><th>Encaissés (${za.located})</th></tr></thead>
             <tbody>

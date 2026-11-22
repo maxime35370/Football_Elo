@@ -24,11 +24,13 @@ const POSSESSION_ODDS = {
 };
 
 function getTeamAvgPossession(teamId, beforeMatchDay, season) {
-    if (typeof allMatches === 'undefined') return null;
+    // Saison en cours uniquement : sans nom de saison, on n'ajuste rien
+    // (jamais de repli sur « toutes les saisons »).
+    if (typeof allMatches === 'undefined' || !season) return null;
     const vals = [];
     allMatches.forEach(m => {
         if (!m.finalScore || !m.matchStats) return;
-        if (season && m.season && m.season !== season) return;
+        if (m.season !== season) return;
         if (beforeMatchDay != null && !(m.matchDay < beforeMatchDay)) return;
         const isHome = m.homeTeamId == teamId;
         if (!isHome && m.awayTeamId != teamId) return;
@@ -184,7 +186,8 @@ async function getMatchOdds(match, teamsWithElo) {
     const awayElo = awayEloData?.eloRating || 1500;
     
     // Possession moyenne des deux équipes avant ce match (saison en cours)
-    const seasonName = typeof currentSeason !== 'undefined' ? currentSeason : null;
+    const seasonName = typeof getCurrentSeason === 'function' ? getCurrentSeason()
+        : (typeof currentSeason !== 'undefined' ? currentSeason : null);
     const homePoss = getTeamAvgPossession(match.homeTeamId, match.matchDay, seasonName);
     const awayPoss = getTeamAvgPossession(match.awayTeamId, match.matchDay, seasonName);
     
