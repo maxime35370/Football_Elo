@@ -1964,19 +1964,24 @@ function updateGoalsHeatmapTeam(teamId) {
 // Coordonnées ESPN d'un but (goal.shotX / goal.shotY, import ESPN) :
 //   shotX = distance à la ligne de but (0 = sur la ligne, ×52,5 ≈ mètres)
 //   shotY = axe latéral vu de l'attaquant (0 = gauche, 0,5 = axe, 1 = droite)
-// Seuils : surface de réparation = 16,5 m (x ≤ 0,314), petite surface = 5,5 m
-// (x ≤ 0,105) ; axe = 0,42 ≤ y ≤ 0,58 (largeur de la zone à ajuster ici).
+// Découpage LATÉRAL en 5 zones (vu de l'attaquant, 0 = gauche, 1 = droite), en
+// fractions des 68 m de largeur :
+//   gauche | centre-gauche | centre | centre-droite | droite
+//   centre = axe du but (entre les poteaux, 7,32 m)
+//   centre-gauche/droite = du poteau au bord de la grande surface (16,5 m)
+//   gauche/droite = le reste, hors de la largeur de la grande surface (13,84 m)
+// Profondeur : surface de réparation = 16,5 m (x ≤ 0,314), petite surface = 5,5 m.
 const SHOT_ZONES = {
     PITCH_HALF_LENGTH_M: 52.5,
     BOX_X: 16.5 / 52.5,
     SIX_YARD_X: 5.5 / 52.5,
-    LEFT_Y: 0.42,
-    RIGHT_Y: 0.58
+    // limites latérales (fractions de la largeur) : bord grande surface, poteau, poteau, bord grande surface
+    LATERAL: [13.84 / 68, 30.34 / 68, 37.66 / 68, 54.16 / 68]
 };
 
 function classifyShot(goal) {
-    const x = goal.shotX, y = goal.shotY;
-    const side = y < SHOT_ZONES.LEFT_Y ? 'left' : y > SHOT_ZONES.RIGHT_Y ? 'right' : 'centre';
+    const x = goal.shotX, y = goal.shotY, L = SHOT_ZONES.LATERAL;
+    const side = y < L[0] ? 'left' : y < L[1] ? 'centreLeft' : y <= L[2] ? 'centre' : y <= L[3] ? 'centreRight' : 'right';
     const depth = x <= SHOT_ZONES.SIX_YARD_X ? 'sixYard' : x <= SHOT_ZONES.BOX_X ? 'box' : 'outside';
     return { side, depth };
 }
@@ -1984,7 +1989,7 @@ function classifyShot(goal) {
 // Agrège les buts d'une liste : csc exclus, penaltys à part, sans coordonnées = non localisés
 function aggregateShotZones(goals) {
     const r = { total: 0, located: 0, unlocated: 0, penalties: 0, ownGoals: 0,
-        left: 0, centre: 0, right: 0, sixYard: 0, box: 0, outside: 0, points: [] };
+        left: 0, centreLeft: 0, centre: 0, centreRight: 0, right: 0, sixYard: 0, box: 0, outside: 0, points: [] };
     goals.forEach(g => {
         if (plIsOwnGoal(g)) { r.ownGoals++; return; }
         r.total++;
@@ -2090,6 +2095,9 @@ function renderShotPitch(points) {
                 <line x1="0" y1="52.5" x2="68" y2="52.5"/>
                 <circle cx="34" cy="52.5" r="9.15"/>
                 ${mark(true)}${mark(false)}
+            </g>
+            <g stroke="#5f8f5f" stroke-opacity="0.7" stroke-width="0.3" stroke-dasharray="1.2 1">
+                ${SHOT_ZONES.LATERAL.map(f => `<line x1="${(f * PITCH_W).toFixed(2)}" y1="0" x2="${(f * PITCH_W).toFixed(2)}" y2="${PITCH_L}"/>`).join('')}
             </g>
             <circle cx="34" cy="52.5" r="0.5" fill="#7aa57a"/>
             <g class="shot-layer-for">${points.filter(p => !p.conceded).map(dot).join('')}</g>
@@ -2287,14 +2295,16 @@ function updateShotZonesTeam(teamId) {
         </div>
         ${renderShotPitch(points)}
         <p class="shotzones-note" style="text-align:center;margin:.4rem 0 1rem;">
-            🟢 but marqué (devant le but du haut) · 🔴 but encaissé (devant notre but, en bas) · ◼ penalty · survole ou touche un point pour le détail. Zoom : boutons, Ctrl/⌘ + molette ou double-clic ; glisse pour déplacer.
+            🟢 but marqué (devant le but du haut) · 🔴 but encaissé (devant notre but, en bas) · ◼ penalty · pointillés = zones gauche / centre-gauche / centre (axe du but) / centre-droite / droite · survole ou touche un point pour le détail. Zoom : boutons, Ctrl/⌘ + molette ou double-clic ; glisse pour déplacer.
         </p>
         <table class="stats-table" style="margin-top:1rem;">
             <thead><tr><th>Zone (tirs localisés)</th><th>Marqués (${zf.located})</th><th>Encaissés (${za.located})</th></tr></thead>
             <tbody>
-                ${row('Côté gauche', zf, za, 'left')}
-                ${row('Axe central', zf, za, 'centre')}
-                ${row('Côté droit', zf, za, 'right')}
+                ${row('Gauche', zf, za, 'left')}
+                ${row('Centre-gauche', zf, za, 'centreLeft')}
+                ${row('Centre (axe du but)', zf, za, 'centre')}
+                ${row('Centre-droite', zf, za, 'centreRight')}
+                ${row('Droite', zf, za, 'right')}
                 ${row('Petite surface (≤ 5,5 m)', zf, za, 'sixYard')}
                 ${row('Surface de réparation', zf, za, 'box')}
                 ${row('Hors surface', zf, za, 'outside')}
