@@ -557,12 +557,19 @@ async function fetchMatchDetail(espnId) {
         
         const hStats = statsBoxscore[0]?.statistics || [];
         const aStats = statsBoxscore[1]?.statistics || [];
+
+        // Tirs cadrés : par nom exact. Par libellé, « on target » tombait sur la
+        // ligne « On Target % » (un ratio, ex. 0.6) au lieu de « ON GOAL » (le nombre).
+        const exact = (teamStats, name) => {
+            const s = teamStats.find(x => x.name === name);
+            return s ? (s.displayValue ?? s.value) : null;
+        };
         
         result.stats = {
             home: {
                 possession: extract(hStats, ['possession']),
                 totalShots: extract(hStats, ['shots', 'total shots']),
-                shotsOnTarget: extract(hStats, ['on target', 'shots on goal']),
+                shotsOnTarget: exact(hStats, 'shotsOnTarget') ?? extract(hStats, ['on goal', 'shots on goal']),
                 corners: extract(hStats, ['corner']),
                 fouls: extract(hStats, ['foul']),
                 offsides: extract(hStats, ['offside']),
@@ -570,7 +577,7 @@ async function fetchMatchDetail(espnId) {
             away: {
                 possession: extract(aStats, ['possession']),
                 totalShots: extract(aStats, ['shots', 'total shots']),
-                shotsOnTarget: extract(aStats, ['on target', 'shots on goal']),
+                shotsOnTarget: exact(aStats, 'shotsOnTarget') ?? extract(aStats, ['on goal', 'shots on goal']),
                 corners: extract(aStats, ['corner']),
                 fouls: extract(aStats, ['foul']),
                 offsides: extract(aStats, ['offside']),
@@ -1385,7 +1392,11 @@ async function backfillGoalDetails(options) {
                     return merged;
                 });
 
-                const needStats = !local.matchStats && detail.stats;
+                // Stats à (ré)écrire : absentes, ou tirs cadrés enregistrés comme ratio
+                // (« 0.6 » : ancien bug d'extraction, un nombre de tirs est entier)
+                const badSot = v => String(v == null ? '' : v).includes('.');
+                const needStats = !!detail.stats && (!local.matchStats ||
+                    badSot(local.matchStats.home?.shotsOnTarget) || badSot(local.matchStats.away?.shotsOnTarget));
                 if (!changed && !needStats) { unchanged++; continue; }
 
                 const penalties = goals.filter(g => g.isPenalty).length;
