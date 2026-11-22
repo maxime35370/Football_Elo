@@ -1316,7 +1316,7 @@ async function backfillGoalDetails(options) {
     const dates = [...new Set(locals.map(m => String(m.date).split('T')[0]))].sort();
     console.log(`🔁 Rattrapage ${opts.dryRun ? '(PREVIEW)' : ''} — ${locals.length} match(s), ${dates.length} date(s)`);
 
-    let enriched = 0, unchanged = 0, notFound = 0, errors = 0;
+    let enriched = 0, unchanged = 0, notFound = 0, errors = 0, unmatchedGoals = 0;
 
     for (const date of dates) {
         let espnMatches;
@@ -1337,16 +1337,43 @@ async function backfillGoalDetails(options) {
             try {
                 const detail = await fetchMatchDetail(espn.espnId);
                 const espnGoals = convertGoalsToLocalFormat(detail.goals, espn);
+                // Rapprochement but local ↔ but ESPN, du plus sûr au plus tolérant :
+                //  1) même équipe + même minute (+ temps additionnel)
+                //  2) même équipe + même nom de famille (minute corrigée depuis chez ESPN)
+                //  3) seul but restant de l'équipe de chaque côté
+                const localGoals = local.goals || [];
                 const used = new Set();
-                let changed = false;
+                const pairs = localGoals.map(() => -1);
+                const sameTeam = (eg, g) => String(eg.teamId) === String(g.teamId);
+                const lastName = n => String(n || '').replace(/^\s*\(?CSC\)?\s*/i, '').trim().split(/\s+/).pop().toLowerCase();
 
-                const goals = (local.goals || []).map(g => {
-                    const idx = espnGoals.findIndex((eg, i) => !used.has(i) &&
-                        String(eg.teamId) === String(g.teamId) &&
+                localGoals.forEach((g, i) => {
+                    const j = espnGoals.findIndex((eg, k) => !used.has(k) && sameTeam(eg, g) &&
                         eg.minute === g.minute && (eg.extraTime || 0) === (g.extraTime || 0));
-                    if (idx === -1) return g;
-                    used.add(idx);
-                    const eg = espnGoals[idx];
+                    if (j !== -1) { pairs[i] = j; used.add(j); }
+                });
+                localGoals.forEach((g, i) => {
+                    if (pairs[i] !== -1) return;
+                    const ln = lastName(g.scorerFull || g.scorer);
+                    const j = espnGoals.findIndex((eg, k) => !used.has(k) && sameTeam(eg, g) &&
+                        ln && lastName(eg.scorerFull || eg.scorer) === ln);
+                    if (j !== -1) { pairs[i] = j; used.add(j); }
+                });
+                localGoals.forEach((g, i) => {
+                    if (pairs[i] !== -1) return;
+                    const cand = espnGoals.map((eg, k) => k).filter(k => !used.has(k) && sameTeam(espnGoals[k], g));
+                    const localLeft = localGoals.filter((x, k) => pairs[k] === -1 && String(x.teamId) === String(g.teamId)).length;
+                    if (cand.length === 1 && localLeft === 1) { pairs[i] = cand[0]; used.add(cand[0]); }
+                });
+
+                let changed = false;
+                const goals = localGoals.map((g, i) => {
+                    if (pairs[i] === -1) {
+                        console.warn(`  ⚠️ but non rapproché avec ESPN : ${espn.homeShort}-${espn.awayShort} ${g.displayTime || g.minute + "'"} ${g.scorerFull || g.scorer}`);
+                        unmatchedGoals++;
+                        return g;
+                    }
+                    const eg = espnGoals[pairs[i]];
                     const merged = Object.assign({}, g, {
                         isPenalty: eg.isPenalty,
                         assist: eg.assist,
@@ -1383,10 +1410,11 @@ async function backfillGoalDetails(options) {
     }
 
     if (!opts.dryRun && enriched > 0) _syncLocalStorage();
-    console.log(`\n📊 ${enriched} enrichi(s), ${unchanged} déjà à jour, ${notFound} non trouvé(s) sur ESPN, ${errors} erreur(s)`);
+    console.log(`\n📊 ${enriched} enrichi(s), ${unchanged} déjà à jour, ${notFound} non trouvé(s) sur ESPN, ${errors} erreur(s)` +
+        (unmatchedGoals ? ` | ⚠️ ${unmatchedGoals} but(s) non rapproché(s)` : ''));
     if (opts.dryRun && enriched > 0) console.log('💡 Pour appliquer : await backfillGoalDetails({ dryRun: false })');
     if (!opts.dryRun && enriched > 0) console.log('💡 Recharge la page (F5)');
-    return { enriched, unchanged, notFound, errors };
+    return { enriched, unchanged, notFound, errors, unmatchedGoals };
 }
 
 
