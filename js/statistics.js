@@ -225,7 +225,7 @@ function displayTopScorersTable(scorers) {
                 <td class="${rankClass}">${index + 1}</td>
                 <td class="player-name">${scorer.label || scorer.name}</td>
                 <td>${clubsHtml}</td>
-                <td class="goals-count">${scorer.goals}</td>
+                <td class="goals-count">${plGoalsLabel(scorer)}</td>
             </tr>
         `;
     }).join('');
@@ -298,7 +298,7 @@ function updateTeamScorers() {
             <tr class="scorer-row" onclick="plOpenScorerModal('teamScorers', ${index})" title="Voir les matchs du joueur">
                 <td class="${rankClass}">${index + 1}</td>
                 <td class="player-name">${scorer.label || scorer.name}</td>
-                <td class="goals-count">${scorer.goals}</td>
+                <td class="goals-count">${plGoalsLabel(scorer)}</td>
             </tr>
         `;
 }).join('');
@@ -328,6 +328,7 @@ function toggleStatsView() {
         updateScoreDistributionTeam(selectedTeamId);
         updateSeasonRecordsTeam(selectedTeamId);
         updateGoalsHeatmapTeam(selectedTeamId);
+        updateShotZonesTeam(selectedTeamId);
         updateResultsCardTeam(selectedTeamId);
     }
 }
@@ -1954,6 +1955,354 @@ function updateGoalsHeatmapTeam(teamId) {
             </div>
         `;
     }).join('');
+}
+
+
+// ===============================
+// ZONES DE TIR & POSSESSION (stats équipe)
+// ===============================
+// Coordonnées ESPN d'un but (goal.shotX / goal.shotY, import ESPN) :
+//   shotX = distance à la ligne de but (0 = sur la ligne, ×52,5 ≈ mètres)
+//   shotY = axe latéral vu de l'attaquant (0 = gauche, 0,5 = axe, 1 = droite)
+// Seuils : surface de réparation = 16,5 m (x ≤ 0,314), petite surface = 5,5 m
+// (x ≤ 0,105) ; axe = 0,42 ≤ y ≤ 0,58 (largeur de la zone à ajuster ici).
+const SHOT_ZONES = {
+    PITCH_HALF_LENGTH_M: 52.5,
+    BOX_X: 16.5 / 52.5,
+    SIX_YARD_X: 5.5 / 52.5,
+    LEFT_Y: 0.42,
+    RIGHT_Y: 0.58
+};
+
+function classifyShot(goal) {
+    const x = goal.shotX, y = goal.shotY;
+    const side = y < SHOT_ZONES.LEFT_Y ? 'left' : y > SHOT_ZONES.RIGHT_Y ? 'right' : 'centre';
+    const depth = x <= SHOT_ZONES.SIX_YARD_X ? 'sixYard' : x <= SHOT_ZONES.BOX_X ? 'box' : 'outside';
+    return { side, depth };
+}
+
+// Agrège les buts d'une liste : csc exclus, penaltys à part, sans coordonnées = non localisés
+function aggregateShotZones(goals) {
+    const r = { total: 0, located: 0, unlocated: 0, penalties: 0, ownGoals: 0,
+        left: 0, centre: 0, right: 0, sixYard: 0, box: 0, outside: 0, points: [] };
+    goals.forEach(g => {
+        if (plIsOwnGoal(g)) { r.ownGoals++; return; }
+        r.total++;
+        if (plIsPenaltyGoal(g)) { r.penalties++; return; }
+        if (typeof g.shotX !== 'number' || typeof g.shotY !== 'number') { r.unlocated++; return; }
+        const z = classifyShot(g);
+        r.located++;
+        r[z.side]++;
+        r[z.depth]++;
+        r.points.push({ x: g.shotX, y: g.shotY });
+    });
+    return r;
+}
+
+// Possession (en %) d'une équipe dans un match, null si absente
+function getTeamPossession(match, teamId) {
+    const st = match.matchStats;
+    if (!st || !st.home || !st.away) return null;
+    const raw = match.homeTeamId == teamId ? st.home.possession : st.away.possession;
+    const v = parseFloat(String(raw ?? '').replace(',', '.'));
+    return isNaN(v) ? null : v;
+}
+
+function averageTeamPossession(matches, teamId) {
+    const vals = matches.map(m => getTeamPossession(m, teamId)).filter(v => v !== null);
+    return vals.length >= 1 ? { avg: vals.reduce((a, b) => a + b, 0) / vals.length, n: vals.length } : null;
+}
+
+// ---------- Terrain complet : buts marqués (vert) en haut, encaissés (rouge) en bas ----------
+// L'équipe attaque vers le HAUT. Un but marqué est placé devant le but du haut ;
+// un but encaissé est un tir ADVERSE sur NOTRE but (en bas) : on le pivote de
+// 180° (distance depuis le bas, gauche/droite inversés car l'adversaire regarde
+// vers le bas). Tous les terrains font 68 × 105 m : un tir lointain, y compris
+// depuis la moitié adverse, tombe donc naturellement au bon endroit.
+const PITCH_W = 68, PITCH_L = 105;
+
+function escHtml(t) {
+    return String(t == null ? '' : t).replace(/[&<>"']/g, c =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function shotTooltipHtml(match, goal, conceded) {
+    const tn = id => (allTeams.find(t => t.id == id) || {}).shortName || '?';
+    const name = String(goal.scorerFull || goal.scorer || 'Inconnu').replace(/^\s*\(?CSC\)?\s*/i, '');
+    const when = goal.displayTime || `${goal.minute}'`;
+    const extra = [];
+    if (plIsPenaltyGoal(goal)) extra.push('penalty');
+    if (goal.goalType) extra.push(String(goal.goalType).toLowerCase());
+    if (goal.assist) extra.push('passe de ' + goal.assist);
+    const d = match.date ? new Date(match.date) : null;
+    const dateTxt = d && !isNaN(d) ? d.toLocaleDateString('fr-FR') : '';
+    return `<strong>${escHtml(name)}</strong> ${escHtml(when)} ${conceded ? '🔴' : '🟢'}` +
+        `<br>${escHtml(tn(match.homeTeamId))} ${match.finalScore.home}-${match.finalScore.away} ${escHtml(tn(match.awayTeamId))}` +
+        `<br><small>J${match.matchDay || '?'}${dateTxt ? ' · ' + dateTxt : ''}${extra.length ? '<br>' + escHtml(extra.join(' · ')) : ''}</small>`;
+}
+
+// Construit les points {sx, sy, tip, penalty, conceded} d'un jeu de matchs pour l'équipe
+function buildShotPoints(teamMatches, teamId) {
+    const pts = [];
+    teamMatches.forEach(m => (m.goals || []).forEach(g => {
+        if (plIsOwnGoal(g)) return;
+        if (typeof g.shotX !== 'number' || typeof g.shotY !== 'number') return;
+        const conceded = g.teamId != teamId;
+        const dist = Math.min(g.shotX * SHOT_ZONES.PITCH_HALF_LENGTH_M, PITCH_L);   // mètres au but visé
+        const lat = Math.max(0, Math.min(1, g.shotY));
+        pts.push({
+            conceded,
+            penalty: plIsPenaltyGoal(g),
+            sx: (conceded ? 1 - lat : lat) * PITCH_W,
+            sy: conceded ? PITCH_L - dist : dist,
+            tip: shotTooltipHtml(m, g, conceded)
+        });
+    }));
+    return pts;
+}
+
+function renderShotPitch(points) {
+    const stripes = Array.from({ length: 10 }, (_, i) =>
+        `<rect x="0" y="${i * 10.5}" width="68" height="10.5" fill="${i % 2 ? '#dcebd8' : '#e6f2e2'}"/>`).join('');
+    const mark = (top) => {   // surfaces d'un des deux buts (top=true : but du haut)
+        const f = top ? 1 : -1, y0 = top ? 0 : 105;
+        return `
+            <rect x="13.85" y="${top ? 0 : 88.5}" width="40.3" height="16.5"/>
+            <rect x="24.85" y="${top ? 0 : 99.5}" width="18.3" height="5.5"/>
+            <rect x="30.34" y="${top ? -1.5 : 105}" width="7.32" height="1.5" fill="#fff"/>
+            <path d="M 26.7 ${y0 + f * 16.5} A 9.15 9.15 0 0 ${top ? 0 : 1} 41.3 ${y0 + f * 16.5}"/>
+            <circle cx="34" cy="${y0 + f * 11}" r="0.5" fill="#7aa57a"/>`;
+    };
+    const dot = p => {
+        const c = p.conceded ? '#dc2626' : '#16a34a';
+        const shape = p.penalty
+            ? `<rect x="-1.1" y="-1.1" width="2.2" height="2.2" fill="${c}" fill-opacity="0.85" stroke="#fff" stroke-width="0.3"/>`
+            : `<circle r="1.2" fill="${c}" fill-opacity="0.85" stroke="#fff" stroke-width="0.3"/>`;
+        // .shot-scale : le zoom réduit la taille apparente du point (voir applyShotView)
+        return `<g data-tip="${escHtml(p.tip)}" transform="translate(${p.sx.toFixed(1)},${p.sy.toFixed(1)})" style="cursor:pointer">
+            <g class="shot-scale"><circle r="2.6" fill="transparent"/>${shape}</g></g>`;
+    };
+    return `
+        <svg viewBox="-2 -3 72 111" class="shot-pitch" style="width:100%;max-width:380px;display:block;margin:0 auto;border-radius:6px;background:#cfe3cb;cursor:grab;user-select:none;">
+            ${stripes}
+            <g fill="none" stroke="#7aa57a" stroke-width="0.45">
+                <rect x="0" y="0" width="68" height="105"/>
+                <line x1="0" y1="52.5" x2="68" y2="52.5"/>
+                <circle cx="34" cy="52.5" r="9.15"/>
+                ${mark(true)}${mark(false)}
+            </g>
+            <circle cx="34" cy="52.5" r="0.5" fill="#7aa57a"/>
+            <g class="shot-layer-for">${points.filter(p => !p.conceded).map(dot).join('')}</g>
+            <g class="shot-layer-against">${points.filter(p => p.conceded).map(dot).join('')}</g>
+        </svg>`;
+}
+
+// Infobulle unique (survol souris ou tap), partagée par tous les terrains
+function initShotTooltips(container) {
+    if (container._shotTipReady) return;
+    container._shotTipReady = true;
+    let tip = document.getElementById('shotTooltip');
+    if (!tip) {
+        tip = document.createElement('div');
+        tip.id = 'shotTooltip';
+        tip.style.cssText = 'position:fixed;z-index:10000;display:none;pointer-events:none;max-width:240px;' +
+            'padding:6px 9px;border-radius:6px;font-size:.8rem;line-height:1.35;background:#222;color:#fff;box-shadow:0 2px 8px #0006;';
+        document.body.appendChild(tip);
+    }
+    const show = e => {
+        const el = e.target.closest && e.target.closest('[data-tip]');
+        if (!el) { tip.style.display = 'none'; return; }
+        tip.innerHTML = el.getAttribute('data-tip');
+        tip.style.display = 'block';
+        const w = tip.offsetWidth, h = tip.offsetHeight;
+        tip.style.left = Math.max(4, Math.min(window.innerWidth - w - 4, e.clientX + 12)) + 'px';
+        tip.style.top = Math.max(4, Math.min(window.innerHeight - h - 4, e.clientY + 12)) + 'px';
+    };
+    container.addEventListener('mouseover', show);
+    container.addEventListener('mousemove', show);
+    container.addEventListener('click', show);          // tactile
+    container.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+}
+
+// ---------- Zoom / déplacement du terrain ----------
+// viewBox complet : [x, y, largeur, hauteur]. Le zoom ne change que le viewBox.
+const SHOT_FULL_VB = [-2, -3, 72, 111];
+const SHOT_MAX_ZOOM = 8;
+const SHOT_VIEWS = {
+    full:   SHOT_FULL_VB,
+    top:    [6, -2, 56, 40],     // surface adverse (buts marqués)
+    bottom: [6, 67, 56, 40]      // notre surface (buts encaissés)
+};
+
+function getShotSvg() { return document.querySelector('#teamShotZones svg.shot-pitch'); }
+
+function readShotViewBox(svg) { return svg.getAttribute('viewBox').split(/\s+/).map(Number); }
+
+function applyShotView(svg, vb) {
+    const F = SHOT_FULL_VB;
+    let [x, y, w, h] = vb;
+    const ratio = h / w;
+    w = Math.max(F[2] / SHOT_MAX_ZOOM, Math.min(w, F[2]));
+    h = w * ratio;
+    if (h > F[3]) { h = F[3]; w = h / ratio; }
+    x = Math.max(F[0], Math.min(x, F[0] + F[2] - w));
+    y = Math.max(F[1], Math.min(y, F[1] + F[3] - h));
+    svg.setAttribute('viewBox', `${x.toFixed(2)} ${y.toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)}`);
+    // Les points grossissent avec le zoom : on les compense en partie pour
+    // garder des buts distincts quand on regarde de près.
+    const scale = 1 / Math.pow(F[2] / w, 0.7);
+    svg.querySelectorAll('.shot-scale').forEach(g => g.setAttribute('transform', `scale(${scale.toFixed(3)})`));
+}
+
+function setShotView(mode) {
+    const svg = getShotSvg();
+    if (svg && SHOT_VIEWS[mode]) applyShotView(svg, SHOT_VIEWS[mode].slice());
+}
+
+// Zoom ×factor autour d'un point (coordonnées du terrain) ; centre de la vue par défaut
+function zoomShot(factor, cx, cy) {
+    const svg = getShotSvg();
+    if (!svg) return;
+    const [x, y, w, h] = readShotViewBox(svg);
+    if (cx == null) { cx = x + w / 2; cy = y + h / 2; }
+    applyShotView(svg, [cx - (cx - x) / factor, cy - (cy - y) / factor, w / factor, h / factor]);
+}
+
+function shotPointFromEvent(svg, e) {
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX; pt.y = e.clientY;
+    return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+
+// Interactions souris : Ctrl/⌘ + molette = zoom, double-clic = zoom ×2, glisser = déplacer
+function initShotZoom(container) {
+    if (container._shotZoomReady) return;
+    container._shotZoomReady = true;
+    let drag = null;
+
+    container.addEventListener('wheel', e => {
+        const svg = e.target.closest && e.target.closest('svg.shot-pitch');
+        if (!svg || !(e.ctrlKey || e.metaKey)) return;     // sinon la page défile normalement
+        e.preventDefault();
+        const p = shotPointFromEvent(svg, e);
+        zoomShot(e.deltaY < 0 ? 1.25 : 0.8, p.x, p.y);
+    }, { passive: false });
+
+    container.addEventListener('dblclick', e => {
+        const svg = e.target.closest && e.target.closest('svg.shot-pitch');
+        if (!svg) return;
+        const p = shotPointFromEvent(svg, e);
+        zoomShot(2, p.x, p.y);
+    });
+
+    container.addEventListener('pointerdown', e => {
+        const svg = e.target.closest && e.target.closest('svg.shot-pitch');
+        if (!svg || e.pointerType !== 'mouse' || e.button !== 0) return;
+        drag = { svg, x: e.clientX, y: e.clientY };
+        svg.style.cursor = 'grabbing';
+    });
+    window.addEventListener('pointermove', e => {
+        if (!drag) return;
+        const [x, y, w, h] = readShotViewBox(drag.svg);
+        const r = drag.svg.getBoundingClientRect();
+        applyShotView(drag.svg, [x - (e.clientX - drag.x) * w / r.width, y - (e.clientY - drag.y) * h / r.height, w, h]);
+        drag.x = e.clientX; drag.y = e.clientY;
+    });
+    window.addEventListener('pointerup', () => {
+        if (drag) { drag.svg.style.cursor = 'grab'; drag = null; }
+    });
+}
+
+// Filtre d'affichage : tous / marqués / encaissés
+function setShotLayer(layer) {
+    const c = document.getElementById('teamShotZones');
+    if (!c) return;
+    c.querySelectorAll('.shot-layer-for').forEach(g => g.style.display = layer === 'against' ? 'none' : '');
+    c.querySelectorAll('.shot-layer-against').forEach(g => g.style.display = layer === 'for' ? 'none' : '');
+    c.querySelectorAll('.shot-layer-btn').forEach(b => b.classList.toggle('active', b.dataset.layer === layer));
+}
+
+function updateShotZonesTeam(teamId) {
+    const container = document.getElementById('teamShotZones');
+    if (!container) return;
+    initShotTooltips(container);
+    initShotZoom(container);
+
+    // Ces stats ne concernent que la saison EN COURS (données ESPN récentes).
+    const active = typeof getCurrentSeason === 'function' ? getCurrentSeason() : null;
+    if (!active || currentSeason !== active) {
+        container.innerHTML = `<p style="color:#7f8c8d;">Zones de tir et possession : disponibles uniquement pour la saison en cours (${escHtml(active || '?')}).</p>`;
+        return;
+    }
+
+    const teamMatches = allMatches.filter(m => m.homeTeamId == teamId || m.awayTeamId == teamId);
+    const goalsFor = [], goalsAgainst = [];
+    teamMatches.forEach(m => (m.goals || []).forEach(g => {
+        (g.teamId == teamId ? goalsFor : goalsAgainst).push(g);
+    }));
+    const zf = aggregateShotZones(goalsFor);
+    const za = aggregateShotZones(goalsAgainst);
+    const points = buildShotPoints(teamMatches, teamId);
+
+    // Possession : équipe vs adversaires rencontrés
+    const mine = averageTeamPossession(teamMatches, teamId);
+    const oppVals = teamMatches.map(m => getTeamPossession(m, m.homeTeamId == teamId ? m.awayTeamId : m.homeTeamId))
+        .filter(v => v !== null);
+    const opp = oppVals.length ? oppVals.reduce((a, b) => a + b, 0) / oppVals.length : null;
+
+    const pct = (n, d) => d > 0 ? `${Math.round(n / d * 100)}%` : '–';
+    const row = (label, f, a, key) => `
+        <tr><td>${label}</td>
+            <td><strong>${f[key]}</strong> <small>(${pct(f[key], f.located)})</small></td>
+            <td><strong>${a[key]}</strong> <small>(${pct(a[key], a.located)})</small></td></tr>`;
+
+    const possHtml = mine ? `
+        <div class="records-grid" style="margin-bottom:1rem;">
+            <div class="record-card"><div class="record-value">${mine.avg.toFixed(1)}%</div>
+                <div class="record-label">Possession moyenne (${mine.n} match${mine.n > 1 ? 's' : ''})</div></div>
+            <div class="record-card"><div class="record-value">${opp !== null ? opp.toFixed(1) + '%' : '–'}</div>
+                <div class="record-label">Possession moyenne des adversaires</div></div>
+            <div class="record-card"><div class="record-value">${opp !== null ? (mine.avg - opp >= 0 ? '+' : '') + (mine.avg - opp).toFixed(1) : '–'}</div>
+                <div class="record-label">Écart de possession</div></div>
+        </div>` : `<p style="color:#7f8c8d;">Possession indisponible (lance <code>await backfillGoalDetails({dryRun:false})</code> dans la console).</p>`;
+
+    if (points.length === 0 && !mine) {
+        container.innerHTML = `<p style="color:#7f8c8d;">Aucune donnée de position de tir pour cette équipe (lance <code>await backfillGoalDetails({dryRun:false})</code> dans la console).</p>`;
+        return;
+    }
+
+    const pill = 'padding:.25rem .7rem;margin:0 .3rem .3rem 0;border:1px solid #bbb;border-radius:14px;background:transparent;color:inherit;cursor:pointer;';
+    const btn = (layer, label) => `<button type="button" class="shot-layer-btn${layer === 'all' ? ' active' : ''}" data-layer="${layer}" onclick="setShotLayer('${layer}')" style="${pill}">${label}</button>`;
+    const vbtn = (mode, label) => `<button type="button" onclick="setShotView('${mode}')" style="${pill}">${label}</button>`;
+    const zbtn = (f, label, title) => `<button type="button" title="${title}" onclick="zoomShot(${f})" style="${pill}min-width:2.2rem;">${label}</button>`;
+
+    container.innerHTML = `
+        ${possHtml}
+        <div style="margin-bottom:.2rem;">
+            ${btn('all', 'Tous')}${btn('for', '🟢 Marqués')}${btn('against', '🔴 Encaissés')}
+        </div>
+        <div style="margin-bottom:.5rem;">
+            ${vbtn('full', '⛶ Terrain')}${vbtn('top', '🔍 Surface adverse')}${vbtn('bottom', '🔍 Notre surface')}
+            ${zbtn(1.5, '＋', 'Zoom avant')}${zbtn(1 / 1.5, '－', 'Zoom arrière')}
+        </div>
+        ${renderShotPitch(points)}
+        <p class="shotzones-note" style="text-align:center;margin:.4rem 0 1rem;">
+            🟢 but marqué (devant le but du haut) · 🔴 but encaissé (devant notre but, en bas) · ◼ penalty · survole ou touche un point pour le détail. Zoom : boutons, Ctrl/⌘ + molette ou double-clic ; glisse pour déplacer.
+        </p>
+        <table class="stats-table" style="margin-top:1rem;">
+            <thead><tr><th>Zone (tirs localisés)</th><th>Marqués (${zf.located})</th><th>Encaissés (${za.located})</th></tr></thead>
+            <tbody>
+                ${row('Côté gauche', zf, za, 'left')}
+                ${row('Axe central', zf, za, 'centre')}
+                ${row('Côté droit', zf, za, 'right')}
+                ${row('Petite surface (≤ 5,5 m)', zf, za, 'sixYard')}
+                ${row('Surface de réparation', zf, za, 'box')}
+                ${row('Hors surface', zf, za, 'outside')}
+                <tr><td>Penaltys</td><td>${zf.penalties}</td><td>${za.penalties}</td></tr>
+                <tr><td>Csc (exclus)</td><td>${zf.ownGoals}</td><td>${za.ownGoals}</td></tr>
+                <tr><td>Sans position</td><td>${zf.unlocated}</td><td>${za.unlocated}</td></tr>
+            </tbody>
+        </table>`;
 }
 
 // ===============================

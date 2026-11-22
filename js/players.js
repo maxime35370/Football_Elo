@@ -146,6 +146,18 @@ function plIsOwnGoal(goal) {
     return /^\s*\(?\s*csc\b/i.test(String(goal.scorerFull || goal.scorer || ''));
 }
 
+// But sur penalty : flag isPenalty (import ESPN) ou type 'Penalty'. Un penalty
+// compte dans le total de buts du joueur ; il est juste isolé pour l'affichage.
+function plIsPenaltyGoal(goal) {
+    return !!goal && (goal.isPenalty === true || goal.type === 'Penalty');
+}
+
+// Libellé du total d'un buteur : « 12 » ou « 12 (3) » (entre parenthèses, le
+// nombre de buts sur penalty, affiché seulement s'il y en a).
+function plGoalsLabel(row) {
+    return row.penalties > 0 ? `${row.goals} (${row.penalties})` : String(row.goals);
+}
+
 // ===============================
 // AGRÉGATION DES BUTEURS
 // ===============================
@@ -180,12 +192,14 @@ function plComputeScorerRows(matches) {
                     customLabel: player ? (player.customLabel || '') : '',
                     clubs: {},
                     goals: 0,
+                    penalties: 0,
                     matchGoals: {}
                 };
             }
 
             const row = rows[bucketKey];
             row.goals++;
+            if (plIsPenaltyGoal(goal)) row.penalties++;
             if (!row.clubs[teamId]) {
                 // firstDay mémorise la 1re journée avec but pour ce club :
                 // les clubs s'affichent en ordre chronologique (avant/après
@@ -421,7 +435,7 @@ function plOpenScorerModal(listId, index) {
         <div class="pm-box">
             <button class="pm-close" onclick="closePlayerMatchesModal()">✖</button>
             <h3>⚽ ${fullName}</h3>
-            <p class="pm-total">${row.goals} but${row.goals > 1 ? 's' : ''} cette saison${row.clubs.length > 1 ? ` (${row.clubs.map(c => `${teamShort(c.teamId)} ${c.goals}`).join(' + ')})` : ''}</p>
+            <p class="pm-total">${row.goals} but${row.goals > 1 ? 's' : ''}${row.penalties > 0 ? ` (dont ${row.penalties} sur penalty)` : ''} cette saison${row.clubs.length > 1 ? ` (${row.clubs.map(c => `${teamShort(c.teamId)} ${c.goals}`).join(' + ')})` : ''}</p>
             ${sections}
         </div>`;
     overlay.style.display = 'flex';

@@ -4,8 +4,58 @@
 // CALCUL DES COTES
 // ===============================
 
+// ===============================
+// POSSESSION (ajustement des cotes)
+// ===============================
+// Chaque point d'écart de possession MOYENNE (matchs précédents de la saison
+// en cours, source ESPN) décale l'écart Elo de `eloPerPoint` points, plafonné.
+// Backtest Ligue 1 (Elo chaîné d'une saison à l'autre) :
+//  • 2025-26 (144 matchs) : pente ≈ +0,011 pt/point de possession (≈ 2,7 Elo),
+//    non significative (t ≈ 1,1), possession corrélée à l'Elo (r ≈ 0,56).
+//  • 2026-27 (69 matchs) : log-loss 0,972 (Elo pur) → 0,966 (2 Elo/pt) → 0,965
+//    (3 Elo/pt) ; marché DraftKings 0,901 sur les mêmes matchs.
+// Effet réel mais modeste → valeur prudente. enabled:false ou eloPerPoint:0
+// pour revenir à l'Elo pur.
+const POSSESSION_ODDS = {
+    enabled: true,
+    eloPerPoint: 2,     // Elo par point de possession d'écart
+    maxEloShift: 20,    // décalage maximal total (Elo)
+    minMatches: 5       // matchs avec possession requis, pour CHAQUE équipe
+};
+
+function getTeamAvgPossession(teamId, beforeMatchDay, season) {
+    // Saison en cours uniquement : sans nom de saison, on n'ajuste rien
+    // (jamais de repli sur « toutes les saisons »).
+    if (typeof allMatches === 'undefined' || !season) return null;
+    const vals = [];
+    allMatches.forEach(m => {
+        if (!m.finalScore || !m.matchStats) return;
+        if (m.season !== season) return;
+        if (beforeMatchDay != null && !(m.matchDay < beforeMatchDay)) return;
+        const isHome = m.homeTeamId == teamId;
+        if (!isHome && m.awayTeamId != teamId) return;
+        const raw = (isHome ? m.matchStats.home : m.matchStats.away)?.possession;
+        const v = parseFloat(String(raw ?? '').replace(',', '.'));
+        if (!isNaN(v)) vals.push(v);
+    });
+    return vals.length >= POSSESSION_ODDS.minMatches
+        ? { avg: vals.reduce((a, b) => a + b, 0) / vals.length, n: vals.length }
+        : null;
+}
+
 // Cotes de base selon l'Elo
-function calculateBaseOdds(homeElo, awayElo) {
+// possession (optionnel) : { home: moyenne %, away: moyenne % }
+function calculateBaseOdds(homeElo, awayElo, possession) {
+    let possessionInfo = null;
+    if (POSSESSION_ODDS.enabled && possession &&
+        typeof possession.home === 'number' && typeof possession.away === 'number') {
+        const raw = (possession.home - possession.away) * POSSESSION_ODDS.eloPerPoint;
+        const shift = Math.max(-POSSESSION_ODDS.maxEloShift, Math.min(POSSESSION_ODDS.maxEloShift, raw));
+        homeElo += shift / 2;
+        awayElo -= shift / 2;
+        possessionInfo = { homeAvg: possession.home, awayAvg: possession.away, eloShift: Math.round(shift * 10) / 10 };
+    }
+
     const homeAdvantage = 65;
     const adjustedHomeElo = homeElo + homeAdvantage;
     
@@ -31,6 +81,7 @@ function calculateBaseOdds(homeElo, awayElo) {
     const margin = 0.95;
     
     return {
+        possession: possessionInfo,
         home: Math.round((1 / homeWinProb) * margin * 100) / 100,
         draw: Math.round((1 / drawProb) * margin * 100) / 100,
         away: Math.round((1 / awayWinProb) * margin * 100) / 100,
@@ -119,6 +170,7 @@ function adjustOddsWithDistribution(baseOdds, distribution) {
         draw: Math.round(baseOdds.draw * adjustFactor(baseOdds.probabilities.draw, distribution.draw) * 100) / 100,
         away: Math.round(baseOdds.away * adjustFactor(baseOdds.probabilities.away, distribution.away) * 100) / 100,
         probabilities: baseOdds.probabilities,
+        possession: baseOdds.possession || null,
         adjusted: true,
         distribution: distribution
     };
@@ -133,8 +185,15 @@ async function getMatchOdds(match, teamsWithElo) {
     const homeElo = homeEloData?.eloRating || 1500;
     const awayElo = awayEloData?.eloRating || 1500;
     
+    // Possession moyenne des deux équipes avant ce match (saison en cours)
+    const seasonName = typeof getCurrentSeason === 'function' ? getCurrentSeason()
+        : (typeof currentSeason !== 'undefined' ? currentSeason : null);
+    const homePoss = getTeamAvgPossession(match.homeTeamId, match.matchDay, seasonName);
+    const awayPoss = getTeamAvgPossession(match.awayTeamId, match.matchDay, seasonName);
+    
     // Cotes de base
-    const baseOdds = calculateBaseOdds(homeElo, awayElo);
+    const baseOdds = calculateBaseOdds(homeElo, awayElo,
+        homePoss && awayPoss ? { home: homePoss.avg, away: awayPoss.avg } : null);
     
     // Distribution des pronos
     const distribution = await getPredictionsDistribution(
