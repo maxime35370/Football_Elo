@@ -449,6 +449,27 @@ function parseEspnClock(displayValue) {
     return { minute: parseInt(m[1]) || 0, extraTime: parseInt(m[2]) || 0 };
 }
 
+// Position d'un tir ESPN → convention unique du projet :
+//   x = distance à la ligne de but (0 = ligne, 1 = milieu de terrain ; ×52,5 ≈ mètres)
+//   y = axe latéral vu de l'attaquant (0 = gauche, 0,5 = axe, 1 = droite)
+// ESPN a deux formats selon les saisons (détectés par événement) :
+//   • 2025-26 : fieldPositionX/Y déjà en 0–1, x = distance au but, y > 0,5 = droite
+//   • 2026-27 : échelle 0–100, x = 100 − distance au but (en % de la longueur
+//     du terrain, ≈ 105 m), et y INVERSÉ (y faible = côté droit).
+// Retourne null si la position n'est pas renseignée (0/0 ou absente).
+function normalizeEspnShotPosition(play) {
+    const rx = play.fieldPositionX, ry = play.fieldPositionY;
+    if (typeof rx !== 'number' || typeof ry !== 'number' || (!rx && !ry)) return null;
+    const isNewScale = Math.max(rx, ry, play.fieldPosition2X || 0) > 1;
+    if (isNewScale) {
+        return {
+            x: Math.round(((100 - rx) / 50) * 1000) / 1000,   // (100−x)% × 105 m ÷ 52,5 m
+            y: Math.round((1 - ry / 100) * 1000) / 1000
+        };
+    }
+    return { x: rx, y: ry };
+}
+
 async function fetchMatchDetail(espnId) {
     const data = await espnFetch(`${ESPN_API.summaryUrl}?event=${espnId}`);
     
@@ -468,8 +489,7 @@ async function fetchMatchDetail(espnId) {
             const isOwn = type.includes('Own');
             // 2e participant = passeur (absent sur penalty / csc)
             const assister = !isOwn && !type.includes('Penalty') ? participants[1] : null;
-            // Coordonnées du tir (repère attaquant, 0 = ligne de but) ; 0/0 = non renseigné
-            const hasPos = play.fieldPositionX || play.fieldPositionY;
+            const shot = normalizeEspnShotPosition(play);
             result.goals.push({
                 scorer: scorer?.athlete?.displayName || 'Inconnu',
                 minute,
@@ -479,8 +499,8 @@ async function fetchMatchDetail(espnId) {
                 // « Goal - Header », « Goal - Volley », « Goal - Free-kick »…
                 subType: type.includes(' - ') && !type.includes('Penalty') ? type.split(' - ')[1] : null,
                 assist: assister?.athlete?.displayName || null,
-                shotX: hasPos ? play.fieldPositionX : null,
-                shotY: hasPos ? play.fieldPositionY : null
+                shotX: shot ? shot.x : null,
+                shotY: shot ? shot.y : null
             });
         }
         

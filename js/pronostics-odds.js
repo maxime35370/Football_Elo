@@ -9,10 +9,13 @@
 // ===============================
 // Chaque point d'écart de possession MOYENNE (matchs précédents de la saison
 // en cours, source ESPN) décale l'écart Elo de `eloPerPoint` points, plafonné.
-// Backtest Ligue 1 2025-26 (144 matchs) : pente ≈ +0,011 pt/point de
-// possession (≈ 2,7 Elo), non significative (t ≈ 1,1) et possession corrélée
-// à l'Elo (r ≈ 0,56) → effet volontairement modeste. Mettre enabled:false ou
-// eloPerPoint:0 pour revenir à l'Elo pur.
+// Backtest Ligue 1 (Elo chaîné d'une saison à l'autre) :
+//  • 2025-26 (144 matchs) : pente ≈ +0,011 pt/point de possession (≈ 2,7 Elo),
+//    non significative (t ≈ 1,1), possession corrélée à l'Elo (r ≈ 0,56).
+//  • 2026-27 (69 matchs) : log-loss 0,972 (Elo pur) → 0,966 (2 Elo/pt) → 0,965
+//    (3 Elo/pt) ; marché DraftKings 0,901 sur les mêmes matchs.
+// Effet réel mais modeste → valeur prudente. enabled:false ou eloPerPoint:0
+// pour revenir à l'Elo pur.
 const POSSESSION_ODDS = {
     enabled: true,
     eloPerPoint: 2,     // Elo par point de possession d'écart
