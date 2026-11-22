@@ -161,6 +161,15 @@ function convertGoalsToLocalFormat(espnGoals, espnMatch) {
             // du même nom de famille dans le même club (référentiel joueurs)
             scorerFull: goal.scorer && goal.scorer !== 'Inconnu' ? prefix + goal.scorer : null,
             isOwnGoal: isOwnGoal,
+            // But sur penalty : sert au classement des buteurs « total (dont pen.) »
+            isPenalty: goal.type === 'Penalty',
+            // Passeur et position du tir (shotX = distance au but, shotY = axe
+            // gauche 0 → droite 1, vus de l'attaquant) : stats de zones de tir.
+            // null (jamais undefined) car Firestore refuse undefined.
+            assist: goal.assist || null,
+            goalType: goal.subType || null,
+            shotX: typeof goal.shotX === 'number' ? goal.shotX : null,
+            shotY: typeof goal.shotY === 'number' ? goal.shotY : null,
             minute: goal.minute,
             extraTime: extra,
             teamId: teamId,
@@ -454,14 +463,24 @@ async function fetchMatchDetail(espnId) {
         const minute = clock.minute;
 
         if (type.includes('Goal') || play.scoringPlay) {
-            const scorer = (play.participants || []).find(p => p.type === 'scorer' || p.athlete);
+            const participants = play.participants || [];
+            const scorer = participants.find(p => p.type === 'scorer' || p.athlete);
+            const isOwn = type.includes('Own');
+            // 2e participant = passeur (absent sur penalty / csc)
+            const assister = !isOwn && !type.includes('Penalty') ? participants[1] : null;
+            // Coordonnées du tir (repère attaquant, 0 = ligne de but) ; 0/0 = non renseigné
+            const hasPos = play.fieldPositionX || play.fieldPositionY;
             result.goals.push({
                 scorer: scorer?.athlete?.displayName || 'Inconnu',
                 minute,
                 extraTime: clock.extraTime,
                 team: play.team?.displayName || '?',
-                type: type.includes('Penalty') ? 'Penalty' : type.includes('Own') ? 'Own Goal' : 'Normal Goal',
-                assist: null
+                type: type.includes('Penalty') ? 'Penalty' : isOwn ? 'Own Goal' : 'Normal Goal',
+                // « Goal - Header », « Goal - Volley », « Goal - Free-kick »…
+                subType: type.includes(' - ') && !type.includes('Penalty') ? type.split(' - ')[1] : null,
+                assist: assister?.athlete?.displayName || null,
+                shotX: hasPos ? play.fieldPositionX : null,
+                shotY: hasPos ? play.fieldPositionY : null
             });
         }
         
@@ -1210,6 +1229,11 @@ function matchUpdateHelp() {
 ║  8. APPLIQUER PAR JOURNÉE                                ║
 ║     await applyMatchUpdates(23)                          ║
 ║                                                          ║
+║  ─── RATTRAPAGE (penalty, passeur, zones de tir, poss.) ─║
+║                                                          ║
+║  await backfillGoalDetails()                ← preview    ║
+║  await backfillGoalDetails({dryRun:false})  ← applique   ║
+║                                                          ║
 ║  ─── DEBUG ───────────────────────────────────────────── ║
 ║                                                          ║
 ║  9. EXPLORER                                             ║
@@ -1219,6 +1243,115 @@ function matchUpdateHelp() {
 ║                                                          ║
 ╚══════════════════════════════════════════════════════════╝
     `);
+}
+
+
+// ===============================
+// 13. RATTRAPAGE DES MATCHS DÉJÀ ENREGISTRÉS
+//     (penalty, passeur, position du tir, possession)
+// ===============================
+
+/**
+ * Enrichit les buts des matchs DÉJÀ en base avec les infos ESPN récentes :
+ * isPenalty, assist, goalType, shotX/shotY, et matchStats (possession…)
+ * si absent. Ne crée rien, ne touche ni au score ni aux buteurs.
+ * Les buts sont rapprochés par (équipe, minute, temps additionnel).
+ * Limité à la SAISON EN COURS (les saisons passées ne sont pas retouchées :
+ * leurs buts restent sans penalty/zone de tir, ce que l'affichage tolère).
+ *
+ *   await backfillGoalDetails()                 // preview, saison en cours
+ *   await backfillGoalDetails({ dryRun: false })  // applique
+ *   await backfillGoalDetails({ matchDay: 23, dryRun: false })
+ */
+async function backfillGoalDetails(options) {
+    const opts = Object.assign({ dryRun: true, matchDay: null }, options || {});
+    // Saison EN COURS uniquement : évite de re-télécharger les matchs des
+    // saisons précédentes. Sans saison courante, on s'arrête (pas de « tout »).
+    const season = typeof getCurrentSeason === 'function' ? getCurrentSeason() : null;
+    if (!season) {
+        console.error('❌ Saison en cours introuvable (getCurrentSeason) : rattrapage annulé');
+        return null;
+    }
+
+    const locals = (typeof allMatches !== 'undefined' ? allMatches : []).filter(m =>
+        m.finalScore && m.date &&
+        m.season === season &&
+        (!opts.matchDay || m.matchDay === opts.matchDay));
+
+    const dates = [...new Set(locals.map(m => String(m.date).split('T')[0]))].sort();
+    console.log(`🔁 Rattrapage ${opts.dryRun ? '(PREVIEW)' : ''} — ${locals.length} match(s), ${dates.length} date(s)`);
+
+    let enriched = 0, unchanged = 0, notFound = 0, errors = 0;
+
+    for (const date of dates) {
+        let espnMatches;
+        try {
+            espnMatches = await fetchLigue1Matches(date);
+        } catch (e) {
+            console.warn(`⚠️ ${date} : ${e.message}`);
+            errors++;
+            continue;
+        }
+
+        for (const local of locals.filter(m => String(m.date).split('T')[0] === date)) {
+            const espn = espnMatches.find(e => e.isFinished &&
+                String(e.homeTeamId) === String(local.homeTeamId) &&
+                String(e.awayTeamId) === String(local.awayTeamId));
+            if (!espn) { notFound++; continue; }
+
+            try {
+                const detail = await fetchMatchDetail(espn.espnId);
+                const espnGoals = convertGoalsToLocalFormat(detail.goals, espn);
+                const used = new Set();
+                let changed = false;
+
+                const goals = (local.goals || []).map(g => {
+                    const idx = espnGoals.findIndex((eg, i) => !used.has(i) &&
+                        String(eg.teamId) === String(g.teamId) &&
+                        eg.minute === g.minute && (eg.extraTime || 0) === (g.extraTime || 0));
+                    if (idx === -1) return g;
+                    used.add(idx);
+                    const eg = espnGoals[idx];
+                    const merged = Object.assign({}, g, {
+                        isPenalty: eg.isPenalty,
+                        assist: eg.assist,
+                        goalType: eg.goalType,
+                        shotX: eg.shotX,
+                        shotY: eg.shotY
+                    });
+                    if (JSON.stringify(merged) !== JSON.stringify(g)) changed = true;
+                    return merged;
+                });
+
+                const needStats = !local.matchStats && detail.stats;
+                if (!changed && !needStats) { unchanged++; continue; }
+
+                const penalties = goals.filter(g => g.isPenalty).length;
+                console.log(`  ${opts.dryRun ? '👁️' : '✅'} ${espn.homeShort} ${local.finalScore.home}-${local.finalScore.away} ${espn.awayShort}` +
+                    ` — ${goals.filter(g => g.shotX != null).length}/${goals.length} tirs localisés, ${penalties} penalty(s)` +
+                    (needStats ? `, possession ${detail.stats.home.possession}-${detail.stats.away.possession}` : ''));
+
+                if (!opts.dryRun) {
+                    const updateObj = { goals };
+                    if (needStats) updateObj.matchStats = detail.stats;
+                    if (typeof db !== 'undefined' && local.id != null) {
+                        await db.collection('matches').doc(String(local.id)).update(updateObj);
+                    }
+                    Object.assign(local, updateObj);
+                }
+                enriched++;
+            } catch (e) {
+                console.error(`  ❌ ${local.homeTeamId}-${local.awayTeamId} : ${e.message}`);
+                errors++;
+            }
+        }
+    }
+
+    if (!opts.dryRun && enriched > 0) _syncLocalStorage();
+    console.log(`\n📊 ${enriched} enrichi(s), ${unchanged} déjà à jour, ${notFound} non trouvé(s) sur ESPN, ${errors} erreur(s)`);
+    if (opts.dryRun && enriched > 0) console.log('💡 Pour appliquer : await backfillGoalDetails({ dryRun: false })');
+    if (!opts.dryRun && enriched > 0) console.log('💡 Recharge la page (F5)');
+    return { enriched, unchanged, notFound, errors };
 }
 
 

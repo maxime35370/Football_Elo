@@ -225,7 +225,7 @@ function displayTopScorersTable(scorers) {
                 <td class="${rankClass}">${index + 1}</td>
                 <td class="player-name">${scorer.label || scorer.name}</td>
                 <td>${clubsHtml}</td>
-                <td class="goals-count">${scorer.goals}</td>
+                <td class="goals-count">${plGoalsLabel(scorer)}</td>
             </tr>
         `;
     }).join('');
@@ -298,7 +298,7 @@ function updateTeamScorers() {
             <tr class="scorer-row" onclick="plOpenScorerModal('teamScorers', ${index})" title="Voir les matchs du joueur">
                 <td class="${rankClass}">${index + 1}</td>
                 <td class="player-name">${scorer.label || scorer.name}</td>
-                <td class="goals-count">${scorer.goals}</td>
+                <td class="goals-count">${plGoalsLabel(scorer)}</td>
             </tr>
         `;
 }).join('');
@@ -328,6 +328,7 @@ function toggleStatsView() {
         updateScoreDistributionTeam(selectedTeamId);
         updateSeasonRecordsTeam(selectedTeamId);
         updateGoalsHeatmapTeam(selectedTeamId);
+        updateShotZonesTeam(selectedTeamId);
         updateResultsCardTeam(selectedTeamId);
     }
 }
@@ -1954,6 +1955,140 @@ function updateGoalsHeatmapTeam(teamId) {
             </div>
         `;
     }).join('');
+}
+
+
+// ===============================
+// ZONES DE TIR & POSSESSION (stats équipe)
+// ===============================
+// Coordonnées ESPN d'un but (goal.shotX / goal.shotY, import ESPN) :
+//   shotX = distance à la ligne de but (0 = sur la ligne, ×52,5 ≈ mètres)
+//   shotY = axe latéral vu de l'attaquant (0 = gauche, 0,5 = axe, 1 = droite)
+// Seuils : surface de réparation = 16,5 m (x ≤ 0,314), petite surface = 5,5 m
+// (x ≤ 0,105) ; axe = 0,42 ≤ y ≤ 0,58 (largeur de la zone à ajuster ici).
+const SHOT_ZONES = {
+    PITCH_HALF_LENGTH_M: 52.5,
+    BOX_X: 16.5 / 52.5,
+    SIX_YARD_X: 5.5 / 52.5,
+    LEFT_Y: 0.42,
+    RIGHT_Y: 0.58
+};
+
+function classifyShot(goal) {
+    const x = goal.shotX, y = goal.shotY;
+    const side = y < SHOT_ZONES.LEFT_Y ? 'left' : y > SHOT_ZONES.RIGHT_Y ? 'right' : 'centre';
+    const depth = x <= SHOT_ZONES.SIX_YARD_X ? 'sixYard' : x <= SHOT_ZONES.BOX_X ? 'box' : 'outside';
+    return { side, depth };
+}
+
+// Agrège les buts d'une liste : csc exclus, penaltys à part, sans coordonnées = non localisés
+function aggregateShotZones(goals) {
+    const r = { total: 0, located: 0, unlocated: 0, penalties: 0, ownGoals: 0,
+        left: 0, centre: 0, right: 0, sixYard: 0, box: 0, outside: 0, points: [] };
+    goals.forEach(g => {
+        if (plIsOwnGoal(g)) { r.ownGoals++; return; }
+        r.total++;
+        if (plIsPenaltyGoal(g)) { r.penalties++; return; }
+        if (typeof g.shotX !== 'number' || typeof g.shotY !== 'number') { r.unlocated++; return; }
+        const z = classifyShot(g);
+        r.located++;
+        r[z.side]++;
+        r[z.depth]++;
+        r.points.push({ x: g.shotX, y: g.shotY });
+    });
+    return r;
+}
+
+// Possession (en %) d'une équipe dans un match, null si absente
+function getTeamPossession(match, teamId) {
+    const st = match.matchStats;
+    if (!st || !st.home || !st.away) return null;
+    const raw = match.homeTeamId == teamId ? st.home.possession : st.away.possession;
+    const v = parseFloat(String(raw ?? '').replace(',', '.'));
+    return isNaN(v) ? null : v;
+}
+
+function averageTeamPossession(matches, teamId) {
+    const vals = matches.map(m => getTeamPossession(m, teamId)).filter(v => v !== null);
+    return vals.length >= 1 ? { avg: vals.reduce((a, b) => a + b, 0) / vals.length, n: vals.length } : null;
+}
+
+function renderShotPitch(points, color) {
+    // Demi-terrain 68 x 52,5 m, but en haut. Vue de l'attaquant : droite = droite.
+    const dots = points.map(p =>
+        `<circle cx="${(p.y * 68).toFixed(1)}" cy="${(p.x * 52.5).toFixed(1)}" r="1.5" fill="${color}" fill-opacity="0.75" stroke="#fff" stroke-width="0.3"/>`).join('');
+    return `
+        <svg viewBox="-1 -1 70 54.5" style="width:100%;max-width:300px;background:#2e7d32;border-radius:6px;">
+            <g fill="none" stroke="#ffffffcc" stroke-width="0.4">
+                <rect x="0" y="0" width="68" height="52.5"/>
+                <rect x="13.85" y="0" width="40.3" height="16.5"/>
+                <rect x="24.85" y="0" width="18.3" height="5.5"/>
+                <path d="M 26.7 16.5 A 9.15 9.15 0 0 0 41.3 16.5"/>
+            </g>
+            <circle cx="34" cy="11" r="0.5" fill="#ffffffcc"/>
+            ${dots}
+        </svg>`;
+}
+
+function updateShotZonesTeam(teamId) {
+    const container = document.getElementById('teamShotZones');
+    if (!container) return;
+
+    const teamMatches = allMatches.filter(m => m.homeTeamId == teamId || m.awayTeamId == teamId);
+    const goalsFor = [], goalsAgainst = [];
+    teamMatches.forEach(m => (m.goals || []).forEach(g => {
+        (g.teamId == teamId ? goalsFor : goalsAgainst).push(g);
+    }));
+    const zf = aggregateShotZones(goalsFor);
+    const za = aggregateShotZones(goalsAgainst);
+
+    // Possession : équipe vs adversaires rencontrés vs moyenne du championnat
+    const mine = averageTeamPossession(teamMatches, teamId);
+    const oppSum = teamMatches.map(m => getTeamPossession(m, m.homeTeamId == teamId ? m.awayTeamId : m.homeTeamId))
+        .filter(v => v !== null);
+    const opp = oppSum.length ? oppSum.reduce((a, b) => a + b, 0) / oppSum.length : null;
+
+    const pct = (n, d) => d > 0 ? `${Math.round(n / d * 100)}%` : '–';
+    const row = (label, f, a, key) => `
+        <tr><td>${label}</td>
+            <td><strong>${f[key]}</strong> <small>(${pct(f[key], f.located)})</small></td>
+            <td><strong>${a[key]}</strong> <small>(${pct(a[key], a.located)})</small></td></tr>`;
+
+    const possHtml = mine ? `
+        <div class="records-grid" style="margin-bottom:1rem;">
+            <div class="record-card"><div class="record-value">${mine.avg.toFixed(1)}%</div>
+                <div class="record-label">Possession moyenne (${mine.n} match${mine.n > 1 ? 's' : ''})</div></div>
+            <div class="record-card"><div class="record-value">${opp !== null ? opp.toFixed(1) + '%' : '–'}</div>
+                <div class="record-label">Possession moyenne des adversaires</div></div>
+            <div class="record-card"><div class="record-value">${opp !== null ? (mine.avg - opp >= 0 ? '+' : '') + (mine.avg - opp).toFixed(1) : '–'}</div>
+                <div class="record-label">Écart de possession</div></div>
+        </div>` : `<p style="color:#7f8c8d;">Possession indisponible (lance <code>await backfillGoalDetails({dryRun:false})</code> dans la console).</p>`;
+
+    if (zf.located + za.located === 0 && !mine) {
+        container.innerHTML = `<p style="color:#7f8c8d;">Aucune donnée de position de tir pour cette équipe (saison en cours uniquement — lance <code>await backfillGoalDetails({dryRun:false})</code>).</p>`;
+        return;
+    }
+
+    container.innerHTML = `
+        ${possHtml}
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;">
+            <div><h4>⚽ Buts marqués</h4>${renderShotPitch(zf.points, '#f1c40f')}</div>
+            <div><h4>🛡️ Buts encaissés</h4>${renderShotPitch(za.points, '#e74c3c')}</div>
+        </div>
+        <table class="stats-table" style="margin-top:1rem;">
+            <thead><tr><th>Zone (tirs localisés)</th><th>Marqués (${zf.located})</th><th>Encaissés (${za.located})</th></tr></thead>
+            <tbody>
+                ${row('Côté gauche', zf, za, 'left')}
+                ${row('Axe central', zf, za, 'centre')}
+                ${row('Côté droit', zf, za, 'right')}
+                ${row('Petite surface (≤ 5,5 m)', zf, za, 'sixYard')}
+                ${row('Surface de réparation', zf, za, 'box')}
+                ${row('Hors surface', zf, za, 'outside')}
+                <tr><td>Penaltys</td><td>${zf.penalties}</td><td>${za.penalties}</td></tr>
+                <tr><td>Csc (exclus)</td><td>${zf.ownGoals}</td><td>${za.ownGoals}</td></tr>
+                <tr><td>Sans position</td><td>${zf.unlocated}</td><td>${za.unlocated}</td></tr>
+            </tbody>
+        </table>`;
 }
 
 // ===============================
