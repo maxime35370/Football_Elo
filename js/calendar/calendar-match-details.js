@@ -647,6 +647,111 @@ function mdVenueRecordHtml(teamId, atHome, timeline) {
     `;
 }
 
+
+// ===============================
+// DONNÉES ESPN : stats du match + terrain des buts
+// (affichés seulement si le match a été enrichi — saison en cours)
+// ===============================
+
+const MD_GOAL_TYPES = { 'Header': 'de la tête', 'Volley': 'volée', 'Free-kick': 'coup franc' };
+
+function mdEsc(t) {
+    return String(t == null ? '' : t).replace(/[&<>"']/g, c =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function mdNum(v) {
+    const n = parseFloat(String(v == null ? '' : v).replace(',', '.'));
+    return isNaN(n) ? null : n;
+}
+
+// Possession, tirs, cadrés, corners, fautes (matchStats : valeurs ESPN)
+function mdMatchStatsHtml(match, homeTeam, awayTeam) {
+    const st = match.matchStats;
+    if (!st || !st.home || !st.away) return '';
+    const hp = mdNum(st.home.possession), ap = mdNum(st.away.possession);
+
+    const possession = (hp !== null && ap !== null) ? `
+        <div class="md-stat-row">
+            <span class="md-stat-val">${hp.toFixed(1)}%</span>
+            <div class="md-stat-bar" title="Possession">
+                <div class="md-stat-fill home" style="width:${hp}%"></div>
+                <div class="md-stat-fill away" style="width:${100 - hp}%"></div>
+            </div>
+            <span class="md-stat-val">${ap.toFixed(1)}%</span>
+        </div>
+        <div class="md-stat-label">Possession</div>` : '';
+
+    const line = (label, key) => {
+        const h = mdNum(st.home[key]), a = mdNum(st.away[key]);
+        if (h === null || a === null) return '';
+        // anciens imports : « tirs cadrés » enregistrés comme ratio (0.6) → on masque
+        if (key === 'shotsOnTarget' && (!Number.isInteger(h) || !Number.isInteger(a))) return '';
+        return `<div class="md-stat-line"><span>${h}</span><span class="md-stat-label">${label}</span><span>${a}</span></div>`;
+    };
+    const lines = line('Tirs', 'totalShots') + line('Tirs cadrés', 'shotsOnTarget') +
+        line('Corners', 'corners') + line('Fautes', 'fouls') + line('Hors-jeu', 'offsides');
+    if (!possession && !lines) return '';
+
+    return `
+        <div class="md-section">
+            <h4>📊 Statistiques du match</h4>
+            <div class="md-stat-head"><span>${mdEsc(homeTeam.shortName)}</span><span>${mdEsc(awayTeam.shortName)}</span></div>
+            ${possession}${lines}
+        </div>`;
+}
+
+// Terrain complet : l'équipe à domicile attaque vers le HAUT (ses buts au but du
+// haut, en vert) ; l'extérieur attaque vers le BAS (ses buts au but du bas, en
+// rouge). Coordonnées normalisées à l'import : shotX = distance au but visé
+// (×52,5 ≈ mètres), shotY = axe gauche 0 → droite 1 vu de l'attaquant.
+function mdShotMapHtml(match, homeTeam, awayTeam) {
+    const goals = (match.goals || []).filter(g => !g.isOwnGoal && !/^\s*\(?csc/i.test(g.scorer || '') &&
+        typeof g.shotX === 'number' && typeof g.shotY === 'number');
+    if (goals.length === 0) return '';
+
+    const dots = goals.map(g => {
+        const away = g.teamId == match.awayTeamId;
+        const dist = Math.min(g.shotX * 52.5, 105);
+        const lat = Math.max(0, Math.min(1, g.shotY));
+        const x = (away ? 1 - lat : lat) * 68, y = away ? 105 - dist : dist;
+        const c = away ? '#dc2626' : '#16a34a';
+        const time = g.displayTime || (g.minute + "'");
+        const tip = `${(g.scorerFull || g.scorer || '').replace(/^\s*\(?CSC\)?\s*/i, '')} ${time}` +
+            (g.isPenalty ? ' (penalty)' : '') + (MD_GOAL_TYPES[g.goalType] ? ' · ' + MD_GOAL_TYPES[g.goalType] : '') +
+            (g.assist ? ' · passe de ' + g.assist : '');
+        const shape = g.isPenalty
+            ? `<rect x="${(x - 1.3).toFixed(1)}" y="${(y - 1.3).toFixed(1)}" width="2.6" height="2.6" fill="${c}" stroke="#fff" stroke-width="0.35"/>`
+            : `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1.5" fill="${c}" stroke="#fff" stroke-width="0.35"/>`;
+        return `<g style="cursor:help"><title>${mdEsc(tip)}</title><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="transparent"/>${shape}</g>`;
+    }).join('');
+
+    const stripes = Array.from({ length: 10 }, (_, i) =>
+        `<rect x="0" y="${i * 10.5}" width="68" height="10.5" fill="${i % 2 ? '#dcebd8' : '#e6f2e2'}"/>`).join('');
+    const goalArea = top => {
+        const f = top ? 1 : -1, y0 = top ? 0 : 105;
+        return `<rect x="13.85" y="${top ? 0 : 88.5}" width="40.3" height="16.5"/><rect x="24.85" y="${top ? 0 : 99.5}" width="18.3" height="5.5"/>` +
+            `<rect x="30.34" y="${top ? -1.5 : 105}" width="7.32" height="1.5" fill="#fff"/>` +
+            `<path d="M 26.7 ${y0 + f * 16.5} A 9.15 9.15 0 0 ${top ? 0 : 1} 41.3 ${y0 + f * 16.5}"/>`;
+    };
+
+    return `
+        <div class="md-section">
+            <h4>🎯 Buts sur le terrain</h4>
+            <svg viewBox="-2 -3 72 111" class="md-shot-pitch">
+                ${stripes}
+                <g fill="none" stroke="#7aa57a" stroke-width="0.45">
+                    <rect x="0" y="0" width="68" height="105"/><line x1="0" y1="52.5" x2="68" y2="52.5"/>
+                    <circle cx="34" cy="52.5" r="9.15"/>${goalArea(true)}${goalArea(false)}
+                </g>
+                ${dots}
+            </svg>
+            <div class="md-stat-label" style="text-align:center">
+                🟢 ${mdEsc(homeTeam.shortName)} (attaque vers le haut) · 🔴 ${mdEsc(awayTeam.shortName)} (vers le bas) · ◼ penalty<br>Survole un point pour le détail.
+            </div>
+        </div>`;
+}
+
 // ===============================
 // RENDU : MATCH JOUÉ
 // ===============================
@@ -670,7 +775,13 @@ function renderPlayedMatchDetails(match, timeline) {
     const homeGoals = goals.filter(g => g.teamId == match.homeTeamId);
     const awayGoals = goals.filter(g => g.teamId == match.awayTeamId);
 
-    const goalLine = g => `<div class="md-goal">⚽ ${g.scorer} <span class="md-goal-time">${g.displayTime || (g.minute + "'")}</span></div>`;
+    // Détails ESPN (penalty, type, passeur) : présents seulement sur les matchs enrichis
+    const goalLine = g => {
+        const kind = g.isPenalty ? 'penalty' : (MD_GOAL_TYPES[g.goalType] || '');
+        return `<div class="md-goal">⚽ ${g.scorer} <span class="md-goal-time">${g.displayTime || (g.minute + "'")}</span>` +
+            (kind ? ` <span class="md-goal-kind">${kind}</span>` : '') +
+            (g.assist ? `<div class="md-goal-assist">passe de ${mdEsc(g.assist)}</div>` : '') + `</div>`;
+    };
 
     const goalsHtml = goals.length > 0 ? `
         <div class="md-section">
@@ -724,6 +835,8 @@ function renderPlayedMatchDetails(match, timeline) {
             <div class="md-header-sub">Journée ${match.matchDay || '?'}${dateText ? ' · ' + dateText : ''}</div>
         </div>
         ${goalsHtml}
+        ${mdMatchStatsHtml(match, homeTeam, awayTeam)}
+        ${mdShotMapHtml(match, homeTeam, awayTeam)}
         ${contextHtml}
         ${eloHtml}
         <div class="md-section">

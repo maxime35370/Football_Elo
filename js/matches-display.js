@@ -237,6 +237,8 @@ function createGoalsHTML(goals) {
                 <span class="goal-time">${timeDisplay}</span>
                 <span class="goal-scorer">${goal.scorer}</span>
                 <span class="goal-team">(${team ? team.shortName : 'Équipe'})</span>
+                ${goal.isPenalty ? '<span class="goal-extra">(pen.)</span>' : ''}
+                ${goal.assist ? `<span class="goal-extra">passe de ${String(goal.assist).replace(/[<>&"]/g, '')}</span>` : ''}
             </div>
         `;
     });

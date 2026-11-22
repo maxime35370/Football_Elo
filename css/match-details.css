@@ -536,3 +536,69 @@
     font-weight: 700;
     fill: #2c3e50;
 }
+
+
+/* --- Détails ESPN : types de buts, stats du match, terrain --- */
+
+.md-goal-kind {
+    color: #7f8c8d;
+    font-size: 0.75rem;
+    font-style: italic;
+}
+
+.md-goal-assist {
+    color: #7f8c8d;
+    font-size: 0.75rem;
+}
+
+.md-stat-head,
+.md-stat-line {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 0.1rem 0;
+}
+
+.md-stat-head {
+    color: #7f8c8d;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+}
+
+.md-stat-label {
+    color: #7f8c8d;
+    font-size: 0.75rem;
+    font-weight: 400;
+    text-align: center;
+}
+
+.md-stat-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.3rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.md-stat-bar {
+    flex: 1;
+    display: flex;
+    height: 10px;
+    border-radius: 5px;
+    overflow: hidden;
+    background: #ddd;
+}
+
+.md-stat-fill.home { background: #3498db; }
+.md-stat-fill.away { background: #e67e22; }
+
+.md-shot-pitch {
+    display: block;
+    width: 100%;
+    max-width: 320px;
+    margin: 0 auto 0.4rem;
+    border-radius: 6px;
+    background: #cfe3cb;
+}
