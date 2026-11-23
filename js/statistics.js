@@ -2018,12 +2018,12 @@ function averageTeamPossession(matches, teamId) {
     return vals.length >= 1 ? { avg: vals.reduce((a, b) => a + b, 0) / vals.length, n: vals.length } : null;
 }
 
-// ---------- Terrain complet : buts marqués (vert) en haut, encaissés (rouge) en bas ----------
-// L'équipe attaque vers le HAUT. Un but marqué est placé devant le but du haut ;
-// un but encaissé est un tir ADVERSE sur NOTRE but (en bas) : on le pivote de
-// 180° (distance depuis le bas, gauche/droite inversés car l'adversaire regarde
-// vers le bas). Tous les terrains font 68 × 105 m : un tir lointain, y compris
-// depuis la moitié adverse, tombe donc naturellement au bon endroit.
+// ---------- Terrain : tous les buts sur la MÊME moitié, vus du tireur ----------
+// Le but visé est en haut. Un but marqué (vert) et un but encaissé (rouge) sont
+// placés exactement comme le tireur les voyait, face au but : gauche du tireur
+// à gauche de l'écran. Aucun pivotement, donc le même côté = la même position
+// pour les deux couleurs (les zones du tableau sont dans le même repère).
+// Un tir parti de la moitié adverse (lob) étend automatiquement la vue.
 const PITCH_W = 68, PITCH_L = 105;
 
 function escHtml(t) {
@@ -2046,7 +2046,7 @@ function shotTooltipHtml(match, goal, conceded) {
         `<br><small>J${match.matchDay || '?'}${dateTxt ? ' · ' + dateTxt : ''}${extra.length ? '<br>' + escHtml(extra.join(' · ')) : ''}</small>`;
 }
 
-// Construit les points {sx, sy, tip, penalty, conceded} d'un jeu de matchs pour l'équipe
+// Construit les points {sx, sy, tip, penalty, conceded} : sx = largeur (m), sy = distance au but visé (m)
 function buildShotPoints(teamMatches, teamId) {
     const pts = [];
     teamMatches.forEach(m => (m.goals || []).forEach(g => {
@@ -2058,8 +2058,8 @@ function buildShotPoints(teamMatches, teamId) {
         pts.push({
             conceded,
             penalty: plIsPenaltyGoal(g),
-            sx: (conceded ? 1 - lat : lat) * PITCH_W,
-            sy: conceded ? PITCH_L - dist : dist,
+            sx: lat * PITCH_W,
+            sy: dist,
             tip: shotTooltipHtml(m, g, conceded)
         });
     }));
@@ -2067,6 +2067,10 @@ function buildShotPoints(teamMatches, teamId) {
 }
 
 function renderShotPitch(points) {
+    // Moitié de terrain (jusqu'à la ligne médiane) ; étendue si un tir est parti de plus loin
+    const maxY = points.reduce((m, p) => Math.max(m, p.sy), 52.5);
+    const depth = maxY > 52.5 ? Math.min(PITCH_L, Math.ceil(maxY) + 3) : 52.5;
+    const fullVb = `-2 -3 72 ${depth + 5}`;
     const stripes = Array.from({ length: 10 }, (_, i) =>
         `<rect x="0" y="${i * 10.5}" width="68" height="10.5" fill="${i % 2 ? '#dcebd8' : '#e6f2e2'}"/>`).join('');
     const mark = (top) => {   // surfaces d'un des deux buts (top=true : but du haut)
@@ -2088,7 +2092,7 @@ function renderShotPitch(points) {
             <g class="shot-scale"><circle r="2.6" fill="transparent"/>${shape}</g></g>`;
     };
     return `
-        <svg viewBox="-2 -3 72 111" class="shot-pitch" style="width:100%;max-width:380px;display:block;margin:0 auto;border-radius:6px;background:#cfe3cb;cursor:grab;user-select:none;">
+        <svg viewBox="${fullVb}" data-fullvb="${fullVb}" class="shot-pitch" style="width:100%;max-width:380px;display:block;margin:0 auto;border-radius:6px;background:#cfe3cb;cursor:grab;user-select:none;">
             ${stripes}
             <g fill="none" stroke="#7aa57a" stroke-width="0.45">
                 <rect x="0" y="0" width="68" height="105"/>
@@ -2134,20 +2138,22 @@ function initShotTooltips(container) {
 
 // ---------- Zoom / déplacement du terrain ----------
 // viewBox complet : [x, y, largeur, hauteur]. Le zoom ne change que le viewBox.
-const SHOT_FULL_VB = [-2, -3, 72, 111];
+const SHOT_FULL_VB = [-2, -3, 72, 57.5];       // valeur par défaut (moitié de terrain)
 const SHOT_MAX_ZOOM = 8;
-const SHOT_VIEWS = {
-    full:   SHOT_FULL_VB,
-    top:    [6, -2, 56, 40],     // surface adverse (buts marqués)
-    bottom: [6, 67, 56, 40]      // notre surface (buts encaissés)
-};
+const SHOT_BOX_VIEW = [6, -2, 56, 38];            // zoom sur la surface
+
+// Vue complète du terrain affiché (étendue si un lob dépasse la ligne médiane)
+function getShotFullVb(svg) {
+    const v = (svg.getAttribute('data-fullvb') || '').split(/\s+/).map(Number);
+    return v.length === 4 && v.every(n => !isNaN(n)) ? v : SHOT_FULL_VB;
+}
 
 function getShotSvg() { return document.querySelector('#teamShotZones svg.shot-pitch'); }
 
 function readShotViewBox(svg) { return svg.getAttribute('viewBox').split(/\s+/).map(Number); }
 
 function applyShotView(svg, vb) {
-    const F = SHOT_FULL_VB;
+    const F = getShotFullVb(svg);
     let [x, y, w, h] = vb;
     const ratio = h / w;
     w = Math.max(F[2] / SHOT_MAX_ZOOM, Math.min(w, F[2]));
@@ -2164,7 +2170,8 @@ function applyShotView(svg, vb) {
 
 function setShotView(mode) {
     const svg = getShotSvg();
-    if (svg && SHOT_VIEWS[mode]) applyShotView(svg, SHOT_VIEWS[mode].slice());
+    if (!svg) return;
+    applyShotView(svg, (mode === 'box' ? SHOT_BOX_VIEW : getShotFullVb(svg)).slice());
 }
 
 // Zoom ×factor autour d'un point (coordonnées du terrain) ; centre de la vue par défaut
@@ -2290,12 +2297,12 @@ function updateShotZonesTeam(teamId) {
             ${btn('all', 'Tous')}${btn('for', '🟢 Marqués')}${btn('against', '🔴 Encaissés')}
         </div>
         <div style="margin-bottom:.5rem;">
-            ${vbtn('full', '⛶ Terrain')}${vbtn('top', '🔍 Surface adverse')}${vbtn('bottom', '🔍 Notre surface')}
+            ${vbtn('full', '⛶ Terrain')}${vbtn('box', '🔍 Surface')}
             ${zbtn(1.5, '＋', 'Zoom avant')}${zbtn(1 / 1.5, '－', 'Zoom arrière')}
         </div>
         ${renderShotPitch(points)}
         <p class="shotzones-note" style="text-align:center;margin:.4rem 0 1rem;">
-            🟢 but marqué (devant le but du haut) · 🔴 but encaissé (devant notre but, en bas) · ◼ penalty · pointillés = zones gauche / centre-gauche / centre (axe du but) / centre-droite / droite · survole ou touche un point pour le détail. Zoom : boutons, Ctrl/⌘ + molette ou double-clic ; glisse pour déplacer.
+            🟢 but marqué · 🔴 but encaissé · tous vus du tireur, face au but (en haut) · ◼ penalty · pointillés = zones gauche / centre-gauche / centre (axe du but) / centre-droite / droite · survole ou touche un point pour le détail. Zoom : boutons, Ctrl/⌘ + molette ou double-clic ; glisse pour déplacer.
         </p>
         <table class="stats-table" style="margin-top:1rem;">
             <thead><tr><th>Zone (tirs localisés)</th><th>Marqués (${zf.located})</th><th>Encaissés (${za.located})</th></tr></thead>

@@ -701,10 +701,11 @@ function mdMatchStatsHtml(match, homeTeam, awayTeam) {
         </div>`;
 }
 
-// Terrain complet : l'équipe à domicile attaque vers le HAUT (ses buts au but du
-// haut, en vert) ; l'extérieur attaque vers le BAS (ses buts au but du bas, en
-// rouge). Coordonnées normalisées à l'import : shotX = distance au but visé
-// (×52,5 ≈ mètres), shotY = axe gauche 0 → droite 1 vu de l'attaquant.
+// Terrain : les buts des DEUX équipes sur la même moitié, vus du tireur face au
+// but (en haut) : domicile en vert, extérieur en rouge, sans pivotement.
+// Coordonnées normalisées à l'import : shotX = distance au but (×52,5 ≈ mètres),
+// shotY = axe gauche 0 → droite 1 vu de l'attaquant. Un lob depuis la moitié
+// adverse étend automatiquement la vue.
 function mdShotMapHtml(match, homeTeam, awayTeam) {
     const goals = (match.goals || []).filter(g => !g.isOwnGoal && !/^\s*\(?csc/i.test(g.scorer || '') &&
         typeof g.shotX === 'number' && typeof g.shotY === 'number');
@@ -714,7 +715,7 @@ function mdShotMapHtml(match, homeTeam, awayTeam) {
         const away = g.teamId == match.awayTeamId;
         const dist = Math.min(g.shotX * 52.5, 105);
         const lat = Math.max(0, Math.min(1, g.shotY));
-        const x = (away ? 1 - lat : lat) * 68, y = away ? 105 - dist : dist;
+        const x = lat * 68, y = dist;
         const c = away ? '#dc2626' : '#16a34a';
         const time = g.displayTime || (g.minute + "'");
         const tip = `${(g.scorerFull || g.scorer || '').replace(/^\s*\(?CSC\)?\s*/i, '')} ${time}` +
@@ -726,6 +727,8 @@ function mdShotMapHtml(match, homeTeam, awayTeam) {
         return `<g style="cursor:help"><title>${mdEsc(tip)}</title><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="transparent"/>${shape}</g>`;
     }).join('');
 
+    const maxDist = goals.reduce((mx, g) => Math.max(mx, Math.min(g.shotX * 52.5, 105)), 52.5);
+    const depth = maxDist > 52.5 ? Math.min(105, Math.ceil(maxDist) + 3) : 52.5;
     const stripes = Array.from({ length: 10 }, (_, i) =>
         `<rect x="0" y="${i * 10.5}" width="68" height="10.5" fill="${i % 2 ? '#dcebd8' : '#e6f2e2'}"/>`).join('');
     const goalArea = top => {
@@ -738,7 +741,7 @@ function mdShotMapHtml(match, homeTeam, awayTeam) {
     return `
         <div class="md-section">
             <h4>🎯 Buts sur le terrain</h4>
-            <svg viewBox="-2 -3 72 111" class="md-shot-pitch">
+            <svg viewBox="-2 -3 72 ${depth + 5}" class="md-shot-pitch">
                 ${stripes}
                 <g fill="none" stroke="#7aa57a" stroke-width="0.45">
                     <rect x="0" y="0" width="68" height="105"/><line x1="0" y1="52.5" x2="68" y2="52.5"/>
@@ -747,7 +750,7 @@ function mdShotMapHtml(match, homeTeam, awayTeam) {
                 ${dots}
             </svg>
             <div class="md-stat-label" style="text-align:center">
-                🟢 ${mdEsc(homeTeam.shortName)} (attaque vers le haut) · 🔴 ${mdEsc(awayTeam.shortName)} (vers le bas) · ◼ penalty<br>Survole un point pour le détail.
+                🟢 ${mdEsc(homeTeam.shortName)} · 🔴 ${mdEsc(awayTeam.shortName)} · chaque but vu du tireur, face au but · ◼ penalty<br>Survole un point pour le détail.
             </div>
         </div>`;
 }
